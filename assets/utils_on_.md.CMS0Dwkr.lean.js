@@ -1,0 +1,1 @@
+import{_ as i,c as a,o as n,ae as h}from"./chunks/framework.CIKNQG74.js";const g=JSON.parse('{"title":"on$","description":"","frontmatter":{},"headers":[],"relativePath":"utils/on$.md","filePath":"utils/on$.md"}'),t={name:"utils/on$.md"};function k(l,s,p,e,E,r){return n(),a("div",null,[...s[0]||(s[0]=[h("",38)])])}const y=i(t,[["render",k]]);export{g as __pageData,y as default};

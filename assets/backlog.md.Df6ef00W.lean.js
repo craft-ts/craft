@@ -1,0 +1,1 @@
+import{_ as t,o as a,c as i,ae as r}from"./chunks/framework.xPPwUF8v.js";const m=JSON.parse('{"title":"","description":"","frontmatter":{},"headers":[],"relativePath":"backlog.md","filePath":"backlog.md"}'),l={name:"backlog.md"};function o(s,e,n,p,c,d){return a(),i("div",null,[...e[0]||(e[0]=[r("",2)])])}const f=t(l,[["render",o]]);export{m as __pageData,f as default};

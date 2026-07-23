@@ -10,7 +10,7 @@ import{_ as a,o as n,c as e,ag as p}from"./chunks/framework.BeAWB4Xg.js";const m
 <span class="line"><span>├── primitives/             # Primitive APIs</span></span>
 <span class="line"><span>│   ├── state.md</span></span>
 <span class="line"><span>│   ├── async-process.md</span></span>
-<span class="line"><span>│   ├── query-param.md</span></span>
+<span class="line"><span>│   ├── query-params.md</span></span>
 <span class="line"><span>│   ├── query.md</span></span>
 <span class="line"><span>│   └── mutation.md</span></span>
 <span class="line"><span>├── insertions/             # Insertion features</span></span>
@@ -24,7 +24,7 @@ import{_ as a,o as n,c as e,ag as p}from"./chunks/framework.BeAWB4Xg.js";const m
 <span class="line"><span>│   ├── craft-inputs.md</span></span>
 <span class="line"><span>│   ├── craft-computed.md</span></span>
 <span class="line"><span>│   ├── craft-async-processed.md</span></span>
-<span class="line"><span>│   ├── craft-query-param.md</span></span>
+<span class="line"><span>│   ├── craft-query-params.md</span></span>
 <span class="line"><span>│   ├── craft-query-params.md</span></span>
 <span class="line"><span>│   ├── craft-query.md</span></span>
 <span class="line"><span>│   ├── craft-mutation.md</span></span>

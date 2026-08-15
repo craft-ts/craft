@@ -1,0 +1,145 @@
+# @craft-ng/core
+
+> Type-safe Angular. Declare. Yield. Derive. Compile — no surprises. Coding agents should start here, then follow linked markdown pages or use the @craft-ng/mcp server.
+
+After importing @craft-ng/core, run `npx -y @craft-ng/mcp@beta` and read /resources/ai-agents. yield* every Craft reader. Do not generate Angular signal(), inject(), or @Injectable in authored Craft code.
+
+## Table of Contents
+
+### Learn
+
+- [Learn @craft-ng](https://ng-angular-stack.github.io/craft/learn.md)
+- [1. Your first state](https://ng-angular-stack.github.io/craft/learn/01-first-state.md)
+- [2. Derive instead of duplicate](https://ng-angular-stack.github.io/craft/learn/02-derive.md)
+- [3. Move logic out of the component](https://ng-angular-stack.github.io/craft/learn/03-service.md)
+- [4. Compose services](https://ng-angular-stack.github.io/craft/learn/04-compose.md)
+- [5. Load server data](https://ng-angular-stack.github.io/craft/learn/05-load-data.md)
+- [6. Write server data](https://ng-angular-stack.github.io/craft/learn/06-mutate-data.md)
+- [7. Put state in the URL](https://ng-angular-stack.github.io/craft/learn/07-url-state.md)
+- [8. Build a form](https://ng-angular-stack.github.io/craft/learn/08-forms.md)
+- [9. Wire up routing](https://ng-angular-stack.github.io/craft/learn/09-routing.md)
+- [10. Test what you wrote](https://ng-angular-stack.github.io/craft/learn/10-testing.md)
+- [Where to go next](https://ng-angular-stack.github.io/craft/learn/next.md)
+
+### Core concepts
+
+- [The mental model](https://ng-angular-stack.github.io/craft/guide/concepts/mental-model.md)
+- [What craft adds to Angular](https://ng-angular-stack.github.io/craft/guide/concepts/vs-angular.md)
+- [Which primitive should I use?](https://ng-angular-stack.github.io/craft/guide/concepts/choose-primitive.md)
+- [Anatomy of a primitive](https://ng-angular-stack.github.io/craft/guide/concepts/primitive-anatomy.md)
+- [Generators and `yield*`](https://ng-angular-stack.github.io/craft/guide/concepts/generators.md)
+- [Insertions](https://ng-angular-stack.github.io/craft/guide/concepts/insertions.md)
+- [Typed insertion pipes](https://ng-angular-stack.github.io/craft/guide/concepts/insertion-pipes.md)
+- [Exceptions as values](https://ng-angular-stack.github.io/craft/guide/concepts/exceptions.md)
+
+### Managing state
+
+- [Local state](https://ng-angular-stack.github.io/craft/guide/state/local-state.md)
+- [query](https://ng-angular-stack.github.io/craft/guide/state/server-state.md)
+- [Mutations](https://ng-angular-stack.github.io/craft/guide/state/mutations.md)
+- [queryParams](https://ng-angular-stack.github.io/craft/guide/state/url-state.md)
+- [asyncProcess](https://ng-angular-stack.github.io/craft/guide/state/async-process.md)
+- [Selecting a sub-state](https://ng-angular-stack.github.io/craft/guide/state/select.md)
+- [Reacting to mutations](https://ng-angular-stack.github.io/craft/guide/state/react-on-mutation.md)
+- [Collections](https://ng-angular-stack.github.io/craft/guide/state/collections.md)
+- [Collection utilities](https://ng-angular-stack.github.io/craft/guide/state/collections-utils.md)
+- [Persistence](https://ng-angular-stack.github.io/craft/guide/state/persistence.md)
+- [GlobalPersisterHandler](https://ng-angular-stack.github.io/craft/guide/state/persistence-handler.md)
+- [Pagination placeholders](https://ng-angular-stack.github.io/craft/guide/state/pagination-placeholder.md)
+- [Schema validation](https://ng-angular-stack.github.io/craft/guide/state/schema-validation.md)
+
+### Recommended approaches
+
+- [Inject at the point of use](https://ng-angular-stack.github.io/craft/guide/patterns/inject-at-point-of-use.md)
+
+### Structuring the app
+
+- [craftService](https://ng-angular-stack.github.io/craft/guide/app/craft-service.md)
+- [Service scopes](https://ng-angular-stack.github.io/craft/guide/app/service-scopes.md)
+- [Shaping a service's public API](https://ng-angular-stack.github.io/craft/guide/app/expose-api.md)
+- [Abstract services](https://ng-angular-stack.github.io/craft/guide/app/abstract-services.md)
+- [Integrating existing Angular code](https://ng-angular-stack.github.io/craft/guide/app/integrate-existing.md)
+- [App start](https://ng-angular-stack.github.io/craft/guide/app/app-start.md)
+- [Lazy services](https://ng-angular-stack.github.io/craft/guide/app/lazy-services.md)
+- [craftRegisterFor](https://ng-angular-stack.github.io/craft/guide/app/register.md)
+- [Target wrapper](https://ng-angular-stack.github.io/craft/guide/app/target-wrapper.md)
+
+### Routing & type-safe DI
+
+- [Routing setup](https://ng-angular-stack.github.io/craft/guide/routing/setup.md)
+- [CLI automation](https://ng-angular-stack.github.io/craft/guide/routing/automation.md)
+- [ESLint rules](https://ng-angular-stack.github.io/craft/guide/routing/eslint-rules.md)
+- [Route providers](https://ng-angular-stack.github.io/craft/guide/routing/route-providers.md)
+- [Route guards](https://ng-angular-stack.github.io/craft/guide/routing/guards.md)
+- [Route exception handling](https://ng-angular-stack.github.io/craft/guide/routing/exception-handling.md)
+- [Non-blocking navigation](https://ng-angular-stack.github.io/craft/guide/routing/pending-ui.md)
+- [Global error component](https://ng-angular-stack.github.io/craft/guide/routing/global-error-component.md)
+- [Route load errors](https://ng-angular-stack.github.io/craft/guide/routing/route-load-errors.md)
+- [Scaling routes](https://ng-angular-stack.github.io/craft/guide/routing/scaling.md)
+- [Angular brand config](https://ng-angular-stack.github.io/craft/guide/routing/angular-brand-config.md)
+
+### Components & templates
+
+- [Components](https://ng-angular-stack.github.io/craft/guide/components.md)
+- [Fine-grained reactivity](https://ng-angular-stack.github.io/craft/guide/components/fine-grained-reactivity.md)
+- [Directives and `.pipe(...)`](https://ng-angular-stack.github.io/craft/guide/components/directives.md)
+- [settledValue & pendingBlock](https://ng-angular-stack.github.io/craft/guide/components/pending-block.md)
+- [Accessibilité](https://ng-angular-stack.github.io/craft/guide/components/accessibility.md)
+- [Customizing components and directives](https://ng-angular-stack.github.io/craft/guide/components/customization.md)
+- [Content projection](https://ng-angular-stack.github.io/craft/guide/components/content-projection.md)
+- [Encapsulated styles](https://ng-angular-stack.github.io/craft/guide/components/styles.md)
+- [Template migrator](https://ng-angular-stack.github.io/craft/guide/components/template-migrator.md)
+
+### Forms
+
+- [Forms](https://ng-angular-stack.github.io/craft/guide/forms.md)
+- [Validators](https://ng-angular-stack.github.io/craft/guide/forms/validation.md)
+- [Submitting a form](https://ng-angular-stack.github.io/craft/guide/forms/submit.md)
+- [Nested forms](https://ng-angular-stack.github.io/craft/guide/forms/nested.md)
+- [Form exception handling](https://ng-angular-stack.github.io/craft/guide/forms/exceptions.md)
+- [Complete form examples](https://ng-angular-stack.github.io/craft/guide/forms/examples.md)
+
+### Testing
+
+- [Testing services](https://ng-angular-stack.github.io/craft/guide/testing/services.md)
+- [Testing components](https://ng-angular-stack.github.io/craft/guide/testing/components.md)
+- [Type-level tests](https://ng-angular-stack.github.io/craft/guide/testing/type-level.md)
+- [Browser boundaries](https://ng-angular-stack.github.io/craft/guide/testing/browser-boundaries.md)
+- [Architecture rules](https://ng-angular-stack.github.io/craft/guide/testing/architecture.md)
+- [Craft graph vs Nx](https://ng-angular-stack.github.io/craft/guide/testing/craft-graph-vs-nx.md)
+
+### Reactivity utilities
+
+- [craftComputed](https://ng-angular-stack.github.io/craft/guide/reactivity/craft-computed.md)
+- [craftEffect](https://ng-angular-stack.github.io/craft/guide/reactivity/craft-effect.md)
+- [craftMethod](https://ng-angular-stack.github.io/craft/guide/reactivity/craft-method.md)
+- [source$](https://ng-angular-stack.github.io/craft/guide/reactivity/source.md)
+- [on$](https://ng-angular-stack.github.io/craft/guide/reactivity/on.md)
+- [fromEventToSource$](https://ng-angular-stack.github.io/craft/guide/reactivity/from-event-to-source.md)
+- [sourceFromEvent](https://ng-angular-stack.github.io/craft/guide/reactivity/source-from-event.md)
+- [afterRecomputation](https://ng-angular-stack.github.io/craft/guide/reactivity/after-recomputation.md)
+
+### Going further
+
+- [Program operators](https://ng-angular-stack.github.io/craft/guide/advanced/program-operators.md)
+- [Pattern matching](https://ng-angular-stack.github.io/craft/guide/advanced/pattern-matching.md)
+- [Observability](https://ng-angular-stack.github.io/craft/guide/advanced/observability.md)
+- [Temporal runtime](https://ng-angular-stack.github.io/craft/guide/advanced/temporal-runtime.md)
+
+### Reference
+
+- [API index](https://ng-angular-stack.github.io/craft/reference.md)
+
+### Resources
+
+- [Examples](https://ng-angular-stack.github.io/craft/resources/examples.md)
+- [Coding agents](https://ng-angular-stack.github.io/craft/resources/ai-agents.md): Point Cursor, Claude, Copilot, and other coding agents at Craft NG docs, MCP tools, and Agent Skills after you import @craft-ng/core.
+- [Migrating an Angular application](https://ng-angular-stack.github.io/craft/resources/migration.md)
+- [Press Kit](https://ng-angular-stack.github.io/craft/resources/press-kit.md)
+- [Roadmap](https://ng-angular-stack.github.io/craft/resources/roadmap.md)
+- [Untitled](https://ng-angular-stack.github.io/craft/resources/backlog.md)
+
+### Other
+
+- [Guide](https://ng-angular-stack.github.io/craft/guide.md)
+- [Typed CSS variables and design tokens](https://ng-angular-stack.github.io/craft/guide/components/css-variables.md)

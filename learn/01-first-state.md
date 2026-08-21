@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/learn/01-first-state.md
+url: https://craft-ts.github.io/craft/learn/01-first-state.md
 ---
 # 1. Your first state
 
@@ -9,8 +9,8 @@ will use in every step — `craftComponent` and a primitive.
 ## Install
 
 ```shell
-npm i @craft-ng/core@beta @craft-ng/component@beta
-npm i -D @craft-ng/dev-tools@beta
+npm i @craft-ts/core@beta @craft-ts/component@beta
+npm i -D @craft-ts/dev-tools@beta
 ```
 
 The packages are currently published on the `beta` channel. The component
@@ -23,24 +23,30 @@ A Craft component is a **function**, not a class. It takes a name, meta, a logic
 factory, and a template:
 
 ```ts
-import { craftComponent, each, h1, li, ul } from '@craft-ng/component';
-import { state } from '@craft-ng/core';
+import { craftComponent, each, h1, li, ul } from '@craft-ts/component';
+import { state } from '@craft-ts/core';
 
 type Task = { id: string; title: string; done: boolean };
 
 export const Tasks = craftComponent(
-  'Tasks',
-  {},
-  function* () {
-    const tasks = yield* state('tasks', [ // read yield* as "I need"
+  'Tasks', // name: stable component name used by tooling and host tags
+  {}, // meta: providers, styles and host configuration
+  function* () { // logic factory: creates the component context
+    const tasks = yield* state('tasks', [ // name: state identifier
       { id: '1', title: 'Read step 1', done: false },
-    ] as Task[]);
+    ] as Task[]); // initial value: the seeded task list
 
     return { tasks };
   },
-  ({ tasks }) => [
+  ({ tasks }) => [ // template: turns the context into rendered nodes
     h1('Tasks'),
-    ul(each(tasks, { track: (task) => task.id }, (task) => li(task.title))),
+    ul(
+      each(
+        tasks, // source: the reactive collection to render
+        { track: (task) => task.id }, // options: stable identity for each item
+        (task) => li(task.title), // render: creates one node per task
+      ),
+    ),
   ],
 );
 ```
@@ -70,8 +76,8 @@ import {
   craftComponent,
   div,
   span,
-} from '@craft-ng/component';
-import { deepYieldable } from '@craft-ng/core';
+} from '@craft-ts/component';
+import { deepYieldable } from '@craft-ts/core';
 
 type User = { name: string };
 
@@ -85,7 +91,7 @@ const UserCard = craftComponent(
   ({ user, onRemove }) =>
     div([
       span(user.name),
-      button({
+      button('remove', {
         type: 'button',
         *click() {
           yield* onRemove(yield* user());
@@ -108,12 +114,12 @@ UserCard({
 });
 ```
 
-| Angular                                     | Craft                                       |
-| ------------------------------------------- | ------------------------------------------- |
-| `@Input()` / `input()` / `input.required()` | a `Input<T>` factory parameter              |
-| `@Output()` / `output()` + `.emit(...)`     | an `Output<H>` parameter, called directly   |
-| `[user]="u"` / `(remove)="fn($event)"`      | `UserCard({ user: u, onRemove: fn })` |
-| Missing required input → runtime            | missing parameter → **compile error**       |
+| Contract | Craft |
+| --- | --- |
+| Input | an `Input<T>` factory parameter |
+| Output | an `Output<H>` parameter, called directly |
+| Component call | `UserCard({ user: u, onRemove: fn })` |
+| Missing required input | **compile error** |
 
 Because it's a function call, there is no template-binding layer between caller
 and component: a wrong input name or type is a plain TypeScript error.
@@ -143,7 +149,7 @@ adds no host element or wrapper around your markup to achieve it. See
 ## Mounting the root
 
 The app's root is a Craft component too. `provideCraftRootComponent(App)`
-designates it, and Angular bootstraps a thin host:
+designates it, and the Craft host bootstraps the application:
 
 ```typescript
 // app.config.ts
@@ -154,16 +160,14 @@ export const appConfig = craftAppConfig({
 
 ```typescript
 // main.ts
-import { bootstrapApplication } from '@angular/platform-browser';
-import { CraftRootComponentHost } from '@craft-ng/component';
-import { toApplicationConfig } from '@craft-ng/core';
+import { bootstrapCraft } from '@craft-ts/component';
 import { appConfig } from './app/app.config';
 
-bootstrapApplication(CraftRootComponentHost, toApplicationConfig(appConfig));
+bootstrapCraft({ config: appConfig });
 ```
 
-`toApplicationConfig` turns the craft config into the `ApplicationConfig`
-Angular expects, so the rest of your Angular setup is unchanged.
+`bootstrapCraft` builds the root injector, runs the app-start hooks, then
+mounts the root component into `<craft-root>`.
 
 ## The two rules of a primitive
 
@@ -189,12 +193,6 @@ dependencies so they show up on **its** graph.
 
 For now, treat it as "the way to use a primitive inside a factory".
 [Step 4](/learn/04-compose) explains what it buys you.
-
-::: tip Coming from Angular classes?
-In an Angular `@Component` class there is no generator to yield from, so you
-drive a primitive with `craftUse(state('tasks', []))` instead. Same primitive,
-same result — see [Anatomy of a primitive](/guide/concepts/primitive-anatomy).
-:::
 
 ## The template
 

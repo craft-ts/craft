@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/state/collections-utils.md
+url: https://craft-ts.github.io/craft/guide/state/collections-utils.md
 ---
 # Collection utilities
 

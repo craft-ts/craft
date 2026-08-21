@@ -1,9 +1,9 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/concepts/mental-model.md
+url: https://craft-ts.github.io/craft/guide/concepts/mental-model.md
 ---
 # The mental model
 
-Three words describe everything `@craft-ng` does: **declare, yield, derive.**
+Three words describe everything `@craft-ts` does: **declare, yield, derive.**
 
 You declare state with a name. Every named entity — a factory, a computed, a
 method — pulls in with `yield*` what it does not own, so the compiler can see
@@ -156,13 +156,12 @@ depends on exactly what it reads — and a test provides exactly that, no more.
 
 A service is a factory with a name and a scope, not a class:
 [`craftService`](/guide/app/craft-service) for the ones you write,
-[`toCraftService`](/guide/app/integrate-existing) for existing Angular
-dependencies. Both participate in the same typed composition and the same
-testing workflow.
+and small host adapters for dependencies owned by the runtime. Both participate
+in the same typed composition and the same testing workflow.
 
 ```typescript
 const { UserProfile } = craftService(
-  { name: 'UserProfile', scope: 'global' },
+  { name: 'UserProfile', providedIn: 'global' },
   function* () {
     const api = yield* UserApi();
     const userId = yield* state('userId', '5', ({ set }) => ({ set }));
@@ -231,7 +230,6 @@ if nobody does. See [Exceptions as values](/guide/concepts/exceptions).
 
 ## See Also
 
-* [What craft adds to Angular](/guide/concepts/vs-angular) — the full inventory
 * [Which primitive should I use?](/guide/concepts/choose-primitive)
 * [Anatomy of a primitive](/guide/concepts/primitive-anatomy)
 * [Learn: the guided path](/learn/)

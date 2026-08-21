@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/testing/services.md
+url: https://craft-ts.github.io/craft/guide/testing/services.md
 ---
 # Testing services
 
@@ -8,7 +8,7 @@ inverts it: you supply a **register** covering the service's whole dependency
 graph, and the compiler refuses to run the test until every node is accounted
 for.
 
-**Use it for** any `craftService` or `toCraftService`.
+**Use it for** any `craftService`.
 **Use `boundaryOnly`** when the test should stay close to reality — it keeps the
 real graph and only lets you replace
 [browser boundaries](/guide/testing/browser-boundaries).
@@ -23,9 +23,8 @@ are what keep these tests short — see
 
 ```typescript
 import {
-  setupCraftComponentTestingByRegister,
   setupCraftServiceTestingByRegister,
-} from '@craft-ng/core';
+} from '@craft-ts/core';
 ```
 
 ## Introduction
@@ -61,11 +60,11 @@ import {
   craftUse,
   setupCraftServiceTestingByRegister,
   state,
-} from '@craft-ng/core';
+} from '@craft-ts/core';
 import { vi } from 'vitest';
 
 const { Counter } = craftService(
-  { name: 'Counter', scope: 'global' },
+  { name: 'Counter', providedIn: 'global' },
   function* () {
     const counter = yield* state('counter', 10, ({ update }) => ({
       increment: () => update((value) => value + 1),
@@ -75,7 +74,7 @@ const { Counter } = craftService(
 );
 
 const { CounterConsumer, provideCounterConsumer } = craftService(
-  { name: 'CounterConsumer', scope: 'toProvide' },
+  { name: 'CounterConsumer', providedIn: 'toProvide' },
   function* () {
     const counter = yield* Counter();
 
@@ -222,40 +221,9 @@ const { sut, mocks } = await setupCraftServiceTestingByRegister.boundaryOnly(
 * non-boundary services cannot be mocked in this mode.
 * descendants of a mocked boundary are pruned and do not need entries.
 
-The component helper exposes the same mode:
-
-```typescript
-const { fixture, component, mocks } =
-  await setupCraftComponentTestingByRegister.boundaryOnly(
-    DashboardPage,
-    {} as GenDeps_DashboardPage,
-    {
-      boundaryRegister: {
-        BrowserWindowService: 'real',
-        LocalStorageService: {
-          getItem: vi.fn(() => 'cached'),
-        },
-      },
-      inputs: {
-        userId: '42',
-      },
-    },
-  );
-```
-
-The helper never decides automatically from `jsdom` or another test
-environment. Use `'real'` when the real boundary is appropriate, and provide a
-mock when the test needs deterministic platform behavior.
-
-## Extra Angular Providers
-
-When the graph depends on real Angular infrastructure, append providers through the third argument.
-
-```typescript
-const { sut } = await setupCraftServiceTestingByRegister(Navigation, register, {
-  providers: [provideRouter([])],
-});
-```
+The helper never decides automatically from the test environment. Use `'real'`
+when the real boundary is appropriate, and provide a mock when the test needs
+deterministic platform behavior.
 
 ## Alias
 

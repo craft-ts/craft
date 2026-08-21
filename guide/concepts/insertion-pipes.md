@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/concepts/insertion-pipes.md
+url: https://craft-ts.github.io/craft/guide/concepts/insertion-pipes.md
 ---
 # Typed insertion pipes
 
@@ -13,6 +13,7 @@ insertions, use the pipe named after that primitive:
 | `mutation`     | `insertMutationPipe`     |
 | `queryParams`  | `insertQueryParamsPipe`  |
 | `asyncProcess` | `insertAsyncProcessPipe` |
+| `craftStateMachine` | `insertStateMachinePipe` |
 
 The typed pipe keeps the primitive call readable and gives every member the
 correct contextual type. Members run from left to right, and each member can
@@ -21,7 +22,7 @@ read the outputs of the members before it through `insertions`.
 ## State
 
 ```typescript
-import { craftComputed, insertStatePipe, state } from '@craft-ng/core';
+import { craftComputed, insertStatePipe, state } from '@craft-ts/core';
 
 const { counter } =
   yield *
@@ -52,7 +53,7 @@ import {
   insertStoragePersister,
   insertQueryPipe,
   query,
-} from '@craft-ng/core';
+} from '@craft-ts/core';
 
 const { users } =
   yield *
@@ -79,7 +80,7 @@ const { users } =
 ## Mutation
 
 ```typescript
-import { insertMutationPipe, mutation } from '@craft-ng/core';
+import { insertMutationPipe, mutation } from '@craft-ts/core';
 
 const { saveUser } =
   yield *
@@ -108,7 +109,7 @@ const { saveUser } =
 ## URL state
 
 ```typescript
-import { craftComputed, insertQueryParamsPipe, queryParams } from '@craft-ng/core';
+import { craftComputed, insertQueryParamsPipe, queryParams } from '@craft-ts/core';
 
 const { filters } =
   yield *
@@ -139,7 +140,7 @@ const { filters } =
 ## Async process
 
 ```typescript
-import { insertAsyncProcessPipe, asyncProcess } from '@craft-ng/core';
+import { insertAsyncProcessPipe, asyncProcess } from '@craft-ts/core';
 
 const { search } =
   yield *

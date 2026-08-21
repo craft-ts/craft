@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/app/abstract-services.md
+url: https://craft-ts.github.io/craft/guide/app/abstract-services.md
 ---
 # Abstract services
 
@@ -13,7 +13,7 @@ test — instead of a hard import.
 Use `scope: 'abstract'` to declare a contract that must be implemented elsewhere.
 
 ```ts
-import { abstract, craftService } from '@craft-ng/core';
+import { abstract, craftService } from '@craft-ts/core';
 
 type CounterContract = {
   (): number;
@@ -36,7 +36,7 @@ token. This lets you implement the contract **inline at the providing site** (a 
 a feature config) instead of declaring a separate concrete `craftService`.
 
 ```typescript
-import { abstract, craftService } from '@craft-ng/core';
+import { abstract, craftService } from '@craft-ts/core';
 
 type User = { name: string };
 
@@ -57,7 +57,7 @@ the resulting provider participates in the cascade DI check just like a regular 
 
 ```typescript
 const { Greeting } = craftService(
-  { name: 'Greeting', scope: 'global' },
+  { name: 'Greeting', providedIn: 'global' },
   () => ({ prefix: 'Hello' }),
 );
 

@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/learn/02-derive.md
+url: https://craft-ts.github.io/craft/learn/02-derive.md
 ---
 # 2. Derive instead of duplicate
 
@@ -12,12 +12,12 @@ The last argument of a primitive is an **insertion**: a function that receives
 the primitive's internals and returns whatever you want exposed on it.
 
 ```ts
-import { craftComputed, craftService, state } from '@craft-ng/core';
+import { craftComputed, craftService, state } from '@craft-ts/core';
 
 type Task = { id: string; title: string; done: boolean };
 
 export const { TaskList } = craftService(
-  { name: 'TaskList', scope: 'function' },
+  { name: 'TaskList', providedIn: 'function' },
   function* () {
     const tasks = yield* state('tasks', [] as Task[], ({ state, set, update }) => ({
       add: (title: string) =>
@@ -73,7 +73,7 @@ import {
   input,
   li,
   ul,
-} from '@craft-ng/component';
+} from '@craft-ts/component';
 
 export const Tasks = craftComponent(
   'Tasks',
@@ -133,26 +133,23 @@ generator and `yield*`.
 The logic factory is now three lines. That's the point: **behaviour lives on the
 state, not around it.**
 
-## Control flow: the Angular equivalents
+## Control flow
 
 Craft templates are TypeScript, so control flow is made of functions rather than
-syntax. Each Angular block has a counterpart:
+syntax. Each block is a typed function with an explicit contract:
 
-| Angular    | Craft                                              |
-| ---------- | -------------------------------------------------- |
-| `@for`     | `each(source, { track, empty }, render)`            |
-| `@empty`   | the `empty` option of `each`                        |
-| `@if`      | `ifBlock(condition, whenTrue, whenFalse?)`          |
-| `@switch`  | `matchBlock.exhaustive(source, key, handlers)`      |
-| `@defer`   | `defer(loader, options)`                            |
+| Block | Purpose |
+| --- | --- |
+| `each` | Renders a collection with stable tracking and an optional empty branch |
+| `ifBlock` | Preserves a conditional branch in the render contract |
+| `matchBlock.exhaustive` | Matches every member of a discriminated union |
+| `defer` | Loads a branch lazily |
 
-`matchBlock.exhaustive` is the closest thing to `@switch`, and it is stricter:
-it matches on a **discriminant key** of a union and the handler map must cover
-every member — a missing case is a compile error, which `@switch` cannot give
-you.
+`matchBlock.exhaustive` matches on a **discriminant key** of a union and the
+handler map must cover every member — a missing case is a compile error.
 
 ```typescript
-matchBlock.exhaustive(() => tasksQuery.exceptions().loader, 'code', {
+matchBlock.exhaustive(() => tasksQuery.exceptions().loader, '_tag', {
   TASK_NOT_FOUND: () => p('This task no longer exists.'),
   TASK_FORBIDDEN: () => p('You do not have access to it.'),
 });
@@ -257,10 +254,10 @@ logic — a toast, a log — and produces no DOM.
 One insertion function gets crowded fast. Split it and compose with `insertStatePipe`:
 
 ```ts
-import { insertStatePipe, craftComputed, craftService, state } from '@craft-ng/core';
+import { insertStatePipe, craftComputed, craftService, state } from '@craft-ts/core';
 
 export const { TaskList } = craftService(
-  { name: 'TaskList', scope: 'function' },
+  { name: 'TaskList', providedIn: 'function' },
   function* () {
     const tasks = yield* state(
       'tasks',

@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/learn/08-forms.md
+url: https://craft-ts.github.io/craft/learn/08-forms.md
 ---
 # 8. Build a form
 
@@ -12,7 +12,7 @@ There is no `FormBuilder` here. You start from the state you already know, and
 `insertForm` derives the form from it:
 
 ```ts
-import { craftService, state } from '@craft-ng/core';
+import { craftService, state } from '@craft-ts/core';
 import {
   cRequired,
   cMaxLength,
@@ -20,10 +20,10 @@ import {
   insertFormAttributes,
   insertNoopTypingAnchor,
   insertSelectFormTree,
-} from '@craft-ng/core';
+} from '@craft-ts/core';
 
 export const { TaskForm } = craftService(
-  { name: 'TaskForm', scope: 'function' },
+  { name: 'TaskForm', providedIn: 'function' },
   function* () {
     const taskForm = yield* state(
       'taskForm',
@@ -138,7 +138,7 @@ insertFormSubmit(createTask, {
       const clash = submitCraftResource.exceptions()?.loader
         ?.TITLE_ALREADY_EXISTS;
       if (!clash) return undefined;
-      return craftException({ code: 'PICK_ANOTHER_TITLE' }, clash.payload);
+      return craftException({ _tag: 'PICK_ANOTHER_TITLE' }, clash.payload);
     },
   ],
 });

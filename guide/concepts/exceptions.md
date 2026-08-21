@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/concepts/exceptions.md
+url: https://craft-ts.github.io/craft/guide/concepts/exceptions.md
 ---
 # Exceptions as values
 
@@ -22,9 +22,9 @@ checking possible at all.
 ## Declaring one
 
 ```typescript
-import { craftException } from '@craft-ng/core';
+import { craftException } from '@craft-ts/core';
 
-craftException({ code: 'TITLE_REQUIRED' }, { received: payload.title });
+craftException({ _tag: 'TITLE_REQUIRED' }, { received: payload.title });
 ```
 
 The first argument carries the `code` (and an optional `scope`); the second is a
@@ -40,7 +40,7 @@ const createTask = yield* mutation('createTask', {
   // rejected before any request is sent — the loader never runs
   method: (payload: { title: string }) =>
     payload.title.trim().length === 0
-      ? craftException({ code: 'TITLE_REQUIRED' }, { received: payload.title })
+      ? craftException({ _tag: 'TITLE_REQUIRED' }, { received: payload.title })
       : payload,
 
   loader: function* ({ params }) {
@@ -52,7 +52,7 @@ const createTask = yield* mutation('createTask', {
       exceptions: [
         function* ({ status }) {
           if (!(yield* status(409))) return;
-          return craftException({ code: 'TITLE_ALREADY_EXISTS' });
+          return craftException({ _tag: 'TITLE_ALREADY_EXISTS' });
         },
       ],
     }));
@@ -70,7 +70,7 @@ place and travels. Wrap it in a [`craftGen`](/guide/concepts/generators) and it
 becomes a reusable unit that **short-circuits its callers**:
 
 ```typescript
-import { craftException, craftGen, craftUntilSettled } from '@craft-ng/core';
+import { craftException, craftGen, craftUntilSettled } from '@craft-ts/core';
 
 // one business rule, declared once
 export const loadReport = craftGen(function* () {
@@ -78,7 +78,7 @@ export const loadReport = craftGen(function* () {
   const report = yield* craftUntilSettled(reportRef);
 
   return report.totalUsers === 0
-    ? craftException({ code: 'REPORT_EMPTY' })
+    ? craftException({ _tag: 'REPORT_EMPTY' })
     : report;
 });
 ```
@@ -88,7 +88,7 @@ skipped — no `if (result.isError)` at each level:
 
 ```typescript
 const { ReportFacade } = craftService(
-  { name: 'ReportFacade', scope: 'global' },
+  { name: 'ReportFacade', providedIn: 'global' },
   function* () {
     const report = yield* loadReport(); // narrowed: never the exception
     return { total: report.totalUsers };
@@ -130,7 +130,7 @@ operators](/guide/advanced/program-operators) for `catchTag` and `retry`.
 
 Working example: the `slow-page` demo raises `REPORT_EMPTY` from a `craftGen`
 resolver and recovers it locally, so the route never declares a handler for it —
-[slow-page.routes.ts](https://github.com/ng-angular-stack/ng-craft/blob/main/apps/demo/src/app/examples/routes/slow-page/slow-page.routes.ts).
+[slow-page.routes.ts](https://github.com/craft-ts/craft-ts/blob/main/apps/demo/src/app/examples/routes/slow-page/slow-page.routes.ts).
 
 ## Reading them
 

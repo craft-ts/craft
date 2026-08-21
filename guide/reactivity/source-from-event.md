@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/reactivity/source-from-event.md
+url: https://craft-ts.github.io/craft/guide/reactivity/source-from-event.md
 ---
 # sourceFromEvent
 
@@ -13,13 +13,13 @@ rather than a target resolved lazily — for that, see
 ## Import
 
 ```typescript
-import { sourceFromEvent } from '@craft-ng/core';
+import { sourceFromEvent } from '@craft-ts/core';
 ```
 
 ## Basic Usage
 
 ```typescript
-import { state, sourceFromEvent } from '@craft-ng/core';
+import { state, sourceFromEvent } from '@craft-ts/core';
 
 const button = document.querySelector('button')!;
 
@@ -54,8 +54,8 @@ that usually means a document- or window-level target, since the component's own
 elements are better handled with a plain event prop:
 
 ```typescript
-import { craftComponent, p } from '@craft-ng/component';
-import { sourceFromEvent, state } from '@craft-ng/core';
+import { craftComponent, p } from '@craft-ts/component';
+import { sourceFromEvent, state } from '@craft-ts/core';
 
 export const KeyCounter = craftComponent(
   'KeyCounter',

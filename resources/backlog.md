@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/resources/backlog.md
+url: https://craft-ts.github.io/craft/resources/backlog.md
 ---
 ## Backlog
 
@@ -19,7 +19,7 @@ url: https://ng-angular-stack.github.io/craft/resources/backlog.md
 
 * \[ ] Add to-source$ utility to create a source from a DOM event
 
-* \[ ] Proposer un state ou un pattern pour gérer les tree (à explorer)
+* \[ ] Propose a state or pattern to handle trees (to explore)
 
 * \[ ] add crossLayerEvent to insertSelect (from bottom to top)
 
@@ -30,7 +30,7 @@ url: https://ng-angular-stack.github.io/craft/resources/backlog.md
 * Explore an explicit way to pass dependencies of primitives (it would be easier for testing)
 
 * forms:
-  * Gérer les appels async des valdiateurs en parallèle
-  * login form exemple, expliquer comment trigger une exception au submit et debounce les erreurs
-  * afficher erreur si form submit mutation n'a pas la même payload que le form value
-  * on ne peut pas utilise formRoot pour la soumission, créer une directive alternative ?
+  * Handle async validator calls in parallel
+  * login form example, explain how to trigger an exception on submit and debounce errors
+  * show an error if the form submit mutation doesn't have the same payload as the form value
+  * formRoot can't be used for submission, create an alternative directive?

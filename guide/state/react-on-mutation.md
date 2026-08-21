@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/state/react-on-mutation.md
+url: https://craft-ts.github.io/craft/guide/state/react-on-mutation.md
 ---
 # Reacting to mutations
 
@@ -12,7 +12,7 @@ affects: patch the query optimistically, reload it, or both — without calling
 a hidden coupling.
 
 ```typescript
-import { insertReactOnMutation } from '@craft-ng/core';
+import { insertReactOnMutation } from '@craft-ts/core';
 ```
 
 ## The common case
@@ -96,7 +96,7 @@ import {
   insertQueryPipe,
   insertReactOnMutation,
   insertStoragePersister,
-} from '@craft-ng/core';
+} from '@craft-ts/core';
 
 const { users } = query(
   'users',

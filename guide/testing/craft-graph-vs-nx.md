@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/testing/craft-graph-vs-nx.md
+url: https://craft-ts.github.io/craft/guide/testing/craft-graph-vs-nx.md
 ---
 # Craft graph vs Nx
 
@@ -40,13 +40,13 @@ judge an **app**, not a workspace.
 
 | Nx sees | Nx misses | Craft counterpart |
 | --- | --- | --- |
-| `demo` imports `@craft-ng/core` | `yield* CheckoutApi` in the same app | `depends-on` |
+| `demo` imports `@craft-ts/core` | `yield* CheckoutApi` in the same app | `depends-on` |
 | Tags on a lib (`scope:admin`) | Two features that share one app | `assertPathBoundaries`, `noExclusiveLink` |
 | A circular import between libs | A service cycle `A → B → A` inside one tsconfig | `assertNoDependencyCycles` |
 | That `HttpClient` was imported | That `GET users` is called from two APIs | `assertHttpEndpointUnique` |
 | Nothing about storage keys | Two queries sharing a `craftUnique` identity | `assertCraftUnique` |
 | Nothing about unused type aliases | A commented-out `CanRun` that still compiles | `assertRouteDiProofs` |
-| Nothing about `computed` | A `craftComputed` that `calls` a method or `writes` a `source$` | `assertCraftComputedPure` |
+| Nothing about named buttons | Two interactive helpers sharing `data-craft-name` | `assertInteractiveElementNamed` |
 
 Three consequences follow.
 
@@ -64,7 +64,7 @@ including lazy `loadChildren` collections a parent proof never covers.
 
 Nx Enterprise Conformance can add workspace rules on the project graph and the
 file tree. Recreating Craft's AST analysis (DI, yield, HTTP) there would be
-rewriting `@craft-ng/dev-tools`.
+rewriting `@craft-ts/dev-tools`.
 
 ## What Craft cannot see
 
@@ -77,7 +77,7 @@ tsconfig). It does not become a build system.
 | Folder lanes on `depends-on` | A deep import that bypasses a lib's `index.ts` | `enforce-module-boundaries` |
 | A duplicate `GET users` | Nest imported from a frontend project | `bannedExternalImports` |
 | A service cycle in `apps/shop` | `orders` ↔ `customers` as libs | circular project dependencies |
-| Craft/Angular TypeScript | Python, Nest, assets, configs | polyglot project graph, implicit deps |
+| Craft TypeScript | Python, Nest, assets, configs | polyglot project graph, implicit deps |
 | A failing Vitest assertion | A generator that rewrites the file | Conformance fix generators |
 | Seconds of ts-morph analysis | Millisecond cache hits on unchanged libs | local / remote computation cache |
 
@@ -90,7 +90,7 @@ does not scale in CI.
 architecture target — analysis reloads the tsconfig, in seconds, not
 milliseconds.
 
-Craft is a Craft/Angular analyser. Outside that dialect the graph is empty.
+Craft is a TypeScript analyser. Outside that dialect the graph is empty.
 Nx tags Nest, React, Python, assets and config files.
 
 ## The overlap
@@ -138,6 +138,4 @@ Vitest on the Craft graph. Copy that layout from
   target
 * [ESLint rules](/guide/routing/eslint-rules) — local slips the graph cannot
   autofix
-* [What craft adds to Angular](/guide/concepts/vs-angular) — compile-time
-  inventory this graph sits on
 * [Learn: test what you wrote](/learn/10-testing)

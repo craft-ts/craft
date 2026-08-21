@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/forms/exceptions.md
+url: https://craft-ts.github.io/craft/guide/forms/exceptions.md
 ---
 # Form exception handling
 
@@ -112,7 +112,7 @@ function* registrationLogic() {
               validWhen: () =>
                 field.value().password === field.value().confirmation,
               exception: () =>
-                craftException({ code: 'passwordMismatch' }, undefined),
+                craftException({ _tag: 'passwordMismatch' }, undefined),
             }),
           ],
         })),

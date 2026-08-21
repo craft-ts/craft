@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/learn/07-url-state.md
+url: https://craft-ts.github.io/craft/learn/07-url-state.md
 ---
 # 7. Put state in the URL
 
@@ -9,10 +9,10 @@ refresh and a copy-pasted link — without syncing anything by hand.
 ## `queryParams` is a state that lives in the URL
 
 ```ts
-import { craftService, queryParams } from '@craft-ng/core';
+import { craftService, queryParams } from '@craft-ts/core';
 
 export const { TaskFilters } = craftService(
-  { name: 'TaskFilters', scope: 'function' },
+  { name: 'TaskFilters', providedIn: 'function' },
   function* () {
     const numberCodec = {
       decode: (value: string) => parseInt(value, 10),

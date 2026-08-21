@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/app/app-start.md
+url: https://craft-ts.github.io/craft/guide/app/app-start.md
 ---
 # App start
 
@@ -15,7 +15,7 @@ blocking on it costs your users a blank screen.
 ## Import
 
 ```typescript
-import { onAppStart } from '@craft-ng/core';
+import { onAppStart } from '@craft-ts/core';
 ```
 
 ## Overview
@@ -29,7 +29,7 @@ Important constraints:
 * the callback can be a plain function or a generator function
 * nested `onAppStart(...)` calls inside the callback are not supported
 
-`craftAppConfig(...)` runs registered app-start services during Angular application initialization.
+`craftAppConfig(...)` runs registered app-start services during application initialization.
 
 ## Signature
 
@@ -52,12 +52,12 @@ function onAppStart<Yielded>(
 Use a plain callback when startup logic does not need to `yield*` crafted dependencies.
 
 ```ts
-import { craftService, onAppStart } from '@craft-ng/core';
+import { craftService, onAppStart } from '@craft-ts/core';
 
 export const { StartupFlag } = craftService(
   {
     name: 'StartupFlag',
-    scope: 'global',
+    providedIn: 'global',
     appStart: true,
   },
   function* () {
@@ -76,12 +76,12 @@ export const { StartupFlag } = craftService(
 Use a generator callback when startup logic needs to `yield*` crafted dependencies.
 
 ```typescript
-import { Console, craftService, onAppStart } from '@craft-ng/core';
+import { Console, craftService, onAppStart } from '@craft-ts/core';
 
 export const { AppStartLog } = craftService(
   {
     name: 'AppStartLog',
-    scope: 'toProvide',
+    providedIn: 'toProvide',
     appStart: true,
   },
   function* () {
@@ -111,7 +111,7 @@ Declaring `onAppStart` is only half of it — nothing runs until the service is
 Augment the app-start registry so the service is known by name:
 
 ```typescript
-declare module '@craft-ng/core' {
+declare module '@craft-ts/core' {
   interface CraftAppStartRegistry {
     AppStartLog: typeof AppStartLog;
   }
@@ -131,18 +131,18 @@ export const appConfig = craftAppConfig({
 });
 ```
 
-`craftAppConfig` runs every registered app-start service during Angular's
+`craftAppConfig` runs every registered app-start service during the application's
 application initialization, and the app renders once they have settled.
 
 Here it is end to end:
 
 ```ts
-import { Console, craftAppConfig, craftService, onAppStart } from '@craft-ng/core';
+import { Console, craftAppConfig, craftService, onAppStart } from '@craft-ts/core';
 
 const { AppStartLog } = craftService(
   {
     name: 'AppStartLog',
-    scope: 'global',
+    providedIn: 'global',
     appStart: true,
   },
   function* () {
@@ -155,7 +155,7 @@ const { AppStartLog } = craftService(
   },
 );
 
-declare module '@craft-ng/core' {
+declare module '@craft-ts/core' {
   interface CraftAppStartRegistry {
     AppStartLog: typeof AppStartLog;
   }
@@ -167,7 +167,7 @@ export const appConfig = craftAppConfig({
 ```
 
 ::: tip The registry augmentation is generated
-The `declare module` block is written for you by the craft-ng ESLint plugin —
+The `declare module` block is written for you by the craft-ts ESLint plugin —
 you rarely type it by hand.
 :::
 
@@ -199,7 +199,7 @@ If the callback returns:
 
 * `void`: startup continues immediately
 * `Promise`: startup waits for the promise to resolve
-* `Observable`: startup waits through Angular's initializer handling
+* `Observable`: startup waits until the observable completes
 
 Generator callbacks preserve the same waiting behavior. The generator itself resolves first, then its returned `Promise` / `Observable` / `void` is used as the startup result.
 

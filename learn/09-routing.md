@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/learn/09-routing.md
+url: https://craft-ts.github.io/craft/learn/09-routing.md
 ---
 # 9. Wire up routing
 
@@ -19,8 +19,8 @@ A Craft component is mounted with `loadCraftComponent(...)`, spread into the
 route:
 
 ```ts
-import { loadCraftComponent } from '@craft-ng/component';
-import { craftRoutes } from '@craft-ng/core';
+import { loadCraftComponent } from '@craft-ts/component';
+import { craftRoutes } from '@craft-ts/core';
 
 export const { appRoutes } = craftRoutes('app', [
   {
@@ -44,7 +44,7 @@ Declaring the collection's paths is what makes navigation type-safe across the
 app:
 
 ```typescript
-declare module '@craft-ng/core' {
+declare module '@craft-ts/core' {
   interface CraftRouterRoutesRegistry {
     App: typeof appRoutes.META_PATHS;
   }
@@ -60,22 +60,22 @@ Two ways, both checked against the registry above.
 **As a link**, with the `CraftRouterLink` directive:
 
 ```ts
-import { a, craftComponent } from '@craft-ng/component';
-import { CraftRouterLink } from '@craft-ng/core';
+import { a, craftComponent } from '@craft-ts/component';
+import { CraftRouterLink } from '@craft-ts/core';
 
 export const TasksLink = craftComponent(
   'TasksLink',
   {},
   () => ({}),
-  () => a({ craftRouterLink: { to: 'tasks' } }, 'Tasks').pipe(CraftRouterLink),
+  () => a('tasks', { craftRouterLink: { to: 'tasks' } }, 'Tasks').pipe(CraftRouterLink),
 );
 ```
 
 **Imperatively**, by yielding the router:
 
 ```ts
-import { craftComponent } from '@craft-ng/component';
-import { CraftRouter, craftMethod } from '@craft-ng/core';
+import { craftComponent } from '@craft-ts/component';
+import { CraftRouter, craftMethod } from '@craft-ts/core';
 
 export const TaskOpener = craftComponent(
   'TaskOpener',
@@ -113,15 +113,14 @@ turns a mismatch into a TypeScript error.
 
 The `tasks` route created above remains visible as the source of truth; the
 check below validates that route's component and its `path: 'tasks'` context.
-An AI can also create this Craft NG routing boilerplate very well — including
+An AI can also create this CraftTS routing boilerplate very well — including
 the lazy import, retry handling, route registry and DI check — from the
 component and path you provide.
 
 Declare one local alias for your app's context, then one `CanRun` per route:
 
 ```ts
-import type { ActivatedRoute, Router } from '@angular/router';
-import type { CanRun, ComponentDepsOf, RouteCheckedDI } from '@craft-ng/core';
+import type { CanRun, ComponentDepsOf, RouteCheckedDI } from '@craft-ts/core';
 
 type AppRouteCheckedDI<
   Component,
@@ -130,7 +129,7 @@ type AppRouteCheckedDI<
 > = RouteCheckedDI<
   ComponentDepsOf<Component>,
   'CraftRouter',
-  Router | ActivatedRoute,
+  CraftRouter | ActivatedRoute,
   Context,
   RouteInputs
 >;
@@ -180,7 +179,7 @@ handler exists for a code nothing produces:
 assertExhaustiveRouteExceptions(appRoutes);
 ```
 
-The ESLint rule `craft-ng/require-assert-exhaustive-route-exceptions` adds it
+The ESLint rule `craft-ts/require-assert-exhaustive-route-exceptions` adds it
 for you.
 
 A component can also handle its own codes with `.pipe(catchTag.exhaustive(...))`,
@@ -191,16 +190,15 @@ just disappear](/guide/concepts/exceptions). Everything else is on
 ## Wire it into the app
 
 ```ts
-import { craftAppConfig } from '@craft-ng/core';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { craftAppConfig } from '@craft-ts/core';
 
 export const appConfig = craftAppConfig({
   routingDeps: appRoutes.META_DATA,
-  providers: [provideRouter(appRoutes.toRoutes(), withComponentInputBinding())],
+  providers: [provideRouter(appRoutes.toRoutes(), )],
 });
 ```
 
-`toRoutes()` hands Angular the real routes; `META_DATA` hands the compile-time
+`toRoutes()` returns the runtime routes; `META_DATA` carries the compile-time
 graph to `craftAppConfig`.
 
 ## Make the DI contract enforceable
@@ -228,15 +226,13 @@ page. Swap `provideRouter` for `provideCraftRouter` and render
 immediately while the chain runs behind it:
 
 ```ts
-import { craftAppConfig, provideCraftRouter, withTransitionTimings } from '@craft-ng/core';
-import { withComponentInputBinding } from '@angular/router';
+import { craftAppConfig, provideCraftRouter, withTransitionTimings } from '@craft-ts/core';
 
 export const appConfig = craftAppConfig({
   routingDeps: appRoutes.META_DATA,
   providers: [
     provideCraftRouter(
       appRoutes.toRoutes(),
-      withComponentInputBinding(),
       withTransitionTimings({ stayMs: 300, blankMs: 300, pendingMinMs: 500 }),
     ),
   ],
@@ -287,7 +283,7 @@ The `slow-page` demo exists for exactly this: two deliberately slow steps (~1.5s
 each) so you can watch the stay → blank → loader phases play out. The first
 visit is slow, a revisit is instant thanks to the query cache, and a "clear
 cache" button replays it. Source:
-[slow-page.routes.ts](https://github.com/ng-angular-stack/ng-craft/blob/main/apps/demo/src/app/examples/routes/slow-page/slow-page.routes.ts).
+[slow-page.routes.ts](https://github.com/craft-ts/craft-ts/blob/main/apps/demo/src/app/examples/routes/slow-page/slow-page.routes.ts).
 
 Full details — the phase diagram, per-route overrides, view transitions and the
 DI check on skeletons — are on

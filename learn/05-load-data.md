@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/learn/05-load-data.md
+url: https://craft-ts.github.io/craft/learn/05-load-data.md
 ---
 # 5. Load server data
 
@@ -9,10 +9,10 @@ loading, error and exception state for free.
 ## The query primitive
 
 ```ts
-import { CraftHttpClient, craftService, query } from '@craft-ng/core';
+import { CraftHttpClient, craftService, query } from '@craft-ts/core';
 
 export const { TaskList } = craftService(
-  { name: 'TaskList', scope: 'function' },
+  { name: 'TaskList', providedIn: 'function' },
   function* () {
     const tasksQuery = yield* query('tasksQuery', {
       // The initial params value immediately triggers the loader.
@@ -56,12 +56,12 @@ tasksQuery.exception(); // craftException | undefined
 ## In the template
 
 `ifBlock` / `matchBlock` are the structural conditionals (see [step
-2](/learn/02-derive#control-flow-the-angular-equivalents)). For a first pass a
+2](/learn/02-derive#control-flow)). For a first pass a
 ternary chain reads fine — just remember it makes the branch invisible to the
 [type-level assertions](/guide/testing/type-level):
 
 ```typescript
-import { craftComponent, each, li, p, ul } from '@craft-ng/component';
+import { craftComponent, each, li, p, ul } from '@craft-ts/component';
 
 export const Tasks = craftComponent(
   'Tasks',
@@ -90,7 +90,7 @@ for `matchBlock.exhaustive(...)` — the compiler then checks you covered every
 code:
 
 ```typescript
-matchBlock.exhaustive(() => tasks.exceptions().loader, 'code', {
+matchBlock.exhaustive(() => tasks.exceptions().loader, '_tag', {
   TASKS_FORBIDDEN: () => p('You do not have access to this list.'),
   TASKS_NOT_FOUND: () => p('This list no longer exists.'),
 });
@@ -104,10 +104,10 @@ See [Exceptions as values](/guide/concepts/exceptions).
 instead, use `method`:
 
 ```ts
-import { CraftHttpClient, craftService, query } from '@craft-ng/core';
+import { CraftHttpClient, craftService, query } from '@craft-ts/core';
 
 export const { TaskSearch } = craftService(
-  { name: 'TaskSearch', scope: 'function' },
+  { name: 'TaskSearch', providedIn: 'function' },
   function* () {
     const { searchQuery } =
       yield *

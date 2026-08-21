@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/reactivity/craft-effect.md
+url: https://craft-ts.github.io/craft/guide/reactivity/craft-effect.md
 ---
 # craftEffect
 
@@ -12,7 +12,7 @@ with `computed` instead of writing it from an effect.
 ## Import
 
 ```typescript
-import { craftEffect } from '@craft-ng/core';
+import { craftEffect } from '@craft-ts/core';
 ```
 
 ```typescript
@@ -43,7 +43,7 @@ button({ click: () => saveMutation.mutate({ term: input() }) }, 'Save');
 
 Do not use those triggers as dependencies of a `craftEffect`. Prefer a
 declarative `params` signal, a `source$`, or a mutation/query insertion. The
-`craft-ng/no-imperative-craft-resource-trigger` rule also follows a
+`craft-ts/no-imperative-craft-resource-trigger` rule also follows a
 `craftGen`, so wrapping the call does not bypass the restriction:
 
 ```typescript

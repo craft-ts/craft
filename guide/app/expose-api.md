@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/app/expose-api.md
+url: https://craft-ts.github.io/craft/guide/app/expose-api.md
 ---
 # Shaping a service's public API
 
@@ -13,10 +13,10 @@ When only one public property is needed, `X.property()` is a shortcut for
 a one-property derivation.
 
 ```ts
-import { craftService } from '@craft-ng/core';
+import { craftService } from '@craft-ts/core';
 
 const { UsersApi } = craftService(
-  { name: 'UsersApi', scope: 'global' },
+  { name: 'UsersApi', providedIn: 'global' },
   () => ({
     updateUser: (user: { id: string; name: string }) => Promise.resolve(user),
     getUsers: () => Promise.resolve([]),
@@ -24,7 +24,7 @@ const { UsersApi } = craftService(
 );
 
 const { UserUpdater } = craftService(
-  { name: 'UserUpdater', scope: 'global' },
+  { name: 'UserUpdater', providedIn: 'global' },
   function* () {
     const updateUser = yield* UsersApi.updateUser();
 
@@ -59,10 +59,10 @@ The same shortcut notation is available on the generated `X` helper. Use it
 inside a craft generator when only one property is needed:
 
 ```ts
-import { craftService, state } from '@craft-ng/core';
+import { craftService, state } from '@craft-ts/core';
 
 const { UsersApi } = craftService(
-  { name: 'UsersApi', scope: 'global' },
+  { name: 'UsersApi', providedIn: 'global' },
   function* () {
     const currentUser = yield* state('currentUser', {
       id: '1',
@@ -77,7 +77,7 @@ const { UsersApi } = craftService(
 );
 
 const { CurrentUser } = craftService(
-  { name: 'CurrentUser', scope: 'global' },
+  { name: 'CurrentUser', providedIn: 'global' },
   function* () {
     return yield* UsersApi.currentUser();
   },
@@ -100,10 +100,10 @@ When only a sub-property of a service output is needed, add a second `.property`
 before calling:
 
 ```ts
-import { craftService, state } from '@craft-ng/core';
+import { craftService, state } from '@craft-ts/core';
 
 const { SearchApi } = craftService(
-  { name: 'SearchApi', scope: 'global' },
+  { name: 'SearchApi', providedIn: 'global' },
   function* () {
     const isLoading = yield* state('isLoading', false);
     const data = yield* state('data', [] as string[]);
@@ -117,7 +117,7 @@ const { SearchApi } = craftService(
 );
 
 const { SearchFacade } = craftService(
-  { name: 'SearchFacade', scope: 'global' },
+  { name: 'SearchFacade', providedIn: 'global' },
   function* () {
     const isLoading = yield* SearchApi.usersQuery.isLoading();
     return { isLoading };
@@ -140,10 +140,10 @@ intentionally disabled at the type level, because calling without bindings would
 silently use default values and mask a missing dependency:
 
 ```ts
-import { craftService, type CraftServiceInput } from '@craft-ng/core';
+import { craftService, type CraftServiceInput } from '@craft-ts/core';
 
 const { Counter } = craftService(
-  { name: 'Counter', scope: 'function' },
+  { name: 'Counter', providedIn: 'function' },
   function* (inputs: { initialValue?: CraftServiceInput<number> }) {
     const initialValue = inputs.initialValue
       ? yield* inputs.initialValue()
@@ -182,10 +182,10 @@ const isLoading = yield* Counter.OmitInputs.userQuery.isLoading();
 `yield* X()` can expose only the part of a dependency that should remain public.
 
 ```ts
-import { craftService, state } from '@craft-ng/core';
+import { craftService, state } from '@craft-ts/core';
 
 const { Counter } = craftService(
-  { name: 'Counter', scope: 'toProvide' },
+  { name: 'Counter', providedIn: 'toProvide' },
   function* () {
     const counter = yield* state('counter', 0, ({ update }) => ({
       increment: () => update((value) => value + 1),
@@ -196,7 +196,7 @@ const { Counter } = craftService(
 );
 
 const { CounterExtended, provideCounterExtended } = craftService(
-  { name: 'CounterExtended', scope: 'toProvide' },
+  { name: 'CounterExtended', providedIn: 'toProvide' },
   function* () {
     return yield* Counter(undefined, ({ $self, increment }) => ({
       $self,

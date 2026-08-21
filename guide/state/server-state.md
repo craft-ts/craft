@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/state/server-state.md
+url: https://craft-ts.github.io/craft/guide/state/server-state.md
 ---
 # query
 
@@ -20,7 +20,7 @@ the loader re-runs when they change.
 ## The common case
 
 ```typescript
-import { CraftHttpClient, craftComputed, craftUse, query, settled } from '@craft-ng/core';
+import { CraftHttpClient, craftComputed, craftUse, query, settled } from '@craft-ts/core';
 
 const { userQuery } =
   yield *
@@ -88,7 +88,7 @@ const { searchQuery } =
   });
 
 // In a tracked generator, consume the trigger with yield*.
-yield * searchQuery.call('angular');
+yield * searchQuery.call('craft');
 ```
 
 From an ordinary UI callback, the imperative form remains valid:
@@ -131,8 +131,8 @@ selected item. The selector keeps the item type, so derived values can use its
 properties without casting:
 
 ```typescript
-import { computed } from '@angular/core';
-import { CraftHttpClient, insertQuerySelect, query } from '@craft-ng/core';
+import { craftComputed as computed } from '@craft-ts/core';
+import { CraftHttpClient, insertQuerySelect, query } from '@craft-ts/core';
 
 type User = {
   id: string;
@@ -205,7 +205,7 @@ import {
   insertQueryPipe,
   insertReactOnMutation,
   insertStoragePersister,
-} from '@craft-ng/core';
+} from '@craft-ts/core';
 
 const userQuery = yield* query(
   'userQuery',
@@ -240,7 +240,7 @@ Full options on [Reacting to mutations](/guide/state/react-on-mutation).
 the request produced:
 
 ```typescript
-import { craftException, query } from '@craft-ng/core';
+import { craftException, query } from '@craft-ts/core';
 
 const { userQuery } =
   yield *
@@ -248,13 +248,13 @@ const { userQuery } =
     method: (value: string) =>
       value.length < 3
         ? craftException(
-            { code: 'SEARCH_TERM_TOO_SHORT' },
+            { _tag: 'SEARCH_TERM_TOO_SHORT' },
             { min: 3, received: value.length },
           )
         : value,
     loader: async ({ params }) =>
       params === 'forbidden'
-        ? craftException({ code: 'USER_ACCESS_FORBIDDEN' }, { id: params })
+        ? craftException({ _tag: 'USER_ACCESS_FORBIDDEN' }, { id: params })
         : { id: params, name: 'John Doe' },
   });
 
@@ -322,7 +322,7 @@ loader: function* ({ params }) {
         if (!(yield* content('Password is required'))) return;
 
         return craftException({
-          code: 'PASSWORD_REQUIRED',
+          _tag: 'PASSWORD_REQUIRED',
           scope: 'UsersFeatureForDependencies',
         });
       },
@@ -335,7 +335,7 @@ loader: function* ({ params }) {
         if (!(yield* header('x-error-kind', 'validation'))) return;
 
         return craftException({
-          code: 'VALIDATION_HEADER_ERROR',
+          _tag: 'VALIDATION_HEADER_ERROR',
           scope: 'UsersFeatureForDependencies',
         });
       },
@@ -345,7 +345,7 @@ loader: function* ({ params }) {
 ```
 
 Working source:
-[exceptions demo](https://github.com/ng-angular-stack/ng-craft/blob/main/apps/demo/src/app/examples/primitives/exceptions/exceptions.ts).
+[exceptions demo](https://github.com/craft-ts/craft-ts/blob/main/apps/demo/src/app/examples/primitives/exceptions/exceptions.ts).
 :::
 
 ::: details Advanced — yielding dependencies from `params`

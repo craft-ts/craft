@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/concepts/choose-primitive.md
+url: https://craft-ts.github.io/craft/guide/concepts/choose-primitive.md
 ---
 # Which primitive should I use?
 
@@ -40,8 +40,8 @@ share sheet, a delay, a Web API call.
 
 ## Things that are *not* a primitive
 
-* **Derived values** — use Angular's `computed` inside an insertion. Craft
-  doesn't replace signal derivation, it hosts it.
+* **Derived values** — use `craftComputed` inside an insertion. Craft keeps the
+  reader dependency visible in the graph.
 * **Reusable logic across primitives** — that's an
   [insertion](/guide/concepts/insertions), not a primitive.
 * **A group of primitives with a name and a scope** — that's a

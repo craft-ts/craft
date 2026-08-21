@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/learn/06-mutate-data.md
+url: https://craft-ts.github.io/craft/learn/06-mutate-data.md
 ---
 # 6. Write server data
 
@@ -11,10 +11,10 @@ request even comes back.
 `mutation` is `query`'s counterpart for writes. Same shape, triggered explicitly.
 
 ```ts
-import { CraftHttpClient, craftService, mutation } from '@craft-ng/core';
+import { CraftHttpClient, craftService, mutation } from '@craft-ts/core';
 
 export const { TaskWrites } = craftService(
-  { name: 'TaskWrites', scope: 'function' },
+  { name: 'TaskWrites', providedIn: 'function' },
   function* () {
     const { createTask } =
       yield *
@@ -50,10 +50,10 @@ import {
   insertReactOnMutation,
   mutation,
   query,
-} from '@craft-ng/core';
+} from '@craft-ts/core';
 
 export const { TaskSync } = craftService(
-  { name: 'TaskSync', scope: 'function' },
+  { name: 'TaskSync', providedIn: 'function' },
   function* () {
     const { createTask } = yield* mutation('createTask', {
       method: (payload: { title: string }) => payload,
@@ -115,12 +115,12 @@ You rarely want to send a request you know will fail. Return a `craftException`
 from `method` and the loader never runs:
 
 ```typescript
-import { craftException } from '@craft-ng/core';
+import { craftException } from '@craft-ts/core';
 
 const createTask = yield* mutation('createTask', {
   method: (payload: { title: string }) =>
     payload.title.trim().length === 0
-      ? craftException({ code: 'TITLE_REQUIRED' }, { received: payload.title })
+      ? craftException({ _tag: 'TITLE_REQUIRED' }, { received: payload.title })
       : payload,
   loader: /* … */,
 });
@@ -158,10 +158,12 @@ const createTask = yield* mutation('createTask', {
 schema's **output** value — so a coercion or a `.trim()` in the schema is
 reflected in the type.
 
-Any library implementing `StandardSchemaV1` works — Zod, Valibot, Effect, or a
-hand-written `{ '~standard': … }` object. None of them becomes a dependency of
-`@craft-ng`. Queries have the same hooks for their reactive params
-(`paramsSchema`) and their result (`loaderSchema`).
+Any library implementing `StandardSchemaV1` works — Zod, Valibot, ArkType, or
+a hand-written `{ '~standard': … }` object; Effect Schema works too, after one
+[`Schema.toStandardSchemaV1`](/guide/state/schema-validation#effect-schema)
+call. None of them becomes a dependency of `@craft-ts`. Queries have the same
+hooks for their reactive params (`paramsSchema`) and their result
+(`loaderSchema`).
 
 **Use a schema** when the shape itself is the rule, **a `craftException` from
 `method`** when the rule is business logic — "this title already exists in the

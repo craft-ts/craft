@@ -1,6 +1,5 @@
 ---
-url: >-
-  https://ng-angular-stack.github.io/craft/guide/components/content-projection.md
+url: https://craft-ts.github.io/craft/guide/components/content-projection.md
 ---
 # Content projection
 
@@ -36,7 +35,7 @@ import {
   section,
   type ContentSlot,
   type RequiredContent,
-} from '@craft-ng/component';
+} from '@craft-ts/component';
 
 type CardInput = {
   readonly header?: ContentSlot;
@@ -107,7 +106,7 @@ A component becomes projectable when its logic factory returns a `contract`
 property, built and checked with `satisfies`.
 
 ```ts
-import { content, input } from '@craft-ng/component';
+import { content, input } from '@craft-ts/component';
 
 import {
   button,
@@ -116,7 +115,7 @@ import {
   type ContentSlot,
   type ProjectionContractOf,
   type ProjectionOf,
-} from '@craft-ng/component';
+} from '@craft-ts/component';
 
 type ToolbarActionContract = {
   readonly kind: 'toolbar-action';
@@ -142,7 +141,7 @@ const ToolbarAction = craftComponent(
     content: input.content,
   }),
   ({ contract, content }) =>
-    button(
+    button('action',
       {
         type: 'button',
         disabled: contract.disabled,
@@ -177,7 +176,7 @@ import {
   each,
   renderContent,
   type ProjectionOf,
-} from '@craft-ng/component';
+} from '@craft-ts/component';
 
 const Toolbar = craftComponent(
   'Toolbar',
@@ -239,7 +238,7 @@ import {
   craftComponent,
   input,
   renderContent,
-} from '@craft-ng/component';
+} from '@craft-ts/component';
 
 const StyledCard = craftComponent(
   'StyledCard',
@@ -269,7 +268,7 @@ StyledCard({
 ```
 
 Exposed styles apply to ordinary DOM nodes in the fragment. They never cross the
-boundary of a nested Craft or Angular component:
+boundary of a nested Craft component:
 
 ```ts
 StyledCard({
@@ -326,7 +325,7 @@ import {
   footer,
   input,
   renderContent,
-} from '@craft-ng/component';
+} from '@craft-ts/component';
 
 craftComponent(
   'InvalidStyles',

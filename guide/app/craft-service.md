@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/app/craft-service.md
+url: https://craft-ts.github.io/craft/guide/app/craft-service.md
 ---
 # craftService
 
@@ -9,15 +9,15 @@ dependency graph visible to the compiler.
 
 **Use it when** logic outgrows a single component field, or when two places need
 the same behaviour.
-**Not when** you are adapting an existing Angular service or token — that is
-[`toCraftService`](/guide/app/integrate-existing).
+Use a small adapter when a dependency is owned by the runtime environment
+rather than by your application.
 
 The contrast with `inject(...)` scattered across classes is the point:
 dependencies here are explicit and **type-visible**, which is what the route DI
 check and the test registers read.
 
 ```typescript
-import { craftService } from '@craft-ng/core';
+import { craftService } from '@craft-ts/core';
 ```
 
 Service inputs that can change should be consumed as yieldable readers
@@ -25,10 +25,10 @@ Service inputs that can change should be consumed as yieldable readers
 Yield them so the input-to-service edge stays in the dependency graph:
 
 ```typescript
-import { craftService, query, type CraftServiceInput } from '@craft-ng/core';
+import { craftService, query, type CraftServiceInput } from '@craft-ts/core';
 
 const { UserQuery } = craftService(
-  { name: 'UserQuery', scope: 'global' },
+  { name: 'UserQuery', providedIn: 'global' },
   (inputs: { userId: CraftServiceInput<string | undefined> }) =>
     query('userQuery', {
       params: function* () {
@@ -39,7 +39,7 @@ const { UserQuery } = craftService(
 );
 ```
 
-The call site still accepts a resolved value, an Angular signal, or a Craft
+The call site still accepts a resolved value, a signal, or a Craft
 reader — the service boundary adapts it into that reader. Inside the factory,
 always `yield* inputs.x()`.
 
@@ -75,10 +75,10 @@ Each scope and when to pick it: **[Service scopes](/guide/app/service-scopes)**.
 ## The common case
 
 ```ts
-import { craftService, state } from '@craft-ng/core';
+import { craftService, state } from '@craft-ts/core';
 
 const { Counter } = craftService(
-  { name: 'Counter', scope: 'global' },
+  { name: 'Counter', providedIn: 'global' },
   function* () {
     const counter = yield* state('counter', 0, ({ update }) => ({
       increment: () => update((value) => value + 1),
@@ -89,7 +89,7 @@ const { Counter } = craftService(
 );
 
 const { CounterConsumer } = craftService(
-  { name: 'CounterConsumer', scope: 'global' },
+  { name: 'CounterConsumer', providedIn: 'global' },
   function* () {
     const counter = yield* Counter();
     yield* counter.increment();
@@ -109,10 +109,10 @@ import {
   craftService,
   query,
   type CraftServiceInput,
-} from '@craft-ng/core';
+} from '@craft-ts/core';
 
 const { UserQuery } = craftService(
-  { name: 'UserQuery', scope: 'global' },
+  { name: 'UserQuery', providedIn: 'global' },
   (inputs: { userId: CraftServiceInput<string | undefined> }) =>
     query('userQuery', {
       params: function* () {
@@ -133,10 +133,10 @@ import {
   query,
   state,
   type CraftServiceInput,
-} from '@craft-ng/core';
+} from '@craft-ts/core';
 
 const { UserQuery } = craftService(
-  { name: 'UserQueryWithState', scope: 'global' },
+  { name: 'UserQueryWithState', providedIn: 'global' },
   (inputs: { userId: CraftServiceInput<string | undefined> }) =>
     craftYieldRecord({
       userQuery: query('userQuery', {
@@ -163,7 +163,7 @@ Use `providers` in the service config when the service factory itself needs loca
 const { UserFacade } = craftService(
   {
     name: 'UserFacade',
-    scope: 'global',
+    providedIn: 'global',
     providers: [provideUserApi(), provideUserLogger()],
   },
   function* () {
@@ -185,10 +185,10 @@ This is separate from `provideUserFacade()`, which is only generated for provide
 ## Composing services
 
 ```ts
-import { craftService, state } from '@craft-ng/core';
+import { craftService, state } from '@craft-ts/core';
 
 const { Counter } = craftService(
-  { name: 'Counter', scope: 'global' },
+  { name: 'Counter', providedIn: 'global' },
   function* () {
     const counter = yield* state('counter', 0, ({ update }) => ({
       increment: () => update((value) => value + 1),
@@ -198,7 +198,7 @@ const { Counter } = craftService(
 );
 
 const { CounterFacade } = craftService(
-  { name: 'CounterFacade', scope: 'global' },
+  { name: 'CounterFacade', providedIn: 'global' },
   function* () {
     const counter = yield* Counter();
 
@@ -231,14 +231,14 @@ single one. See **[Shaping a service's public API](/guide/app/expose-api)**.
 The callback can be a plain function or a generator function. Use the generator form when startup logic needs to `yield*` crafted dependencies:
 
 ```ts
-import { craftAppConfig } from '@craft-ng/core';
+import { craftAppConfig } from '@craft-ts/core';
 
-import { Console, craftService, onAppStart } from '@craft-ng/core';
+import { Console, craftService, onAppStart } from '@craft-ts/core';
 
 const { AppStartLog } = craftService(
   {
     name: 'AppStartLog',
-    scope: 'global',
+    providedIn: 'global',
     appStart: true,
   },
   function* () {
@@ -252,8 +252,8 @@ const { AppStartLog } = craftService(
 );
 
 // register the current service to the AppStartRegistry
-// it is auto-generated when used with the craft-ng ESLint plugin
-declare module '@craft-ng/core' {
+// it is auto-generated when used with the craft-ts ESLint plugin
+declare module '@craft-ts/core' {
   interface CraftAppStartRegistry {
     AppStartLog: typeof AppStartLog;
   }
@@ -275,7 +275,7 @@ Dependencies used only inside that callback are still tracked on the parent serv
 whole app, whether or not that was intended. Start at `function` — see
 [Service scopes](/guide/app/service-scopes).
 
-**`toProvide` without the provider.** Angular does not report a missing provider
+**`toProvide` without the provider.** A missing provider is reported by the route
 at compile time; the failure appears at runtime. The
 [route DI check](/guide/routing/setup) is what closes that hole.
 [Architecture tests](/guide/testing/architecture#assertroutediproofs) keep that
@@ -284,10 +284,6 @@ compiles.
 
 **Returning the whole world.** What a service returns is its API. Return the
 narrow thing; consumers that need more can yield more.
-
-**Calling `inject()` inside a craft factory.** It works and it is invisible to
-every check that makes this worthwhile. The `craft-ng/no-angular-inject` rule
-exists for exactly this.
 
 ## See Also
 

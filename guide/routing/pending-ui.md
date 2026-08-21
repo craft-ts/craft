@@ -1,17 +1,17 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/routing/pending-ui.md
+url: https://craft-ts.github.io/craft/guide/routing/pending-ui.md
 ---
 # Non-blocking navigation
 
-By default, a slow guard or resolver freezes the app on the previous page with no
-feedback. `CraftRouterOutlet()` inverts that: the URL commits immediately and a
-pending component appears only if the wait is actually noticeable.
+By default, a slow guard or resolver can leave the current screen unchanged with
+no feedback. `CraftRouterOutlet()` commits the URL immediately and shows a
+pending component only if the wait is actually noticeable.
 
 **Use it when** guards or resolvers do real work — an HTTP call, a permission
 check.
-**Not when** everything resolves synchronously; `<router-outlet>` is fine then.
+For synchronous routes, the outlet renders the target immediately.
 
-`CraftRouterOutlet()` replaces `<router-outlet>` with **non-blocking** navigation :
+`CraftRouterOutlet()` provides **non-blocking** navigation:
 the URL commits immediately, a pending component appears only if the guard/resolve chain is slow,
 and the target component is mounted **only on success** — never while an exception is being
 resolved.
@@ -21,7 +21,7 @@ resolved.
 Call the outlet inside a Craft component tree:
 
 ```ts
-import { CraftRouterOutlet, craftComponent, main } from '@craft-ng/component';
+import { CraftRouterOutlet, craftComponent, main } from '@craft-ts/component';
 
 export const App = craftComponent(
   'App',
@@ -31,7 +31,7 @@ export const App = craftComponent(
 );
 ```
 
-Routes with no craft guard/resolve render immediately, exactly like `<router-outlet>`.
+Routes with no craft guard or resolver render immediately.
 
 ## Lifecycle
 
@@ -56,10 +56,10 @@ download or retry does not currently activate this pending timeline; dedicated l
 earlier phase is a planned evolution.
 
 ```
-clic → URL committée
- ├─ 0 → stayMs ........ page PRÉCÉDENTE conservée   ─(résolu)─▶ cible
- ├─ stayMs → +blankMs . page BLANCHE                ─(résolu)─▶ cible
- └─ au-delà ........... LOADER (min pendingMinMs)   ─(résolu / redirect)─▶ cible / redirect
+click → URL committed
+ ├─ 0 → stayMs ........ PREVIOUS page kept          ─(resolved)─▶ target
+ ├─ stayMs → +blankMs . BLANK page                  ─(resolved)─▶ target
+ └─ beyond ............ LOADER (min pendingMinMs)    ─(resolved / redirect)─▶ target / redirect
 ```
 
 `pendingMinMs` adds anti-flicker: once the loader is shown, it stays visible for at least that long,
@@ -71,15 +71,12 @@ keeps its state for the duration of the window.
 
 ## Configuration
 
-The loading/error features are plain feature objects (like Angular's
-`withComponentInputBinding()`). The recommended place for them is **directly in
-`provideCraftRouter(...)`**, mixed with Angular's own router features — they are
-split apart internally and routed to `provideRouter` / `provideCraftLoading`:
+The loading and error features are plain feature objects. The recommended place
+for them is **directly in `provideCraftRouter(...)`**:
 
 ```ts
 provideCraftRouter(
   appRoutes.toRoutes(),
-  withComponentInputBinding(),                     // Angular router feature
   withCraftViewTransitions(),                       // craft loading feature (see below)
   withErrorComponent({
     component: MyGlobalErrorScreen,
@@ -99,7 +96,7 @@ provideCraftRouter(
 
 Most loading features still work standalone via `provideCraftLoading(...)` if you prefer to keep them
 in a separate provider. Keep `withRouteLoadError(...)` in `provideCraftRouter(...)`: it also
-registers an Angular navigation error handler and an internal recovery route.
+registers a navigation error handler and an internal recovery route.
 
 ```ts
 provideCraftLoading(
@@ -128,8 +125,8 @@ built-in translation (`Loading…` / `Chargement…`).
 
 ## Per-route overrides
 
-Any route may override the defaults via craft-only fields (stripped from the emitted Angular
-`Route`):
+Any route may override the defaults via route fields that are stripped before
+the runtime route is emitted:
 
 ```ts
 craftRoute('user/:userId', {
@@ -143,8 +140,9 @@ craftRoute('user/:userId', {
 
 ## View Transitions
 
-Angular's `withViewTransitions()` brackets **only the synchronous URL commit** in
-`document.startViewTransition()`. With the non-blocking outlet that is the wrong instant: the target
+The default view-transition feature brackets **only the synchronous URL commit**
+in `document.startViewTransition()`. With the non-blocking outlet that is the
+wrong instant: the target
 component mounts **after** the guard/resolve chain settles, so a shared-element morph captures
 `previous page → (stay/loader)` and the real `previous → target` morph is lost — worse, a full-screen
 loader becomes the captured "old" frame.
@@ -157,7 +155,7 @@ the API is missing, and is overridable in tests via the `CRAFT_START_VIEW_TRANSI
 ```ts
 provideCraftRouter(
   appRoutes.toRoutes(),
-  withCraftViewTransitions(), // replaces Angular's withViewTransitions()
+  withCraftViewTransitions(),
 ),
 ```
 
@@ -235,7 +233,7 @@ export default class PhotoSkeleton {
 > The global, untyped `injectCraftViewTransition(): Signal<unknown>` still exists for ad-hoc reads, but
 > prefer the route-generated helper when you have a declared payload.
 
-The payload travels in Angular's navigation `state`, so it is **lost on reload or direct URL access**
+The payload travels in navigation `state`, so it is **lost on reload or direct URL access**
 — there is no previous page to morph from in that case anyway; the app stays functional (skeleton
 without the preview image, then the target). Pass `withCraftViewTransitions({ skipBlank: true })` to
 skip the blank phase for **every** route, not just opted-in ones.
@@ -271,7 +269,7 @@ type _CanRunPending = CanRun<_CheckPendingDI>;
 
 A service the skeleton injects but nothing provides becomes a TypeScript error on `_CanRunPending`
 (`The X service is not provided in pending component: photos/:photoId`). The
-`craft-ng/require-pending-component-di-check` ESLint rule **generates and refreshes this whole block**
+`craft-ts/require-pending-component-di-check` ESLint rule **generates and refreshes this whole block**
 from `pendingComponent` on `--fix` — resolving the skeleton's `GenDeps_*`, deriving the auto-provided
 service names from the route's path params + payload, and borrowing the parent context from the
 collection's own `ValidateCascadeRoutesFile` — so you never hand-write or stale it.

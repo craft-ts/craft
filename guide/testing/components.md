@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/testing/components.md
+url: https://craft-ts.github.io/craft/guide/testing/components.md
 ---
 # Testing components
 
@@ -18,24 +18,12 @@ import {
   setupCraftComponentTemplateTest,
   setupCraftDirectiveLogicTest,
   setupCraftDirectiveTemplateTest,
-} from '@craft-ng/component/testing';
+} from '@craft-ts/component/testing';
 ```
 
-They complement the existing Angular setup and deliberately separate the
-factory from rendering. Each utility also exposes a `.byRegister(...)` form,
-which makes the services used by the tested code explicit.
-
-The package also re-exports the legacy registry-based setups:
-
-```ts
-import {
-  setupCraftServiceTestingByRegister,
-  setupCraftComponentTestingByRegister,
-} from '@craft-ng/component/testing';
-```
-
-They remain compatible with the existing test setup and can be used in the
-same file as the logic/template utilities.
+They deliberately separate the factory from rendering. Each utility also
+exposes a `.byRegister(...)` form, which makes the services used by the tested
+code explicit.
 
 ## Component logic
 
@@ -99,8 +87,8 @@ DOM element type, while `class`, `data-*`, and `aria-*` criteria are matched
 against the rendered element:
 
 ```ts
-import { button, craftComponent, div } from '@craft-ng/component';
-import { setupCraftComponentTemplateTest } from '@craft-ng/component/testing';
+import { button, craftComponent, div } from '@craft-ts/component';
+import { setupCraftComponentTemplateTest } from '@craft-ts/component/testing';
 
 const Editor = craftComponent(
   'Editor',
@@ -151,7 +139,7 @@ const saveButton = button(
 The same pattern works with every built-in helper:
 
 ```ts
-import { input } from '@craft-ng/component';
+import { input } from '@craft-ts/component';
 
 const searchInput = input('search', { 'aria-label': 'Search' }, []);
 ```
@@ -166,9 +154,9 @@ the `content` criterion. The locator does not inspect the rendered value, so
 this also works for non-text values and remains independent of formatting:
 
 ```typescript
-import { signal } from '@angular/core';
-import { span, craftComponent } from '@craft-ng/component';
-import { markYieldableValue, state } from '@craft-ng/core';
+import { craftSignal as signal } from '@craft-ts/core';
+import { span, craftComponent } from '@craft-ts/component';
+import { markYieldableValue, state } from '@craft-ts/core';
 
 const Status = craftComponent(
   'Status',
@@ -229,14 +217,14 @@ To verify that a DOM property is connected to the correct context member, add a
 contract assertion next to the template test:
 
 ```ts
-import { setupCraftComponentLogicTest } from '@craft-ng/component';
+import { setupCraftComponentLogicTest } from '@craft-ts/component';
 
-import { craftComputed, craftUse, state } from '@craft-ng/core';
-import { craftComponent, button } from '@craft-ng/component';
+import { craftComputed, craftUse, state } from '@craft-ts/core';
+import { craftComponent, button } from '@craft-ts/component';
 import type {
   ComponentTemplateOf,
   TemplateRendersStateWhen,
-} from '@craft-ng/component';
+} from '@craft-ts/component';
 import type { Equal, Expect } from 'test-type';
 
 const Counter = craftComponent(
@@ -253,7 +241,7 @@ const Counter = craftComponent(
     return { counter };
   },
   ({ counter }) =>
-    button(
+    button('increment',
       { type: 'button',
         disabled: counter.disabled,
         *click() {

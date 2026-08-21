@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/reactivity/source.md
+url: https://craft-ts.github.io/craft/guide/reactivity/source.md
 ---
 # source$
 
@@ -23,7 +23,7 @@ automatic cleanup and signal-based value tracking.
 ## Import
 
 ```typescript
-import { craftComputed, source$ } from '@craft-ng/core';
+import { craftComputed, source$ } from '@craft-ts/core';
 ```
 
 ## Signature
@@ -34,7 +34,7 @@ function source$<T>(name: string): Source$<T>;
 
 ### Parameters
 
-* **`name: string`** - Name matching the variable/property this source is assigned to. Used for host tagging and dev-tools snapshot reporting, consistent with `craftComputed`/`craftEffect`. The [`craft-ng/craft-source-name-match`](/guide/routing/eslint-rules) ESLint rule enforces the match and offers a quick fix.
+* **`name: string`** - Name matching the variable/property this source is assigned to. Used for host tagging and dev-tools snapshot reporting, consistent with `craftComputed`/`craftEffect`. The [`craft-ts/craft-source-name-match`](/guide/routing/eslint-rules) ESLint rule enforces the match and offers a quick fix.
 
 ### Returns
 
@@ -104,10 +104,10 @@ Use a `craftService` as the dependency handle when a source is shared by
 multiple consumers:
 
 ```ts
-import { craftService, source, state } from '@craft-ng/core';
+import { craftService, source, state } from '@craft-ts/core';
 
 const { Reset } = craftService(
-  { name: 'Reset', scope: 'global' },
+  { name: 'Reset', providedIn: 'global' },
   function* () {
     const reset$ = yield* source$<void>('reset$');
     return reset$;
@@ -115,7 +115,7 @@ const { Reset } = craftService(
 );
 
 const { Counter } = craftService(
-  { name: 'Counter', scope: 'global' },
+  { name: 'Counter', providedIn: 'global' },
   function* () {
     const counter = yield* state('counter', 0, ({ set }) => ({
       reset: on$(Reset, () => set(0)),
@@ -222,8 +222,8 @@ const { counter } = state('counter', 0, ({ set, update }) => ({
 ### Basic Usage with on$
 
 ```typescript
-import { button, craftComponent, p } from '@craft-ng/component';
-import { on$, source$, state } from '@craft-ng/core';
+import { button, craftComponent, p } from '@craft-ts/component';
+import { on$, source$, state } from '@craft-ts/core';
 
 export const Counter = craftComponent(
   'Counter',
@@ -256,7 +256,7 @@ export const Counter = craftComponent(
 ### Multi-Source Coordination
 
 ```typescript
-import { source$, state, on$ } from '@craft-ng/core';
+import { source$, state, on$ } from '@craft-ts/core';
 
 // Multiple sources for different events
 const userLogin$ = source$<User>('userLogin$');
@@ -279,7 +279,7 @@ console.log(authState()); // null
 ### Late Subscriber Pattern
 
 ```typescript
-import { source$ } from '@craft-ng/core';
+import { source$ } from '@craft-ts/core';
 
 const notifications$ = source$<string>('notifications$').preserveLastValue();
 

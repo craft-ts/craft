@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/testing/browser-boundaries.md
+url: https://craft-ts.github.io/craft/guide/testing/browser-boundaries.md
 ---
 # Browser boundaries
 
@@ -38,13 +38,13 @@ import {
   Cookies,
   LocalStorage,
   SessionStorage,
-} from '@craft-ng/core';
+} from '@craft-ts/core';
 ```
 
 When you need to derive methods for later reuse, each boundary also exposes the usual generated helpers:
 
 ```typescript
-import { ConsoleService, CONSOLE_SERVICE_META_DATA } from '@craft-ng/core';
+import { ConsoleService, CONSOLE_SERVICE_META_DATA } from '@craft-ts/core';
 ```
 
 The same pattern exists for the other boundaries:
@@ -78,10 +78,10 @@ There are two valid ways to use a browser boundary.
 Use the DSL when the browser interaction belongs to the generator itself.
 
 ```ts
-import { Console, craftService } from '@craft-ng/core';
+import { Console, craftService } from '@craft-ts/core';
 
 const { BootLogger } = craftService(
-  { name: 'BootLogger', scope: 'global' },
+  { name: 'BootLogger', providedIn: 'global' },
   function* () {
     yield* Console.log('boot');
     yield* Console.info('config loaded');
@@ -98,10 +98,10 @@ const { BootLogger } = craftService(
 Use `XService(...)` when the browser method needs to stay callable later from a returned method.
 
 ```ts
-import { ConsoleService, craftService } from '@craft-ng/core';
+import { ConsoleService, craftService } from '@craft-ts/core';
 
 const { AuditTrail } = craftService(
-  { name: 'AuditTrail', scope: 'global' },
+  { name: 'AuditTrail', providedIn: 'global' },
   function* () {
     const consoleService = yield* ConsoleService(
       undefined,
@@ -214,7 +214,7 @@ const uuid = yield * BrowserCrypto.randomUUID();
 
 Every service below is:
 
-* `scope: 'global'`
+* `providedIn: 'global'`
 * `browserBoundary: true`
 * exposed both as a DSL object and as generated service helpers
 
@@ -359,14 +359,16 @@ Methods:
 
 `CraftHttpClient` is implemented, but it is not a browser boundary.
 
-Unlike `Console`, `LocalStorage`, or `BrowserLocation`, Angular's `HttpClient` is already a DI-managed Angular dependency. It is better modeled as a typed craft adapter than as a browser-host global.
+Unlike `Console`, `LocalStorage`, or `BrowserLocation`, `CraftHttpClient` is a
+typed service boundary. It belongs in the dependency graph rather than being
+treated as a browser-global.
 
 Its contract is intentionally different:
 
 * it is not treated as `browserBoundary: true`
 * it requires `success: response<T>()` inside a declarative builder
 * it can declare ordered `exceptions: [function* (...) { ... }]` rules
-* it returns a promise of `Success | craftException({ code: 'HttpError' })`
+* it returns a promise of `Success | craftException({ _tag: 'HttpError' })`
 
 Usage looks like this:
 
@@ -399,7 +401,7 @@ const login =
         if (!(yield* code('PASSWORD_REQUIRED'))) return;
         if (!(yield* content('Password is required'))) return;
 
-        return craftException({ code: 'PASSWORD_REQUIRED' });
+        return craftException({ _tag: 'PASSWORD_REQUIRED' });
       },
     ],
   }));
@@ -419,15 +421,15 @@ The browser boundaries stay intentionally narrow.
 
 This keeps the API focused on explicit browser interactions instead of reintroducing broad direct access to host globals.
 
-## Relationship With `craftService` And `toCraftService`
+## Relationship With `craftService`
 
 Browser boundaries participate in the same dependency tracking model as any other crafted service.
 
 * [`craftService`](/guide/app/craft-service) is what you use to consume them and compose higher-level services.
-* [`toCraftService`](/guide/app/integrate-existing) remains the right tool for adapting Angular or host dependencies that are not part of this built-in browser boundary set.
+* Use a small `craftService` adapter for host dependencies that are not part of
+  this built-in browser boundary set.
 
 ## See Also
 
 * [`craftService`](/guide/app/craft-service)
-* [`toCraftService`](/guide/app/integrate-existing)
 * [Architecture rules](/guide/testing/architecture) — assert HTTP only crosses a boundary

@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/concepts/insertions.md
+url: https://craft-ts.github.io/craft/guide/concepts/insertions.md
 ---
 # Insertions
 
@@ -28,7 +28,7 @@ import {
   insertQueryPipe,
   insertStatePipe,
   query,
-} from '@craft-ng/core';
+} from '@craft-ts/core';
 
 const users = yield* query(
   'users',

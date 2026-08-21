@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/components/css-variables.md
+url: https://craft-ts.github.io/craft/guide/components/css-variables.md
 ---
 # Typed CSS variables and design tokens
 
@@ -13,7 +13,7 @@ The browser's native inheritance then carries them to descendants.
 An unguarded use is required. A declaration or inline fallback is optional:
 
 ```ts
-import { article, craftComponent } from '@craft-ng/component';
+import { article, craftComponent } from '@craft-ts/component';
 
 const Card = craftComponent(
   'Card',

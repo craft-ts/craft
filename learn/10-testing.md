@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/learn/10-testing.md
+url: https://craft-ts.github.io/craft/learn/10-testing.md
 ---
 # 10. Test what you wrote
 
@@ -22,10 +22,8 @@ its scope changed to `toProvide` so it has a `provideTaskStats()` to mount in
 the test:
 
 ```ts
-import { craftComputed, craftService, state } from '@craft-ng/core';
-
 export const { TaskStats, provideTaskStats } = craftService(
-  { name: 'TaskStats', scope: 'toProvide' },
+  { name: 'TaskStats', providedIn: 'toProvide' },
   function* () {
     const tasks = yield* TaskList();
 
@@ -86,7 +84,7 @@ Here is the component under test, from steps 2 and 3 — a factory that yields
 `TaskList`, and a template that renders it:
 
 ```ts
-import { craftComponent, each, h1, li, ul } from '@craft-ng/component';
+import { craftComponent, each, h1, li, ul } from '@craft-ts/component';
 
 export const Tasks = craftComponent(
   'Tasks',
@@ -211,7 +209,7 @@ The register proves one service's graph is complete. Architecture rules prove
 invariants **across** services: this feature must not depend on that one, this
 HTTP endpoint is owned once, this `craftUnique` storage key appears once.
 
-They live next to `e2e/`, analyze TypeScript without booting Angular, and are
+They live next to `e2e/`, analyze TypeScript without starting the application, and are
 ordinary Vitest assertions on a typed graph. Look a node up, walk its edges,
 assert. A precise rule — HTTP may only be called from a `browserBoundary`
 service — is an `it()`:
@@ -234,7 +232,7 @@ exclusive feature branches, a method that must not both be called and write a
 verb+URL, pure `craftComputed`, no `depends-on` cycles, `assertPathBoundaries`,
 `noExclusiveLink`, `assertMutationHasReactOn`, `assertPersistedPrimitiveHasUnique`,
 `assertInsertSelectUnique`, `assertCraftEffectNoNetwork`,
-`assertCraftEffectNoImperativeSync`, and the route DI
+`assertCraftEffectNoImperativeSync`, `assertInteractiveElementNamed`, and the route DI
 proofs from [step 9](/learn/09-routing).
 
 Those proofs (`CanRun`, `RouteCheckedDI`) are unused type aliases — omit one

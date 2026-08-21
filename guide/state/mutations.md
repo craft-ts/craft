@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/state/mutations.md
+url: https://craft-ts.github.io/craft/guide/state/mutations.md
 ---
 # Mutations
 
@@ -14,7 +14,7 @@ action that isn't a server write
 ## The common case
 
 ```typescript
-import { CraftHttpClient, mutation } from '@craft-ng/core';
+import { CraftHttpClient, mutation } from '@craft-ts/core';
 
 const { createUser } =
   yield *
@@ -95,7 +95,7 @@ const { deleteUser } =
     method: (payload: { userId: string }) =>
       payload.userId.length < 18
         ? craftException(
-            { code: 'INVALID_ID' },
+            { _tag: 'INVALID_ID' },
             { min: 18, received: payload.userId.length },
           )
         : payload.userId,
@@ -108,7 +108,7 @@ const { deleteUser } =
           function* ({ status }) {
             if (!(yield* status(403))) return;
             return craftException(
-              { code: 'USER_ACCESS_FORBIDDEN' },
+              { _tag: 'USER_ACCESS_FORBIDDEN' },
               { payload: params },
             );
           },

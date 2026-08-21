@@ -1,5 +1,5 @@
 ---
-url: https://ng-angular-stack.github.io/craft/guide/components/directives.md
+url: https://craft-ts.github.io/craft/guide/components/directives.md
 ---
 # Directives and `.pipe(...)`
 
@@ -23,7 +23,7 @@ import {
   type HostRequiredLogic,
   type HostTemplate,
   type Input,
-} from '@craft-ng/component';
+} from '@craft-ts/component';
 ```
 
 ## `InteractivePermissions`
@@ -38,7 +38,7 @@ import {
   HostTemplate,
   Input,
   craftDirective,
-} from '@craft-ng/component';
+} from '@craft-ts/component';
 
 type User = { id?: string; name: string };
 
@@ -196,7 +196,7 @@ import {
   craftDirective,
   div,
   p,
-} from '@craft-ng/component';
+} from '@craft-ts/component';
 
 const whenDirective = craftDirective(
   'whenDirective',

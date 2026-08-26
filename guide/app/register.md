@@ -149,7 +149,7 @@ const CounterBoard = craftComponent(
       p(function* () {
         return `Active children: ${yield* childCount()}`;
       }),
-      each([1, 2, 3], () => CounterChild({})),
+      forNode([1, 2, 3], () => CounterChild({})),
     ]),
 );
 ```

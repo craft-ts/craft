@@ -84,7 +84,7 @@ Here is the component under test, from steps 2 and 3 — a factory that yields
 `TaskList`, and a template that renders it:
 
 ```ts
-import { craftComponent, each, h1, li, ul } from '@craft-ts/component';
+import { craftComponent, forNode, h1, li, ul } from '@craft-ts/component';
 
 export const Tasks = craftComponent(
   'Tasks',
@@ -98,7 +98,7 @@ export const Tasks = craftComponent(
       return `Tasks — ${yield* tasks.remaining()} left`;
     }),
     ul(
-      each(
+      forNode(
         tasks,
         { track: (task) => task.id },
         (task) => li(task.title),
@@ -178,7 +178,7 @@ types. Those get their own kind of test, resolved by the compiler with no
 type TasksTemplateTest = SetupTestComponentTemplate<typeof Tasks, [typeof TaskRow]>;
 ```
 
-The resolver walks elements, directives, `each`, `defer` and child components,
+The resolver walks elements, directives, `forNode`, `deferNode` and child components,
 and a child missing from the tuple becomes a type diagnostic. Companion
 assertions — `TemplateHasElement`, `TemplateHasElementWithProps`,
 `TemplateHasYieldableEvent`, `TemplateRendersStateWhen` — check that the template

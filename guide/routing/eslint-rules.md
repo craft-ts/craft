@@ -61,6 +61,7 @@ export default [
       'craft-ts/require-yieldable-reactive-read': 'error',
       'craft-ts/require-yieldable-template-method': 'error',
       'craft-ts/require-yieldable-insertion-write': 'error',
+      'craft-ts/no-craft-service-component-same-file': 'error',
       'craft-ts/prefer-craft-http-transport': 'error',
       'craft-ts/no-injection-token': 'error',
       'craft-ts/require-primitive-derived-property': 'error',
@@ -84,7 +85,7 @@ export default [
 
 What each rule does:
 
-* `craft-ts/prefer-craft-template-blocks`: keeps `craftComponent(...)` templates declarative by rejecting ternaries, logical expressions, negations, and imperative control flow; use `ifBlock(...)`, `matchBlock.exhaustive(...)`, `each(...)`, or `defer(...)`
+* `craft-ts/prefer-craft-template-blocks`: keeps `craftComponent(...)` templates declarative by rejecting ternaries, logical expressions, negations, and imperative control flow; use `ifNode(...)`, `matchNode.exhaustive(...)`, `forNode(...)`, or `deferNode(...)`
 * `craft-ts/no-render-writes`: rejects detectable `set()`, `update()`, and `mutate()` calls in component templates and render bindings while allowing DOM event and `onXxx` output callbacks
 * `craft-ts/require-reactive-template-bindings`: requires signals, named Craft values, and component inputs to be read inside granular binding callbacks instead of during VNode construction; static values remain valid
 * `craft-ts/no-craft-use`: forbids the synchronous `craftUse(...)` escape hatch in Craft TypeScript files; use a generator and delegate the reader with `yield*` instead
@@ -93,8 +94,13 @@ What each rule does:
 * `craft-ts/template-element-name-unique`: requires named HTML helpers to use a static, unique local name within a component; use the object-first helper form for unnamed elements such as `p({ id: 'hint' }, ...)`
 * `craft-ts/no-craft-computed-side-effects`: forbids writes and asynchronous work inside `craftComputed`; only reactive reads and `settled(...)` are allowed. The graph-wide counterpart is [`assertCraftComputedPure`](/guide/testing/architecture#assertcraftcomputedpure).
 * `craft-ts/no-effect-outside-loaders`: keeps `params`, methods, `craftComputed(...)`, and `craftEffect(...)` synchronous by allowing Effect values and Effect service reads only in Effect loaders; `no-effect-in-params` remains as a compatibility alias
+* `craft-ts/sync-effect-body`: keeps a body declared synchronous (`SyncOp` in its requirements) free of anything that may suspend — async constructors such as `Effect.sleep`/`Effect.promise`, and members nothing declares synchronous. Type-aware: the ESLint parser must use `projectService: true` or a TypeScript `project`
+* `craft-ts/no-explicit-effect-type`: lets `Effect.gen` infer its complete type instead of repeating an explicit Effect annotation; contracts declared in interfaces and type aliases remain allowed
+* `craft-ts/prefer-inline-effect-insertion`: keeps the `queryEffect` insertion factory inline so its resource and exception types are inferred without a separate `InsertionParams` context alias
+* `craft-ts/prefer-inline-route-providers`: inlines a route provider tuple used only once by `loadCraftComponent(...)`, preserving the route-level type proof
 * `craft-ts/prefer-craft-reactivity`: rejects authored signal/computed/effect/resource APIs, explicit `.subscribe()` calls, and RxJS `Subject`/`BehaviorSubject`/`ReplaySubject`; use `state`, `craftComputed`, `craftEffect`, `query`, and named `source$`/`on$` flows
 * `craft-ts/prefer-craft-service`: keeps services in the `craftService(...)` model
+* `craft-ts/no-craft-service-component-same-file`: forbids declaring `craftService(...)` and `craftComponent(...)` in the same file; a route-level service provider combined with a lazy-loaded component can break lazy loading, so keep them in separate files
 * `craft-ts/no-injection-token`: forbids authored `InjectionToken` contracts; declare them with `craftService({ name, providedIn: 'abstract' }, abstract<Contract>())`
 * `craft-ts/prefer-craft-http-client`: forbids direct transport usage in favor of `CraftHttpClient`
 * `craft-ts/prefer-craft-http-transport`: forbids direct `fetch()` and `XMLHttpRequest`; use `query()` for reads or `mutation()` for writes with `CraftHttpClient`
@@ -106,7 +112,7 @@ What each rule does:
 * `craft-ts/no-transition-actions`: forbids `query.call(...)`, `mutation.mutate(...)`, and `asyncProcess.method(...)` inside `transitionStep(...)`; validate the event and emit a source, then let the resource react to that source.
 * `craft-ts/require-craft-resource-trigger-yield`: requires those triggers to use `yield*` inside generator functions, while ordinary UI callbacks may keep imperative calls
 * `craft-ts/require-craft-method-for-yieldable-callback`: requires callbacks returned by a `craftComponent` factory to wrap yieldable Craft method calls in `craftMethod(...)`
-* `craft-ts/prefer-direct-yieldable-callback`: replaces a template generator that only returns `yield* callback()` with the callback reference itself
+* `craft-ts/prefer-direct-yieldable-callback`: replaces a template generator or generator method that only delegates `yield* callback()` with the callback reference itself (`callback` or `object.method`)
 * `craft-ts/require-yieldable-reactive-read`: requires Craft reactive readers to be delegated with `yield*` inside generator functions; a function that reads a Craft reader must itself be a generator
 * `craft-ts/require-yieldable-template-method`: requires yieldable Craft method calls in a `craftComponent` template to be delegated with `yield*`, or passed as a reference (`click: counter.increment`)
 * `craft-ts/require-yieldable-insertion-write`: requires `set(...)`, `patch(...)`, and `update(...)` to be delegated with `yield*` when they are used inside a generator method
@@ -114,6 +120,13 @@ What each rule does:
 * `craft-ts/require-craft-exception-handler`: enforces `craftExceptionHandler(function* (...) {})`; simple handlers are autofixed and ambiguous raw redirects are reported for manual migration
 * `craft-ts/require-exception-component-di-check`: generates O(1) `RouteExceptionComponentCheckedDI` checks for `renderComponent`, route-level `errorComponent`, `withErrorComponent`, `withRouteLoadError`, and route-local `provideRouteLoadErrorComponent`
 * `craft-ts/require-pending-component-di-check`: generates the independent `RouteCheckedDI` check for each `pendingComponent`
+* `craft-ts/no-raw-class`: forbids a `class:` binding that is a string, a template literal or a function, in any file that imports `@craft-ts/style`. A class assembled at render time is a visual state nothing recorded, so the [visual matrix](/guide/style/testing) would enumerate what the sheets declare while the DOM shows something else. Move the rule into the sheet and bind the class it returns; make the variation an axis and set a `data-*` attribute
+* `craft-ts/no-raw-css-value`: forbids a string or number literal as an argument to a `@craft-ts/style` helper — `p('12px')`, `bg('red')`. If the scale is missing the step, add it to the scale; if the value genuinely cannot be proven, `unsafeLength('13px', reason)` compiles and makes the debt countable in the [graph](/guide/style/testing#what-the-graph-adds)
+* `craft-ts/no-free-has`: forbids a hand-written `:has()` in styles. It reaches across the component boundary, so what a component looks like depends on markup it does not own — a state the matrix cannot enumerate. Use the `descendant` axis, which is a closed set and carries its own test driver
+* `craft-ts/style-file-boundary`: restricts a `*.style.ts` to style-vocabulary imports. The [build plugin](/guide/style/setup) imports the file in Node to read what it registered, so an application import would run application code at build time
+* `craft-ts/craft-css-token-registry`: reports a custom property registered with `@property` by two different components. A custom property may have only one owner; two silently fight over its syntax and initial value
+* `craft-ts/require-effect-adapters`: requires the Effect-aware adapters — `queryEffect`, `mutationEffect`, `asyncProcessEffect` — instead of the plain primitives in an Effect application. See [Choose the right adapter](/guide/advanced/effect#choose-the-right-adapter)
+* `craft-ts/craft-signal-source-name-match`: requires `signalSource(name, ...)` to take a string literal matching the variable, class property or object property it is assigned to, so the name in a trace is the name in the source. A computed name defeats the [architecture graph](/guide/testing/architecture), which reads these names statically
 * `craft-ts/require-child-route-mount-check`: adds the missing `assertChildRouteMounts(...)` call + import (Quick Fix) for any `craftRoutes(...)` collection that mounts lazy `loadChildren`, so a `.withParent`-pinned child mounted under the wrong path is a compile error
 * `craft-ts/require-lazy-load-with-retry`: wraps route `loadComponent` and `loadChildren` imports with the generated `withRetry(...)` loader helper while preserving a statically analyzable import specifier
 * `craft-ts/require-cascade-route-di-check`: rejects any `craftRoutes(...)` collection without a same-file `ValidateCascadeRoutesFile + CanRun` proof; its autofix adds the conservative `<never, Router>` context, which should be adjusted when the mount inherits providers
@@ -152,13 +165,13 @@ values and business decisions in the component's state/query layer, then make
 the template express visibility explicitly:
 
 ```ts
-ifBlock(
+ifNode(
   isReady,
   () => p('Ready'),
   () => p('Loading…'),
 );
 
-matchBlock.exhaustive(query.exceptions, '_tag', {
+matchNode.exhaustive(query.exceptions, '_tag', {
   NOT_FOUND: () => p('Not found'),
   FORBIDDEN: () => p('Forbidden'),
 });
@@ -172,9 +185,14 @@ application logic, even when it is used only for a DOM property:
 
 ```ts
 // Incorrect: the template derives the disabled state.
-button({ disabled: function* () {
-  return !(yield* machine.canGoBack());
-} }, 'Back');
+button(
+  {
+    disabled: function* () {
+      return !(yield* machine.canGoBack());
+    },
+  },
+  'Back',
+);
 
 // Correct: derive it in the logic factory and bind the result.
 const backDisabled = craftComputed('backDisabled', function* () {
@@ -193,15 +211,13 @@ insertion. This keeps the dependency visible and lets pending/exception
 boundaries name the actual source:
 
 ```ts
-const users = yield* query(
-  'users',
-  config,
-  ({ resource }) => ({
+const users =
+  yield *
+  query('users', config, ({ resource }) => ({
     total: craftComputed('total', function* () {
       return (yield* settled(resource)).length;
     }),
-  }),
-);
+  }));
 ```
 
 Do not create `craftComputed('total', ...)` beside the query when the
@@ -219,7 +235,7 @@ const typedStep = machine.stepState as unknown as () => { step: Step };
 return { typedStep };
 
 // Template: no cast and no craftUse.
-matchBlock.exhaustive(typedStep, 'step', steps);
+matchNode.exhaustive(typedStep, 'step', steps);
 ```
 
 `no-craft-use` applies to Craft TypeScript files, not only the fourth
@@ -269,6 +285,46 @@ Literal and otherwise static values are still allowed, as are reads performed
 from DOM events and `onXxx` output callbacks. Because the rule is type-aware,
 the ESLint parser must use `projectService: true` or a TypeScript `project`.
 
+### Pass simple yieldable callbacks directly
+
+`prefer-direct-yieldable-callback` removes a generator wrapper when the
+template only delegates one zero-argument callback. It handles both a value
+binding and a generator method:
+
+```ts
+// Before: redundant wrappers around the callbacks.
+button(
+  {
+    *click() {
+      yield* press();
+    },
+  },
+  function* () {
+    return yield* label();
+  },
+);
+
+// After `eslint --fix`.
+button({ click: press }, label);
+```
+
+Member callbacks are supported as well when the access is static and has no
+arguments:
+
+```ts
+// Before.
+span(function* () {
+  return yield* counter.increment();
+});
+
+// After.
+span(counter.increment);
+```
+
+The rule leaves callbacks with parameters, extra statements, or additional
+computation unchanged. In those cases the generator contains behavior that
+cannot be represented by passing the callback reference alone.
+
 ### Yield insertion writes from generator methods
 
 `require-yieldable-insertion-write` requires `set(...)`, `patch(...)`, and
@@ -290,13 +346,13 @@ insertion wrapper consumes that result for them.
 Three rules do more than complain — they write code you would otherwise
 maintain by hand:
 
-| Rule                                         | Generates                                                  |
-| -------------------------------------------- | ---------------------------------------------------------- |
-| `require-cascade-route-di-check`             | the same-file DI proof for a `craftRoutes(...)` collection |
-| `require-assert-exhaustive-route-exceptions` | the collection-level exhaustiveness assert                 |
-| `require-child-route-mount-check`            | the `assertChildRouteMounts(...)` call and its import      |
-| `require-lazy-load-with-retry`               | the `withRetry(...)` wrapper on lazy route imports         |
-| `prefer-direct-yieldable-callback`           | removes redundant template generators                      |
+| Rule                                         | Generates                                                     |
+| -------------------------------------------- | ------------------------------------------------------------- |
+| `require-cascade-route-di-check`             | the same-file DI proof for a `craftRoutes(...)` collection    |
+| `require-assert-exhaustive-route-exceptions` | the collection-level exhaustiveness assert                    |
+| `require-child-route-mount-check`            | the `assertChildRouteMounts(...)` call and its import         |
+| `require-lazy-load-with-retry`               | the `withRetry(...)` wrapper on lazy route imports            |
+| `prefer-direct-yieldable-callback`           | replaces redundant generators with direct callback references |
 
 ## Adopting them progressively
 
@@ -306,9 +362,18 @@ On an existing codebase, enable them in waves rather than all at once:
    generate the proofs; [architecture tests](/guide/testing/architecture#assertroutediproofs)
    (`assertRouteDiProofs`) fail CI if a proof is later removed or left unarmed.
 2. **The architecture rules last** — `prefer-craft-service`,
-   `prefer-craft-http-client`, `require-yieldable-reactive-read`,
+   `no-craft-service-component-same-file`, `prefer-craft-http-client`,
+   `require-yieldable-reactive-read`,
    `require-yieldable-template-method`, `require-yieldable-insertion-write`.
    These ask for real refactors.
+
+The four style rules — `no-raw-class`, `no-raw-css-value`, `no-free-has`,
+`style-file-boundary` — are in `craftRules.configs.recommended` at `'error'`,
+and they are **gated on the import**: they fire only in files that import
+`@craft-ts/style`. A component you have not migrated is not claiming the
+guarantee, so nothing reports it. The day a file starts using the design system
+is the day it starts being held to it — which is why enabling them on an
+unmigrated codebase costs nothing.
 
 The two migration rules also expose a VS Code quick fix that inserts a temporary
 local disable comment with the intended migration note, so you can unblock a
@@ -319,3 +384,4 @@ file before doing the full refactor.
 * [Routing setup](/guide/routing/setup) — where these rules are installed
 * [CLI automation](/guide/routing/automation) — the codemods they complement
 * [Architecture rules](/guide/testing/architecture) — graph-wide constraints ESLint cannot see
+* [Activating the style system](/guide/style/setup) — what the four style rules are guarding

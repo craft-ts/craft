@@ -26,19 +26,16 @@ context and add their own services.
 
 ## Add a route Layer
 
-Keep route providers in a named tuple so the compile-time proof can inspect it:
+Inline route providers in `loadCraftComponent(...)`; the compile-time proof
+preserves and inspects the tuple from the typed route collection:
 
 ```typescript
-const teamRouteProviders = [
-  provideLayer(SupportTeamLive),
-] as const;
-
 const routes = craftRoutes('app', [
   {
     path: 'team',
     ...loadCraftComponent(
       () => import('./team').then(({ default: component }) => component),
-      teamRouteProviders,
+      [provideLayer(SupportTeamLive)] as const,
     ),
   },
 ]);
@@ -99,7 +96,7 @@ import type { Effect } from 'effect';
 import type { AppProvidedDependencyValuesOf, CanRun } from '@craft-ts/core';
 import type {
   EffectRequirementsCheckedDI,
-  ProvidedEffectServicesOf,
+  ProvidedEffectServicesOfRoute,
 } from '@craft-ts/effect';
 
 type AppProvidedEffectServices = AppProvidedDependencyValuesOf<
@@ -108,7 +105,8 @@ type AppProvidedEffectServices = AppProvidedDependencyValuesOf<
 
 type CheckTeam = EffectRequirementsCheckedDI<
   Effect.Services<typeof loadTeamOverview>,
-  AppProvidedEffectServices | ProvidedEffectServicesOf<typeof teamRouteProviders>
+  AppProvidedEffectServices |
+    ProvidedEffectServicesOfRoute<typeof routes._routes, 'team'>
 >;
 type CanRunTeam = CanRun<CheckTeam>;
 ```

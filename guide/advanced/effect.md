@@ -30,7 +30,9 @@ boundary.
 | ------------------------------------------------ | -------------------------------- | ---------------------------------------------------------------- |
 | Toggle, draft, selection or other local UI value | `state`                          | Craft owns reactive UI state                                     |
 | Read data with an Effect loader                  | `queryEffect`                    | loading, caching, cancellation and exceptions are Craft concerns |
-| Derive a reactive value with an Effect           | `computedEffect`                 | reruns an Effect factory when Craft dependencies change          |
+| Derive a reactive value from a synchronous Effect | `computedEffect`                 | runs a `SyncOp` Effect in place — a value, not a resource        |
+| Expose a synchronous Effect as a callable method  | `methodEffect`                  | the Effect counterpart of `craftMethod`                         |
+| Run a synchronous Effect in a lower-level position | `syncEffect`                     | `params`, a `craftMethod`, a `state` updater                     |
 | Write data with an Effect loader                 | `mutationEffect`                 | explicit writes and mutation reactions                           |
 | Run an explicit command                          | `asyncProcessEffect`             | export, refresh, share action or other non-resource process      |
 | Provide Effect services                          | `provideLayer`                   | app and route injectors own Layer scope                          |
@@ -186,9 +188,9 @@ const users =
   });
 ```
 
-The Effect ESLint rule enforces this boundary. For an asynchronous derived
-input, use `computedEffect` and feed its resolved Craft value to a synchronous
-`params` function.
+The Effect ESLint rule enforces this boundary. A **declared-synchronous** Effect
+is allowed here through `syncEffect(...)`; for an input that has to suspend, use
+a `queryEffect` and feed its settled value to this one.
 
 ### `mutationEffect`: Effect-backed writes
 
@@ -225,6 +227,58 @@ the loader owns the asynchronous Effect program.
 Use it for an operation with a lifecycle but without a query cache or mutation
 relationship.
 
+### `methodEffect`: synchronous callable methods
+
+Use `methodEffect` when a domain operation is a synchronous Effect and should be
+exposed as a callable method rather than as a resource:
+
+```typescript
+const formatPrice = methodEffect('formatPrice', (cents: number) =>
+  Effect.gen(function* () {
+    yield* SyncOp;
+    return `${(cents / 100).toFixed(2)} €`;
+  }),
+);
+
+formatPrice(1499); // '14.99 €'
+```
+
+It is the Effect-aware convenience form of `craftMethod`. The `SyncOp`
+requirement is mandatory because the method returns immediately. For an Effect
+that can suspend, use `asyncProcessEffect`, `mutationEffect`, or
+`queryEffect`.
+
+### `computedEffect`: a derived value, not a resource
+
+`computedEffect` runs a **synchronous** Effect in place and hands back a value.
+It is the adapter for a derivation — a formatted price, a validity flag — where
+`queryEffect` would wrap the answer in a resource with a loading state nothing
+can ever be in:
+
+```typescript
+import { computedEffect } from '@craft-ts/effect';
+
+const totalLabel = computedEffect('totalLabel', function* () {
+  const lines = yield* cartLines();
+  return cartTotalLabel(lines); // returns the Effect, never runs it
+});
+```
+
+The factory reads Craft dependencies with `yield*` and **returns** an Effect;
+the adapter runs it in place against the nearest `provideLayer(...)`. Read the
+result like any `craftComputed` — no `value`, no `isLoading`, no
+`pendingNode`.
+
+The Effect it returns must be declared synchronous — `Effect<A, E, SyncOp>` —
+for the same reason `syncEffect` requires it: a computation is asked for its
+value now and cannot suspend to produce it, so one whose `R` does not carry
+`SyncOp` is refused at the call site. See [Run a synchronous member from a
+computed](#run-a-synchronous-member-from-a-computed) for what `SyncOp` is and
+the three mechanisms that check the claim.
+
+Use `syncEffect` instead when the synchronous Effect is not the whole
+derivation — inside a `craftMethod`, a `params`, or a `state` updater.
+
 ### `runEffect`: the low-level form
 
 Use `runEffect` when an Effect is yielded directly by a guard, resolver or Craft
@@ -253,12 +307,13 @@ export const appConfig = craftAppConfig({
 Use one merged Layer per injector level. A route can add a narrower Layer:
 
 ```typescript
-const routeProviders = [provideLayer(TeamContextLive)] as const;
-
 const routes = craftRoutes('app', [
   {
     path: 'team',
-    ...loadCraftComponent(() => import('./team'), routeProviders),
+    ...loadCraftComponent(
+      () => import('./team'),
+      [provideLayer(TeamContextLive)] as const,
+    ),
   },
 ]);
 ```
@@ -272,7 +327,8 @@ the values provided by the app and route:
 ```typescript
 type Check = EffectRequirementsCheckedDI<
   Effect.Services<typeof loadTeamOverview>,
-  AppProvidedEffectServices | ProvidedEffectServicesOf<typeof routeProviders>
+  AppProvidedEffectServices |
+    ProvidedEffectServicesOfRoute<typeof routes._routes, 'team'>
 >;
 type CanRunCheck = CanRun<Check>;
 ```
@@ -287,14 +343,14 @@ The bridge keeps Effect's distinctions intact:
 | Effect outcome             | Craft outcome                         | Handle it with                           |
 | -------------------------- | ------------------------------------- | ---------------------------------------- |
 | `Effect.succeed(value)`    | resource value / generator result     | normal rendering                         |
-| typed `Effect.fail(error)` | Craft exception keyed by `error._tag` | `matchBlock`, `catchTag`, route handlers |
+| typed `Effect.fail(error)` | Craft exception keyed by `error._tag` | `matchNode`, `catchTag`, route handlers |
 | `Effect.die(defect)`       | technical error                       | error boundary / monitoring              |
 | interruption               | cancellation                          | normally no user-facing handler          |
 
 Use exhaustive matching for business errors:
 
 ```typescript
-matchBlock.exhaustive(resource.exception, '_tag', {
+matchNode.exhaustive(resource.exception, '_tag', {
   UserNotFound: () => p('No user was found.'),
   Unauthorized: () => p('Your session has expired.'),
 });
@@ -345,6 +401,51 @@ The selection narrows the graph and keeps generic member signatures intact. It
 does not replace `Layer`; the service still comes from the nearest
 `provideLayer(...)`.
 
+## Run a synchronous member from a computed
+
+`params`, `craftComputed(...)` and `craftMethod(...)` run on Craft's synchronous
+driver: they complete on one tick and cannot wait. `Effect<A, E, R>` does not say
+whether running an Effect will suspend, and a service member makes it worse — a
+`Layer` closes over its dependencies at construction, so a network call and a
+pure calculation both surface as `R = never`.
+
+Declare the difference in `R`, the one channel Effect accumulates:
+
+```typescript
+export type CartPricingShape = {
+  readonly fetchCatalog: (skus: readonly string[]) => Effect.Effect<Catalog>;
+  readonly lineTotal: (line: CartLine) => Effect.Effect<number, never, SyncOp>;
+};
+```
+
+`SyncOp` is a phantom requirement: nothing provides it, it costs nothing at
+runtime, and `Effect<A, E, never>` is assignable to `Effect<A, E, SyncOp>` — so
+declaring it in the shape is enough, the implementation needs no ceremony. Where
+`R` is inferred (a standalone `Effect.gen` calling nothing already marked), add
+`yield* SyncOp` to the body.
+
+Run it with `syncEffect(...)`, which resolves in place instead of suspending:
+
+```typescript
+const totalLabel = craftComputed('totalLabel', function* () {
+  const cents = yield* syncEffect(cartTotal(yield* lines()));
+  return yield* syncEffect(formatPrice(cents));
+});
+```
+
+Requirements other than `SyncOp` travel through untouched — the level in force
+satisfies them exactly as it does for a loader. The only thing checked at the
+type level is that `SyncOp` is among them.
+
+The declaration is a claim, and three independent mechanisms check it: the type
+refuses an undeclared Effect at the call; `craft-ts/sync-effect-body` reads the
+body, every branch at once, and rejects one that yields something async; and at
+runtime `syncEffect` goes through `Effect.runSyncExitWith`, which cannot suspend
+— a broken promise throws `CraftEffectNotSynchronous` at the first call rather
+than freezing the UI.
+
+Full walkthrough: [Declare a synchronous member](/learn-effect/03-effect-domain#declare-a-synchronous-member).
+
 ## Testing
 
 Use `mockEffectService` for a focused Layer:
@@ -370,6 +471,7 @@ boundaries](/guide/testing/browser-boundaries).
 | `@craft-ts/component` | functional Craft components and typed templates                                                                  |
 | `@craft-ts/core`      | Craft primitives, services, routing, forms, testing and the current server-function registry                     |
 | `@craft-ts/effect`    | Effect bridge, `Layer` providers, Effect-aware primitives, service selection, mocks and server execution helpers |
+| `@craft-ts/i18n-effect` | the Effect adapter over an `@craft-ts/i18n` runtime: `provideI18nRuntime`, `translateEffect`, `I18nEffectService` — see [i18n with Effect](/guide/i18n/effect) |
 | `effect`              | `Effect`, `Context.Service`, `Layer`, `Schema`, tagged errors and the Effect runtime                             |
 | `@effect/platform-*`  | Effect-native platform adapters; used by the current server-function experiment                                  |
 | `@craft-ts/dev-tools` | generators, migration tools, graph and architecture checks                                                       |
@@ -411,6 +513,9 @@ integration to change before this becomes a stable feature.
   verify it on the server.
 * **Using a bare `yield* effect` in a route program:** use `runEffect` so Craft
   sees the typed exception union.
+* **Declaring a member `SyncOp` to get it into a computed:** the marker states a
+  fact, it does not create one. If the member can suspend, move the work to a
+  loader — the runtime will refuse it anyway.
 
 ## See also
 

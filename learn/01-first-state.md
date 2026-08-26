@@ -23,7 +23,7 @@ A Craft component is a **function**, not a class. It takes a name, meta, a logic
 factory, and a template:
 
 ```ts
-import { craftComponent, each, h1, li, ul } from '@craft-ts/component';
+import { craftComponent, forNode, h1, li, ul } from '@craft-ts/component';
 import { state } from '@craft-ts/core';
 
 type Task = { id: string; title: string; done: boolean };
@@ -41,7 +41,7 @@ export const Tasks = craftComponent(
   ({ tasks }) => [ // template: turns the context into rendered nodes
     h1('Tasks'),
     ul(
-      each(
+      forNode(
         tasks, // source: the reactive collection to render
         { track: (task) => task.id }, // options: stable identity for each item
         (task) => li(task.title), // render: creates one node per task
@@ -204,14 +204,14 @@ without a helper:
 ({ tasks }) => [
   h1('Tasks'),
   ul(
-    each(tasks, { track: (task) => task.id }, (task) => li(task.title)),
+    forNode(tasks, { track: (task) => task.id }, (task) => li(task.title)),
   ),
 ];
 ```
 
 Pass the reader (`tasks`) to the binding that consumes it. The renderer drives
 the read; wrapping `() => tasks()` is a synchronous call the yield rules reject.
-Use `each(...)` when the collection controls a node per item. No `*ngFor`, no
+Use `forNode(...)` when the collection controls a node per item. No `*ngFor`, no
 change detection to think about.
 
 ## Writing to it

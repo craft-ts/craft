@@ -208,11 +208,13 @@ See [Pinning a lazy child to its mount path](/guide/routing/setup#pinning-a-lazy
 The link passes a payload of the **declared type** (required, and shape-checked):
 
 ```ts
-[craftRouterLink]="{
-  to: 'photos/:photoId',
-  params: { photoId: photo.id },
-  viewTransition: { name: 'photo-' + photo.id, image: photo.preview },
-}"
+a({}, 'Photo').pipe(
+  CraftRouterLink({
+    to: 'photos/:photoId',
+    params: { photoId: photo.id },
+    viewTransition: { name: 'photo-' + photo.id, image: photo.preview },
+  }),
+);
 ```
 
 The skeleton (and/or the target) reads it through the **route-generated typed helper** and wears the

@@ -22,6 +22,11 @@ afternoon:
    everything is built on
 5. [Insertions](/guide/concepts/insertions) — how behaviour is composed
 
+## Project setup
+
+[Create a CraftTS project](/guide/create-project) — interactive and
+non-interactive starters, configuration options, and first checks
+
 ## By topic
 
 ### Managing state
@@ -66,7 +71,7 @@ afternoon:
 
 [Components](/guide/components/) ·
 [Fine-grained reactivity](/guide/components/fine-grained-reactivity) ·
-[Progressive `each`](/guide/components/schedule-each) ·
+[Progressive `forNode`](/guide/components/schedule-for) ·
 [Directives and `.pipe(...)`](/guide/components/directives) ·
 [Customization](/guide/components/customization) ·
 [Content projection](/guide/components/content-projection) ·

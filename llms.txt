@@ -92,9 +92,18 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 ### Components & templates
 
 - [Components](https://craft-ts.github.io/craft/guide/components.md)
+- [Activating `@craft-ts/style`](https://craft-ts.github.io/craft/guide/style/setup.md)
+- [Typed styles](https://craft-ts.github.io/craft/guide/style.md)
+- [Defining your design system](https://craft-ts.github.io/craft/guide/style/define.md)
+- [Tokens and typed variables](https://craft-ts.github.io/craft/guide/style/tokens.md)
+- [Axes and the visual matrix](https://craft-ts.github.io/craft/guide/style/variants.md)
+- [Context obligations](https://craft-ts.github.io/craft/guide/style/obligations.md)
+- [Testing what you built](https://craft-ts.github.io/craft/guide/style/testing.md)
+- [Typed CSS variables and design tokens](https://craft-ts.github.io/craft/guide/components/css-variables.md)
 - [Fine-grained reactivity](https://craft-ts.github.io/craft/guide/components/fine-grained-reactivity.md)
+- [Progressive rendering with `scheduleFor`](https://craft-ts.github.io/craft/guide/components/schedule-for.md)
 - [Directives and `.pipe(...)`](https://craft-ts.github.io/craft/guide/components/directives.md)
-- [settledValue & pendingBlock](https://craft-ts.github.io/craft/guide/components/pending-block.md)
+- [settledValue & pendingNode](https://craft-ts.github.io/craft/guide/components/pending-node.md)
 - [Accessibility](https://craft-ts.github.io/craft/guide/components/accessibility.md)
 - [Customizing components and directives](https://craft-ts.github.io/craft/guide/components/customization.md)
 - [Content projection](https://craft-ts.github.io/craft/guide/components/content-projection.md)
@@ -129,6 +138,7 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 - [No dependency cycles](https://craft-ts.github.io/guide/testing/architecture/dependency-cycles.md)
 - [Mutations must have a read-side reaction](https://craft-ts.github.io/guide/testing/architecture/mutation-reactions.md)
 - [Route DI proofs and exception coverage](https://craft-ts.github.io/guide/testing/architecture/route-di-proofs.md)
+- [Route page components each live in their own file](https://craft-ts.github.io/guide/testing/architecture/route-component-files.md)
 - [Folder path boundaries](https://craft-ts.github.io/guide/testing/architecture/path-boundaries.md)
 - [Exclusive branch links](https://craft-ts.github.io/guide/testing/architecture/exclusive-links.md)
 - [Persisted primitives need a unique identity](https://craft-ts.github.io/guide/testing/architecture/persisted-identities.md)
@@ -150,6 +160,22 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 - [sourceFromEvent](https://craft-ts.github.io/craft/guide/reactivity/source-from-event.md)
 - [afterRecomputation](https://craft-ts.github.io/craft/guide/reactivity/after-recomputation.md)
 
+### Internationalisation
+
+- [Type-safe i18n](https://craft-ts.github.io/craft/guide/i18n.md)
+- [The catalogue](https://craft-ts.github.io/craft/guide/i18n/catalog.md)
+- [Tokens](https://craft-ts.github.io/craft/guide/i18n/tokens.md)
+- [The runtime](https://craft-ts.github.io/craft/guide/i18n/runtime.md)
+- [i18n with Effect](https://craft-ts.github.io/craft/guide/i18n/effect.md)
+
+### Deployment (experimental)
+
+- [Deploying a CraftTS application](https://craft-ts.github.io/craft/guide/deployment.md)
+- [Manifest reference](https://craft-ts.github.io/craft/guide/deployment/manifest.md)
+- [Deployment diagnostics](https://craft-ts.github.io/craft/guide/deployment/diagnostics.md)
+- [Deployment providers](https://craft-ts.github.io/craft/guide/deployment/providers.md)
+- [Alchemy provider](https://craft-ts.github.io/craft/guide/deployment/alchemy.md)
+
 ### Going further
 
 - [SSR and hydration](https://craft-ts.github.io/craft/guide/advanced/ssr-hydration.md)
@@ -169,6 +195,7 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 - [Examples](https://craft-ts.github.io/craft/resources/examples.md)
 - [Coding agents](https://craft-ts.github.io/craft/resources/ai-agents.md): Point Cursor, Claude, Copilot, and other coding agents at CraftTS docs, MCP tools, and Agent Skills after you import @craft-ts/core.
 - [Migrating an existing application](https://craft-ts.github.io/craft/resources/migration.md)
+- [Migrating to `_tag` and `providedIn`](https://craft-ts.github.io/craft/guide/migration/wave-1-tag-and-provided-in.md)
 - [Effect compatibility and maturity](https://craft-ts.github.io/craft/resources/effect-compatibility.md)
 - [Adopting CraftTS progressively](https://craft-ts.github.io/craft/resources/effect-adoption.md)
 - [Press Kit](https://craft-ts.github.io/craft/resources/press-kit.md)
@@ -177,8 +204,5 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 
 ### Other
 
+- [Create a CraftTS project](https://craft-ts.github.io/craft/guide/create-project.md)
 - [Guide](https://craft-ts.github.io/craft/guide.md)
-- [Migrating to `_tag` and `providedIn`](https://craft-ts.github.io/craft/guide/migration/wave-1-tag-and-provided-in.md)
-- [Progressive rendering with `scheduleEach`](https://craft-ts.github.io/craft/guide/components/schedule-each.md)
-- [Route page components each live in their own file](https://craft-ts.github.io/craft/guide/testing/architecture/route-component-files.md)
-- [Typed CSS variables and design tokens](https://craft-ts.github.io/craft/guide/components/css-variables.md)

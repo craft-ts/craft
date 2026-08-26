@@ -3,6 +3,21 @@ url: https://craft-ts.github.io/craft/guide/components/css-variables.md
 ---
 # Typed CSS variables and design tokens
 
+::: warning Two things named `cssVars`
+This page is `meta.cssVars` on `craftComponent`: one component's **per-instance**
+styling API, applied as custom properties on that instance's root.
+
+`cssVars(prefix, specs)` from
+[`@craft-ts/style`](../style/define.md#the-theme) is a different mechanism under
+the same name: it declares **design-system-wide** custom properties, registered
+through `@property` and typed by kind, shared by every component that reads
+them.
+
+Nothing is being renamed — both are legitimate and the migration cost would be
+real. Use this one to let a caller restyle one instance; use the other one to
+declare a theme.
+:::
+
 CSS custom properties are the public styling API of a Craft component. Craft
 extracts a contract from inline `meta.styles`, propagates unsatisfied variables
 through component templates, and applies supplied values to the component root.

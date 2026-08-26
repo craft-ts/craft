@@ -63,8 +63,8 @@ forms and `insertReactOnMutation`. Keep validation responsibilities explicit:
 ### 5. Introduce route and feature scopes
 
 Move a Layer to the narrowest scope that owns it. Add the compile-time Effect
-requirements proof for the route, and keep route providers in a named tuple so
-the type checker can inspect them.
+requirements proof for the route, and inline single-use route providers so the
+typed route collection can preserve them for the type checker.
 
 Do this after the first feature works. The proof is valuable, but introducing
 it before the boundary is understood makes the first experiment look more

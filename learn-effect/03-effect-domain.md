@@ -133,6 +133,192 @@ The chain is: `queryEffect` runs `checkUserAccess`, the active `Layer` provides
 `AccessPolicyService`, and `accessLabel` reacts to the query's Craft value. The
 computed does not call the Effect service or start an Effect itself.
 
+## Declare a synchronous member
+
+That last sentence used to be a hard rule: no Effect at all inside `params`,
+`craftComputed(...)` or `craftMethod(...)`. Those run on Craft's **synchronous**
+driver, which completes on one tick and cannot wait — and `Effect<A, E, R>` does
+not say whether running it will suspend.
+
+It is worse than it looks for a service member. A `Layer` closes over the
+member's dependencies when it builds the service, so a member that calls the
+network and a member that adds two numbers *both* surface as `R = never`:
+
+```ts
+import { Context, Effect, Layer } from 'effect';
+import { SyncOp } from '@craft-ts/effect';
+
+export type CartLine = {
+  readonly sku: string;
+  readonly qty: number;
+  readonly unitCents: number;
+};
+
+export type CartPricingShape = {
+  // Asynchronous: `R` is `never` and it still goes to the network — the Layer
+  // closed over the transport at construction. Nothing in the type says so.
+  readonly fetchCatalog: (
+    skus: readonly string[],
+  ) => Effect.Effect<ReadonlyMap<string, number>>;
+
+  // Synchronous: `SyncOp` in `R` is the whole difference.
+  readonly lineTotal: (line: CartLine) => Effect.Effect<number, never, SyncOp>;
+  readonly formatPrice: (cents: number) => Effect.Effect<string, never, SyncOp>;
+};
+
+export class CartPricing extends Context.Service<
+  CartPricing,
+  CartPricingShape
+>()('learn-effect/CartPricing') {}
+
+export const CartPricingLive = Layer.sync(CartPricing)(() => ({
+  fetchCatalog: (skus) =>
+    Effect.gen(function* () {
+      yield* Effect.sleep('50 millis');
+      return new Map(skus.map((sku) => [sku, 1_000]));
+    }),
+
+  // The shape already declares these synchronous, so the implementations need
+  // no ceremony: Effect<A, E, never> is assignable to Effect<A, E, SyncOp>.
+  lineTotal: (line) => Effect.succeed(line.qty * line.unitCents),
+  formatPrice: (cents) => Effect.succeed(`${(cents / 100).toFixed(2)} €`),
+}));
+```
+
+The information does not exist in the type, so you write it there. `SyncOp` is a
+phantom requirement — never provided, no runtime cost — and `R` is the one
+channel Effect accumulates across composition. An Effect that requires `SyncOp`
+is one its author declares never suspends.
+
+Requirements union through `Effect.gen`, so the declaration propagates on its
+own. A standalone program that only calls declared-synchronous members inherits
+the marker; one that calls nothing marked spells it out with `yield* SyncOp`:
+
+```ts
+/**
+ * `R` is inferred here: `CartPricing` from the tag, `SyncOp` from the members.
+ * Composition propagates the declaration — nothing to maintain by hand.
+ */
+export function cartTotalLabel(lines: readonly CartLine[]) {
+  return Effect.gen(function* () {
+    const pricing = yield* CartPricing;
+
+    let cents = 0;
+    for (const line of lines) {
+      cents += yield* pricing.lineTotal(line);
+    }
+
+    return yield* pricing.formatPrice(cents);
+  });
+}
+
+/** No marked call to inherit from, so the marker is spelled out. */
+export function cartWeight(lines: readonly CartLine[]) {
+  return Effect.gen(function* () {
+    yield* SyncOp;
+    return lines.reduce((total, line) => total + line.qty * 250, 0);
+  });
+}
+```
+
+`CartPricing` in `R` is not a problem: the level in force satisfies it, exactly
+as it does for a loader. The only thing checked is that `SyncOp` is among the
+requirements.
+
+## Use it: computedEffect, then syncEffect
+
+For a derived value, reach for `computedEffect` — the Effect counterpart of
+`craftComputed`. The factory reads Craft dependencies and **returns** the
+Effect; the adapter runs it in place, so you get a plain reactive value:
+
+```ts
+import { craftComponent, p } from '@craft-ts/component';
+import { state } from '@craft-ts/core';
+import { computedEffect } from '@craft-ts/effect';
+
+export const CartTotal = craftComponent(
+  'LearnEffectCartTotal',
+  {},
+  function* () {
+    const lines = yield* state('lines', [
+      { sku: 'sku-1', qty: 2, unitCents: 1_000 },
+      { sku: 'sku-2', qty: 1, unitCents: 1_000 },
+    ] as CartLine[]);
+
+    // The factory RETURNS the Effect; `computedEffect` runs it in place.
+    const totalLabel = computedEffect('totalLabel', function* () {
+      return cartTotalLabel(yield* lines());
+    });
+
+    return { totalLabel };
+  },
+  ({ totalLabel }) => [p(totalLabel)],
+);
+```
+
+Anything nobody declared synchronous is refused at the call, before anything
+runs:
+
+```ts
+const catalogProgram = Effect.gen(function* () {
+  const pricing = yield* CartPricing;
+  return yield* pricing.fetchCatalog(['sku-1']);
+});
+
+export function cartSummary() {
+  // ✅ declared synchronous — `SyncOp` is in its requirements.
+  const weightLabel = computedEffect('weightLabel', () => cartWeight([]));
+
+  // ❌ `fetchCatalog` suspends and nobody declared otherwise: a computation
+  //    cannot run it. Use queryEffect.
+  const catalogLabel = computedEffect(
+    'catalogLabel',
+    // @ts-expect-error NotDeclaredSynchronous
+    () => catalogProgram,
+  );
+
+  return { weightLabel, catalogLabel };
+}
+```
+
+For a synchronous Effect exposed as a callable method, use `methodEffect`, the
+Effect counterpart of `craftMethod`. For lower-level positions such as a
+`params` factory or a `state` updater, `syncEffect(...)` is the same door,
+opened by hand:
+
+```typescript
+queryEffect('shippingQuote', {
+  params: function* () {
+    return yield* syncEffect(cartWeightGrams(yield* lines()));
+  },
+  loader: ({ params }) => quoteShipping(params),
+});
+```
+
+The relationship mirrors the asynchronous side: `computedEffect` is to
+`methodEffect` what `queryEffect` is to `asyncProcessEffect` — a value or method
+with no resource lifecycle. `syncEffect` remains the lower-level escape hatch.
+
+::: tip Three lines of defence
+
+`SyncOp` is a claim, not a proof — nothing stops a body from declaring itself
+synchronous and awaiting anyway. Three mechanisms check it, and none is
+redundant:
+
+1. **the type** — `computedEffect` and `syncEffect(...)` refuse an Effect nobody
+   declared, at the call site;
+2. **`craft-ts/sync-effect-body`** — reads the body, every branch at once, and
+   rejects a declared-synchronous body that yields something async. A unit test
+   cannot do this: it only proves the inputs it was given;
+3. **the runtime** — both run through `Effect.runSyncExitWith`, which
+   cannot suspend. A broken declaration throws `CraftEffectNotSynchronous`
+   immediately, at the first call, instead of freezing the UI.
+
+:::
+
+Keep asynchronous work where it belongs: a loader. `SyncOp` opens one narrow,
+explicit door for business calculations, not a way around the adapters.
+
 ## Run a standalone Effect
 
 For a low-level bridge, `runEffect` lets a Craft generator yield an Effect while

@@ -52,7 +52,7 @@ Omit `act` to read the current surface. The broker **always asks the live tab**
 
 Default `detail` is `"controls"`: the named interactive surface (id, role,
 accessible name, value, enabled, index, and `track` when the node is inside
-`each`). Pass `detail: "dom-styles"` only to debug layout or CSS — it is large
+`forNode`). Pass `detail: "dom-styles"` only to debug layout or CSS — it is large
 and opt-in.
 
 `id` is the literal local name from the helper:
@@ -70,7 +70,7 @@ const SaveToolbar = craftComponent(
 
 That name is unique in the app graph
 (`assertInteractiveElementNamed`). The renderer writes `data-craft-name="save"`.
-Do not prefix it with the component name. When `each` repeats the same id, pass
+Do not prefix it with the component name. When `forNode` repeats the same id, pass
 `match.index` or `match.track`.
 
 ## Fill, click, goto, ready

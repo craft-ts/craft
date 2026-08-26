@@ -48,6 +48,7 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 ### Managing state
 
 - [Local state](https://craft-ts.github.io/craft/guide/state/local-state.md)
+- [State machines](https://craft-ts.github.io/craft/guide/state/state-machines.md)
 - [query](https://craft-ts.github.io/craft/guide/state/server-state.md)
 - [Mutations](https://craft-ts.github.io/craft/guide/state/mutations.md)
 - [queryParams](https://craft-ts.github.io/craft/guide/state/url-state.md)

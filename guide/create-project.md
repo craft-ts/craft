@@ -44,8 +44,8 @@ The generator presents menus for:
 * the design system;
 * typed CSS;
 * a standalone or Nx workspace;
-* CraftTS and, when Effect is selected, EffectTS source references and their
-  resolution mode;
+* CraftTS and, when Effect is selected, EffectTS source references for agent
+  context;
 * integrations for Codex, Cursor, Claude Code, or Gemini CLI.
 
 The frontend and backend choices are independent. To create a plain browser
@@ -63,8 +63,10 @@ npx --yes --package @craft-ts/dev-tools@beta craft create
 
 The agent question is a multi-selection list. Use `↑`/`↓` to move, `Space` to
 select or deselect an integration, and `Enter` to confirm. Codex starts
-selected, preserving the default used by scripted creation. The selected
-integration receives its editor-specific project instructions and skills.
+selected, preserving the default used by scripted creation. Every starter
+receives an `AGENTS.md` project guide describing its selected runtimes and
+features; selected integrations additionally receive their editor-specific
+project instructions and skills.
 
 ### Creating inside an existing Git repository
 
@@ -85,24 +87,18 @@ During the interactive flow, reference sources are cloned by default:
 * CraftTS sources go into `.references/craft-ts`;
 * EffectTS sources are also cloned when an Effect frontend or backend is
   selected;
-* the default `context` mode makes the sources available to agents without
-  replacing the installed npm packages.
+* the sources are available to agents without replacing the installed npm
+  packages.
 
 Answer `n` to opt out. In non-interactive mode, references remain opt-in so
 that `--yes` does not silently perform network clones; use
 `--references=craft-ts` or `--references=all` explicitly.
 
-Reference modes have different purposes:
-
-* `context` keeps the cloned sources available to agents and uses portable npm
-  packages in the generated application;
-* `local` builds the cloned CraftTS packages into `dist/libs/...` and links the
-  generated application to those artifacts;
-* `source` links TypeScript and Vite directly to the cloned CraftTS sources.
-
-In `local` mode, the generator uses Nx targets for CraftTS and the package build
-scripts for the MCP/log workspaces. It does not run `npm run build` at the
-CraftTS repository root because that repository has no root `build` script.
+The cloned repositories are reference material for coding agents only. The
+generated application always imports the published CraftTS and EffectTS npm
+packages from `package.json`; it does not use `file:` dependencies or
+TypeScript/Vite aliases to the clones. Use `npm run update:references` to fetch
+the requested refs and refresh the recorded SHAs.
 
 ## Non-interactive creation
 
@@ -127,7 +123,7 @@ To create a backend-only Effect project and clone both reference sources:
 ```bash
 npx --yes --package @craft-ts/dev-tools@beta craft create my-app \
   --yes --frontend-runtime=plain --backend-runtime=effect \
-  --references=all --reference-mode=context
+  --references=all
 ```
 
 The main configuration options are:
@@ -138,13 +134,12 @@ The main configuration options are:
 | `--frontend-runtime` | `plain`, `effect` | Choose the frontend runtime |
 | `--backend-runtime` | `none`, `promise`, `effect` | Choose server functions |
 | `--effect-scope` | `none`, `frontend`, `backend`, `both` | Set Effect placement |
-| `--agents` | comma-separated names or `none` | Add agent instructions |
+| `--agents` | comma-separated names or `none` | Add editor-specific agent integrations; `AGENTS.md` is always generated |
 | `--i18n` | `strict`, `loose`, `none` | Configure type-safe i18n |
 | `--design-system` | `basic`, `none` | Include the design-system starter |
 | `--typed-css` | flag / `--no-typed-css` | Enable or disable typed CSS |
 | `--workspace` | `standalone`, `nx` | Choose the workspace layout |
 | `--references` | `none`, `craft-ts`, `all` | Include source references |
-| `--reference-mode` | `context`, `local`, `source` | Choose reference resolution |
 | `--force` | flag | Allow an existing non-empty destination |
 | `--json` | flag | Print the effective configuration as JSON |
 
@@ -178,6 +173,12 @@ npm test
 npm run architecture
 npm run build
 ```
+
+With a backend, `src/server/application.ts` owns the registry and runtime
+Layer, while `src/server/node-http.ts` is only the Node stream adapter.
+`server.ts` re-exports both for compatibility. In the backend-only Effect
+profile, the browser remains plain CraftTS; Effect services, middleware and
+error projections stay under the server boundary.
 
 ## Troubleshooting
 

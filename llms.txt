@@ -74,6 +74,7 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 - [Abstract services](https://craft-ts.github.io/craft/guide/app/abstract-services.md)
 - [App start](https://craft-ts.github.io/craft/guide/app/app-start.md)
 - [Lazy services](https://craft-ts.github.io/craft/guide/app/lazy-services.md)
+- [Public and protected server functions](https://craft-ts.github.io/craft/guide/app/server-functions.md)
 - [craftRegisterFor](https://craft-ts.github.io/craft/guide/app/register.md)
 - [Target wrapper](https://craft-ts.github.io/craft/guide/app/target-wrapper.md)
 

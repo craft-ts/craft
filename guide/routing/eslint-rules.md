@@ -68,6 +68,8 @@ export default [
       'craft-ts/no-async-await': 'error',
       'craft-ts/no-throw': 'error',
       'craft-ts/no-imperative-craft-resource-trigger': 'error',
+      'craft-ts/no-imperative-craft-method-actions': 'error',
+      'craft-ts/no-imperative-storage-in-craft-method': 'error',
       'craft-ts/no-transition-actions': 'error',
       'craft-ts/require-craft-resource-trigger-yield': 'error',
       'craft-ts/require-assert-exhaustive-route-exceptions': 'error',
@@ -109,6 +111,8 @@ What each rule does:
 * `craft-ts/no-async-await`: forbids `async` functions, `await`, and `for await...of`; use generator-based Craft primitives, `craftSleep`, and `CraftHttpClient` instead
 * `craft-ts/no-throw`: forbids `throw` in Craft code and offers a Quick Fix that returns `craftException({ _tag: 'UNEXPECTED_ERROR' }, { error: ... })`; keep technical boundaries and tests outside this rule when their contracts require thrown errors
 * `craft-ts/no-imperative-craft-resource-trigger`: forbids `query.call(...)`, `mutation.mutate(...)`, and `asyncProcess.method(...)` in a `craftEffect` dependency graph, including through `craftGen(...)`. The graph-wide counterpart, including `state` / `source$` writes, is [`assertCraftEffectNoImperativeSync`](/guide/testing/architecture#assertcrafteffectnoimperativesync).
+* `craft-ts/no-imperative-craft-method-actions`: forbids composing multiple imperative actions in a `craftMethod`; emit a `source$` event and let the affected query react with `insertReactOnMutation(...)` instead. A handler such as `event.preventDefault()` followed by one `mutation.mutate(...)` remains valid.
+* `craft-ts/no-imperative-storage-in-craft-method`: forbids direct storage access and imperative location changes in a `craftMethod`; use `insertReactOnMutation(...)` with `optimisticUpdate: () => undefined` to clear the affected query and let its persistence follow the query state.
 * `craft-ts/no-transition-actions`: forbids `query.call(...)`, `mutation.mutate(...)`, and `asyncProcess.method(...)` inside `transitionStep(...)`; validate the event and emit a source, then let the resource react to that source.
 * `craft-ts/require-craft-resource-trigger-yield`: requires those triggers to use `yield*` inside generator functions, while ordinary UI callbacks may keep imperative calls
 * `craft-ts/require-craft-method-for-yieldable-callback`: requires callbacks returned by a `craftComponent` factory to wrap yieldable Craft method calls in `craftMethod(...)`
@@ -131,6 +135,7 @@ What each rule does:
 * `craft-ts/require-lazy-load-with-retry`: wraps route `loadComponent` and `loadChildren` imports with the generated `withRetry(...)` loader helper while preserving a statically analyzable import specifier
 * `craft-ts/require-cascade-route-di-check`: rejects any `craftRoutes(...)` collection without a same-file `ValidateCascadeRoutesFile + CanRun` proof; its autofix adds the conservative `<never, Router>` context, which should be adjusted when the mount inherits providers
 * `craft-ts/global-exception-registry-match`: keeps `CraftGlobalExceptionRegistry` synchronized with handlers delegating to `globalError()`
+* `craft-ts/prefer-craft-router-link`: requires `CraftRouterLink` for internal `a(..., { href: ... })` navigation; external URLs, fragment links, downloads, `_blank`, and links marked with `data-navigation: 'external'` remain native
 
 ### Accessibility (`craft-ts/a11y`)
 

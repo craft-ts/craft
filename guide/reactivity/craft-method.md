@@ -18,7 +18,12 @@ import { craftMethod } from '@craft-ts/core';
 
 ## Overview
 
-`craftMethod` is designed for component methods such as click handlers, submit handlers, and small UI orchestration callbacks.
+`craftMethod` is designed for component methods such as click handlers and
+submit handlers. Keep the callback focused: event normalisation, pure input
+preparation, and at most one imperative Craft action belong here. When one
+event must coordinate several primitives, emit a `source$` directly and let
+the affected query react with `insertReactOnMutation(...)` or another
+declarative insertion.
 
 The returned method carries the yieldable-method contract. When it is consumed
 from a Craft component template, its template view can delegate it with

@@ -4129,17 +4129,17 @@ Run the command in a real terminal without `craft create --yes`:
 npx --yes --package @craft-ts/dev-tools@beta craft create my-app
 ```
 
-The generator presents menus for:
+The generator presents menus in this order:
 
+* the application type: frontend-only or full-stack;
+* for a full-stack app, the backend runtime: `promise` or `effect` (EffectTS
+  v4 is recommended);
 * the frontend runtime: `plain` or `effect`;
-* the backend runtime: `none`, `promise`, or `effect`;
 * type-safe i18n, its locales, and its default locale;
 * the design system;
 * typed CSS;
 * a standalone or Nx workspace;
-* CraftTS and, when Effect is selected, EffectTS source references for agent
-  context;
-* integrations for Codex, Cursor, Claude Code, or Gemini CLI.
+* integrations for Codex, Cursor, or Cloud Code.
 
 The frontend and backend choices are independent. To create a plain browser
 application whose server functions use Effect v4, choose `plain` for the
@@ -4161,6 +4161,35 @@ receives an `AGENTS.md` project guide describing its selected runtimes and
 features; selected integrations additionally receive their editor-specific
 project instructions and skills.
 
+## Agent-assisted creation
+
+When an agent starts a new project, it should first ask what kind of
+application is being built and what its main features are, without collecting
+detailed requirements yet. If those features imply a backend, it should
+propose EffectTS v4 for the backend and explain that its typed services, Layers
+and errors fit CraftTS's typed server boundary. The user can confirm that
+stack, reject it, or name another backend; the agent must not add an EffectTS
+backend after an explicit rejection.
+
+The agent should create a domain-ready but empty starter with the design
+system, typed CSS and strict i18n enabled, and without the explanatory demo
+pages:
+
+```bash
+npx --yes --package @craft-ts/dev-tools@beta craft create my-app \
+  --yes --no-demos --domain app \
+  --frontend-runtime=plain --backend-runtime=effect \
+  --i18n=strict --design-system=basic --typed-css \
+  --references=all --agents=codex
+```
+
+Use `--backend-runtime=none` when the user declines a backend, or the explicit
+requested backend when it is supported. When no Effect runtime is selected,
+use `--references=craft-ts` instead of `--references=all`. The `--no-demos`
+starter still
+contains the architecture/tooling baseline and a domain boundary, but no
+prefilled product pages or demo content.
+
 ### Creating inside an existing Git repository
 
 An existing `.git` directory makes the destination non-empty. Generate into
@@ -4175,7 +4204,7 @@ npx --yes --package @craft-ts/dev-tools@beta craft create . --force
 off the configuration prompts. Review generated file changes before
 committing when the repository already contains application code.
 
-During the interactive flow, reference sources are cloned by default:
+During the interactive flow, reference sources are cloned automatically:
 
 * CraftTS sources go into `.references/craft-ts`;
 * EffectTS sources are also cloned when an Effect frontend or backend is
@@ -4183,9 +4212,10 @@ During the interactive flow, reference sources are cloned by default:
 * the sources are available to agents without replacing the installed npm
   packages.
 
-Answer `n` to opt out. In non-interactive mode, references remain opt-in so
-that `--yes` does not silently perform network clones; use
-`--references=craft-ts` or `--references=all` explicitly.
+There is no reference confirmation prompt. The same defaults apply in
+non-interactive mode: CraftTS is cloned, and EffectTS is cloned whenever an
+Effect frontend or backend is selected. Use `--references=none` to opt out, or
+`--references=craft-ts` / `--references=all` to choose explicitly.
 
 The cloned repositories are reference material for coding agents only. The
 generated application always imports the published CraftTS and EffectTS npm
@@ -4221,22 +4251,22 @@ npx --yes --package @craft-ts/dev-tools@beta craft create my-app \
 
 The main configuration options are:
 
-| Option               | Values                                | Purpose                                                                 |
-| -------------------- | ------------------------------------- | ----------------------------------------------------------------------- |
-| `--effect`           | `v4`, `none`                          | Select the Effect v4 or plain starter                                   |
-| `--frontend-runtime` | `plain`, `effect`                     | Choose the frontend runtime                                             |
-| `--backend-runtime`  | `none`, `promise`, `effect`           | Choose server functions                                                 |
-| `--effect-scope`     | `none`, `frontend`, `backend`, `both` | Set Effect placement                                                    |
-| `--agents`           | comma-separated names or `none`       | Add editor-specific agent integrations; `AGENTS.md` is always generated |
-| `--i18n`             | `strict`, `loose`, `none`             | Configure type-safe i18n                                                |
-| `--design-system`    | `basic`, `none`                       | Include the design-system starter                                       |
-| `--typed-css`        | flag / `--no-typed-css`               | Enable or disable typed CSS                                             |
-| `--workspace`        | `standalone`, `nx`                    | Choose the workspace layout                                             |
-| `--references`       | `none`, `craft-ts`, `all`             | Include source references                                               |
-| `--no-demos`         | flag                                  | Generate a domain feature without explanatory demo pages                |
-| `--domain`           | slug                                  | Name the first domain feature when using `--no-demos`                   |
-| `--force`            | flag                                  | Allow an existing non-empty destination                                 |
-| `--json`             | flag                                  | Print the effective configuration as JSON                               |
+| Option               | Values                                | Purpose                                                                   |
+| -------------------- | ------------------------------------- | ------------------------------------------------------------------------- |
+| `--effect`           | `v4`, `none`                          | Select the Effect v4 or plain starter                                     |
+| `--frontend-runtime` | `plain`, `effect`                     | Choose the frontend runtime                                               |
+| `--backend-runtime`  | `none`, `promise`, `effect`           | Choose server functions                                                   |
+| `--effect-scope`     | `none`, `frontend`, `backend`, `both` | Set Effect placement                                                      |
+| `--agents`           | comma-separated names or `none`       | Add editor-specific agent integrations; `AGENTS.md` is always generated   |
+| `--i18n`             | `strict`, `loose`, `none`             | Configure type-safe i18n                                                  |
+| `--design-system`    | `basic`, `none`                       | Include the design-system starter                                         |
+| `--typed-css`        | flag / `--no-typed-css`               | Enable or disable typed CSS                                               |
+| `--workspace`        | `standalone`, `nx`                    | Choose the workspace layout                                               |
+| `--references`       | `none`, `craft-ts`, `all`             | Include source references (default: CraftTS, plus EffectTS when selected) |
+| `--no-demos`         | flag                                  | Generate a domain feature without explanatory demo pages                  |
+| `--domain`           | slug                                  | Name the first domain feature when using `--no-demos`                     |
+| `--force`            | flag                                  | Allow an existing non-empty destination                                   |
+| `--json`             | flag                                  | Print the effective configuration as JSON                                 |
 
 Use `craft create --help` to see the complete list:
 
@@ -25503,15 +25533,15 @@ url: https://craft-ts.github.io/craft/guide/i18n.md
 ---
 # Type-safe i18n
 
-`@craft-ts/i18n` has **no CraftTS, Angular or Effect import**. The catalogue is
-a plain TypeScript value and the runtime works in a browser, a server, a worker
-or a test without a framework. That is not a packaging detail — it is what lets
-the same catalogue be checked by `tsc`, exercised by a Node test, and rendered
-during SSR without a second implementation.
+`@craft-ts/i18n` is the CraftTS i18n integration. The catalogue remains a plain
+declarative TypeScript value, while DI-aware tokens use the existing CraftTS
+service contracts. A catalogue that does not use DI can still be formatted by
+`runtime.t`; a catalogue with DI is rendered through the reactive CraftTS
+translator so its dependencies are checked like component dependencies.
 
 ## The contract
 
-Four things are guaranteed, and all four are checked before the app runs.
+Six things are guaranteed, and all six are checked before the app runs.
 
 | guarantee                                                   | what it costs you to break                                          |
 | ----------------------------------------------------------- | ------------------------------------------------------------------- |
@@ -25519,8 +25549,10 @@ Four things are guaranteed, and all four are checked before the app runs.
 | every locale has the **same keys with the same parameters** | a translation you forgot is a compile error, not a fallback         |
 | parameters are **typed by their token**                     | a date cannot be passed where a currency amount belongs             |
 | a plural carries **every category the locale requires**     | Polish needs `one`/`few`/`many`/`other`; French needs `one`/`other` |
+| a DI-aware token declares its **CraftTS services**           | a missing provider is a compile error at the component/route boundary |
+| a token declared with a **schema** types its own input       | the call site passes what the schema parses, not what the formatter wants |
 
-The usual failure mode of a translation layer is that all four of these are
+The usual failure mode of a translation layer is that all of these are
 runtime concerns: a missing key renders its own name, a wrong parameter renders
 `[object Object]`, and a missing plural category renders the wrong branch to the
 users of one locale only. None of that is observable from the code that calls
@@ -25558,8 +25590,9 @@ A working example lives in the demo, at `apps/demo/src/app/examples/i18n/`.
 
 ## Guard visible text in Craft templates
 
-The dev-tools plugin exposes an opt-in `i18n` ESLint preset for applications
-that have finished moving their user-facing copy into a catalogue:
+`craft create` enables this preset for every project generated **with** i18n —
+its own pages already take their copy from the catalogue. A project generated
+without i18n never sees the rule. To add it by hand to an existing application:
 
 ```js
 import craftRules from '@craft-ts/dev-tools/eslint-rules';
@@ -25574,11 +25607,16 @@ export default [
 
 `craft-ts/require-i18n-text` reports static text in visible headings,
 paragraphs, labels, buttons, links and options, plus visible `placeholder`,
-`aria-label` and `title` attributes. Dynamic business values, `i18n.t(...)`
-and catalogue files are accepted. Server files and tests are excluded so
-technical messages and assertions can remain literal. The rule is deliberately
-separate from the recommended preset: enable it when the catalogue is the
-application's source of truth, then run `npm run lint` in CI.
+`aria-label` and `title` attributes — and it looks *inside* the visible
+position, so `p('Total: ' + t('cart.total'))`, ``span(`Total: ${amount}`)``,
+`label(isNew ? 'New' : 'Returning')`, `p(name || 'Anonymous')` and a literal in
+a children array are reported too. Only what carries letters counts: `first + ' ' + last`
+is glue between values, not copy. Dynamic business values, `i18n.t(...)`, its
+key and parameters, a generator child and catalogue files are accepted. Server files and tests are excluded so
+technical messages and assertions can remain literal. The rule stays separate
+from the recommended preset, because it only makes sense once the catalogue is
+the application's source of truth — which is exactly the condition `craft
+create` checks when it decides to enable it.
 
 ---
 
@@ -25668,6 +25706,12 @@ catalog)`, which checks three things against the reference at compile time:
 * the plural categories that *this* locale requires, which may differ from the
   reference's.
 
+`assertLocaleParity` adds one check the types cannot express: two locales must
+also agree on **how** each token is resolved. A locale that swapped a
+service-resolved money token for a static one, or dropped a parameter's schema,
+renders through a different path — it is reported as a `LOCALE_MISMATCH` rather
+than silently formatting in the wrong currency.
+
 A renamed key in the reference therefore breaks every translation file that
 still has the old name, which is the entire point. It also runs
 `assertLocaleParity` at construction, so a mismatch that slips past the types —
@@ -25688,6 +25732,15 @@ pre-commit hook can see what `tsc` sees. Under the hood it is
 When it fails, it names the key and the locale. Add the key; do not loosen the
 catalogue's type to make the message go away.
 
+## Delivering a catalogue as data
+
+`serializeCatalog(catalog)` produces a JSON-safe shape where each token is
+reduced to its stable `tokenId` and parameter name — the receiving application
+registers the executable formatters. A token that parses its input is marked, and
+a token whose formatter is resolved from the injector is **refused**: its
+formatter only exists at render time, so a serialised copy would silently format
+with the default options. Deliver such a message from the application instead.
+
 ## Next
 
 * [Tokens](./tokens.md) — what `amount` and `count` above actually are.
@@ -25701,8 +25754,9 @@ url: https://craft-ts.github.io/craft/guide/i18n/tokens.md
 # Tokens
 
 A token is the unit that makes a message parameter typed. It carries a **name**
-(the parameter key), a **kind**, an optional **guard**, and a **formatter** that
-receives the active locale.
+(the parameter key), a **kind**, a way to check the value — a guard or a
+**schema** — and a way to render it: a **formatter**, or a **resolver** that
+builds one from the injector. Both see the active locale.
 
 ## The shipped tokens
 
@@ -25739,9 +25793,56 @@ const lastSync = relativeTime('lastSync', undefined, { unit: 'day' });
 Each is a factory: `factory(name, adapter?, options?)`. The **name** is what the
 params object will be keyed by, so the same factory serves any number of
 parameters — `money('amount')` and `money('refund')` are two different tokens.
+The **adapter** position takes any of three things: a type guard, a
+[Standard Schema](#validating-and-parsing-with-a-schema), or a
+[generator](#options-that-come-from-a-service) that resolves the options from a
+service.
 
-`percent` takes a ratio, not a percentage: `0.125`, not `12.5`. That is `Intl`'s
-convention and the token does not second-guess it.
+### Options that come from a service
+
+Every factory — not only `money` — accepts a CraftTS generator in place of the
+adapter when its options depend on a service:
+
+```ts
+const orderAmount = money('amount', function* () {
+  const currency = yield* ClientCurrency();
+  return { currency: currency.code, minimumFractionDigits: 2 };
+});
+```
+
+The yielded service is part of the token's type. It is therefore propagated to
+the translation reader and then to the component/route DI check. A provider
+missing from the reachable `craftComponent`/route scope fails compilation.
+The generator runs when the message is rendered, not when the catalogue module
+is imported.
+
+It must be a **generator function**. An arrow that returns a generator satisfies
+the signature but is not one, so it is rejected rather than silently installed
+as the value guard.
+
+## Validating and parsing with a schema
+
+The second argument also accepts a **Standard Schema**: the same contract
+`state`, `query` and forms already take, so a Zod, Valibot or ArkType schema
+written for the rest of the application drops in unchanged.
+
+```ts
+const placedAt = dateLong('placedAt', z.coerce.date());
+
+msg`Placed on ${placedAt}.`;
+// the call site passes a string, the formatter receives a Date
+translate('order', { placedAt: '2026-08-25T14:30:00Z' });
+```
+
+A schema is not only a guard: the parameter type is the schema's **input** and
+the formatter receives its **output**. Parsing therefore happens once, in the
+catalogue, instead of at every call site. An invalid value raises
+`I18nRuntimeError` with the schema's own issue messages, and an asynchronous
+schema is refused — a translation renders synchronously.
+
+A project token declared with `defineToken` takes the same `schema` field, and
+may combine it with `resolveFormatter`: the parameter is parsed, the formatter
+is resolved from the injector.
 
 ## Your own token
 
@@ -25770,12 +25871,104 @@ export const orderStatus = defineToken({
 The `validate` guard is what keeps an arbitrary string out of the params type: a
 message that interpolates this token accepts `'paid' | 'pending' | 'refunded'`
 and nothing else. Without it, the parameter widens and the token stops earning
-its place.
+its place. A `schema` field does the same job and can parse on the way in;
+`defineToken` accepts either, and may combine a schema with a `resolveFormatter`
+so the parameter is parsed and the formatter comes from the injector.
+
+A token can also resolve its formatter from the injector rather than carry one.
+Here the unit system is a Craft service, so the same catalogue renders
+kilogrammes for one user and pounds for another:
+
+```ts
+import { craftService, state } from '@craft-ts/core';
+import { button, craftComponent, div, p } from '@craft-ts/component';
+import {
+  createI18nRuntime,
+  defineCatalog,
+  defineLocale,
+  defineToken,
+  msg,
+} from '@craft-ts/i18n';
+
+type UnitSystem = 'metric' | 'imperial';
+
+const { Units } = craftService(
+  { name: 'Units', providedIn: 'global' },
+  function* () {
+    const system = yield* state('system', 'metric' as UnitSystem, ({ set }) => ({
+      useImperial: () => set('imperial'),
+    }));
+    return { system };
+  },
+);
+
+// No `format`: the unit does not exist until the service has answered, so the
+// token declares a resolver instead of a standalone formatter.
+const weight = defineToken({
+  name: 'weight',
+  kind: 'weight',
+  resolveFormatter: function* () {
+    const units = yield* Units();
+    const unit = (yield* units.system()) === 'imperial' ? 'pound' : 'kilogram';
+    return (value: number, context) =>
+      new Intl.NumberFormat(context.locale, { style: 'unit', unit }).format(
+        unit === 'pound' ? value * 2.20462 : value,
+      );
+  },
+});
+
+const en = defineLocale(
+  'en-US',
+  defineCatalog({ order: { line: msg`Shipping ${weight}.` } }),
+);
+const runtime = createI18nRuntime({ locales: [en] });
+
+const ShippingLine = craftComponent(
+  'ShippingLine',
+  {},
+  function* () {
+    const units = yield* Units();
+    // The translator re-reads whenever the unit system does.
+    return { translate: runtime.bind(units.system), units };
+  },
+  ({ translate, units }) =>
+    div([
+      p(translate('order.line', { weight: 12 })),
+      button(
+        'imperial',
+        { type: 'button', click: units.system.useImperial },
+        'Imperial',
+      ),
+    ]),
+);
+```
+
+The yielded service travels with the message: pass the reader to the template
+and a missing provider is a compile error, exactly as for a service yielded by
+the component factory. See
+[DI inside a translation](./runtime.md#di-inside-a-translation).
 
 `format` receives the value and a context carrying `locale` and, when the
 runtime was given one, `timeZone`. Keep the branching on `context.locale`
 coarse — a language prefix, not a full locale match — unless you genuinely have
 per-region wording.
+
+## `format` or `resolveFormatter`, never both
+
+A token formats through exactly one of the two, and both renderers take
+`resolveFormatter` first whenever it is there:
+
+| declared           | when the formatter is known                                   |
+| ------------------ | -------------------------------------------------------------- |
+| `format`           | when the catalogue is written — `formatters.money('EUR')`      |
+| `resolveFormatter` | at render time, from the injector — the client's currency      |
+
+So a token with a resolver declares no `format`. `t` still renders it if the
+resolver yields nothing; the moment it yields a service request, the message
+belongs to a bound translator and its key leaves `StaticTranslationKey`.
+
+`percent` takes a ratio, not a percentage: `0.125`, not `12.5`. That is `Intl`'s
+convention and the token does not second-guess it.
 
 ## A family of tokens
 
@@ -25859,6 +26052,18 @@ a locale the runtime does not hold. So does `t`, if the active locale was
 somehow never loaded. The error is not a formatting failure to be swallowed: it
 means the app is about to render the wrong language.
 
+The other codes it raises, all for the same reason — rendering something wrong
+is worse than not rendering:
+
+| code                       | when                                                              |
+| -------------------------- | ------------------------------------------------------------------ |
+| `MISSING_PARAM`            | a token's parameter is absent from the params object               |
+| `INVALID_PARAM`            | a guard rejected the value, or a schema's issues, quoted verbatim  |
+| `ASYNC_SCHEMA`             | a parameter's schema returned a promise; a message renders in sync |
+| `CRAFT_INJECTION_REQUIRED` | `t` met a token that resolves a service (see below)                |
+| `INVALID_PLURAL_COUNT`     | a plural selector that is not a finite number                      |
+| `UNKNOWN_KEY`              | a key that no longer exists in the loaded catalogue                |
+
 ## Reactive translation
 
 A string that does not change when the locale changes is not a translation.
@@ -25894,6 +26099,44 @@ export const { I18n } = craftService(
 yields like any other Craft reader. One service owns the locale for the whole
 app; components consume it rather than each building a local binding, which is
 what keeps two components from disagreeing about which language is on screen.
+
+### DI inside a translation
+
+Dependencies belong to the token that needs them, not to the whole i18n
+runtime:
+
+```ts
+const orderAmount = money('amount', function* () {
+  const currency = yield* ClientCurrency();
+  return { currency: currency.code, minimumFractionDigits: 2 };
+});
+
+const catalog = defineCatalog({
+  order: msg`Order total ${orderAmount}.`,
+});
+```
+
+In a template, the translator's result is used exactly like any other child or
+attribute value — pass it, do not drive it:
+
+```ts
+p(translate('order', { amount: 1234.5 }));
+p({ title: translate('order', { amount: 1234.5 }) }, 'Order');
+```
+
+Both forms carry `ClientCurrency` into the component dependency contract, so
+the route check reports a missing provider at compile time, just as it does for
+a service yielded by the component factory.
+
+The reader is a function, so `yield* translate(...)` does not type-check; and
+driving it yourself inside a template generator (`yield* translate(...)()`)
+hides the dependency from that check, exactly as a service yielded straight
+from a template does. Pass the reader.
+
+`t` refuses such a message at compile time: its key type is
+`StaticTranslationKey`, the keys whose formatting resolves nothing. A resolver
+that yields no request is still a `t` key — the type and the runtime draw the
+same line.
 
 ## Loading catalogues
 
@@ -26024,9 +26267,14 @@ failure every call site would have to handle.
 ## When to reach for it
 
 Use `translateEffect` **inside an Effect program** — a domain service building a
-message, a server handler rendering an email. In a component, `t` is the shorter
-and framework-independent path, and reaching for Effect just to format a string
+message, a server handler rendering an email. In a component, the bound
+translator is the shorter path, and reaching for Effect just to format a string
 adds a requirement to the program for nothing.
+
+An Effect program is not a Craft injection context, so `translateEffect` accepts
+`StaticTranslationKey` — the keys whose formatting resolves no service. A
+message whose token yields a Craft service is rendered by the component-side
+translator; that is what keeps the `never` error channel above honest.
 
 See also the [Effect adapters](../advanced/effect.md) page for the rest of the
 `@craft-ts/*-effect` family.
@@ -29168,20 +29416,24 @@ without `craftStyle` from `@craft-ts/style/vite` in the Vite config. See
 
 ## Internationalisation
 
-`@craft-ts/i18n` has no CraftTS, Angular or Effect import; the catalogue is a
-plain TypeScript value.
+`@craft-ts/i18n` is the CraftTS i18n integration: the catalogue stays a plain
+TypeScript value, and a token may resolve a Craft service or parse its
+parameter with a Standard Schema. The package imports core for types only.
 
 | Symbol                                                                                                        | What it does                                                           | Page                                                                  |
 | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | `defineCatalog`, `msg`, `plural`                                                                              | The catalogue, its messages, and per-locale plural categories          | [The catalogue](/guide/i18n/catalog)                                  |
 | `defineLocale`, `defineLocaleLike`                                                                            | The reference locale, and every other one checked against it           | [The catalogue](/guide/i18n/catalog)                                  |
 | `number`, `integer`, `percent`, `compactNumber`, `money`, `dateShort`, `dateLong`, `dateTime`, `relativeTime` | The shipped semantic tokens, formatted through `Intl`                  | [Tokens](/guide/i18n/tokens)                                          |
-| `defineToken`, `defineTokenFactory`, `formatters`                                                             | Project tokens, and the factory the shipped ones are built from        | [Tokens](/guide/i18n/tokens)                                          |
+| `defineToken`, `defineTokenFactory`, `formatters`, `TokenFormatter`, `FormatterContext`                       | Project tokens, and the factory the shipped ones are built from        | [Tokens](/guide/i18n/tokens)                                          |
 | `createI18nRuntime`, `translate` / `t`, `setLocale`, `locale`                                                 | The runtime and its one active locale                                  | [The runtime](/guide/i18n/runtime)                                    |
+| `TranslationDependencies`, `StaticTranslationKey`                                                             | The services a message resolves, and the keys `t` can render alone     | [The runtime](/guide/i18n/runtime#di-inside-a-translation)             |
+| `TokenSchema`, `TokenSchemaInput`, `TokenSchemaOutput`, `TokenFactory`                                        | Declaring a parameter with a Standard Schema                           | [Tokens](/guide/i18n/tokens)                                          |
 | `bind`, `createReactiveTranslator`                                                                            | A translator that re-reads when the locale state changes               | [The runtime](/guide/i18n/runtime#reactive-translation)               |
 | `createI18nLoader`, `loadLocale`                                                                              | Lazy locales, cached by id, evicted on failure                         | [The runtime](/guide/i18n/runtime#lazy-locales)                       |
 | `validateCatalog`, `assertValidCatalog`, `validateLocaleParity`, `assertLocaleParity`                         | The checks behind `npm run i18n:check` (also `@craft-ts/i18n/testing`) | [The catalogue](/guide/i18n/catalog#checking-outside-the-typechecker) |
-| `I18nRuntimeError`                                                                                            | `NO_LOCALES`, `LOCALE_NOT_LOADED`, `INVALID_NUMBER`, `INVALID_DATE`    | [The runtime](/guide/i18n/runtime)                                    |
+| `serializeCatalog`, `serializeToken`                                                                          | JSON-safe delivery shape; refuses a token that resolves a service      | [The catalogue](/guide/i18n/catalog)                                  |
+| `I18nRuntimeError`                                                                                            | `LOCALE_NOT_LOADED`, `MISSING_PARAM`, `INVALID_PARAM`, `CRAFT_INJECTION_REQUIRED`, … | [The runtime](/guide/i18n/runtime)                      |
 | `provideI18nRuntime`, `translateEffect`, `I18nEffectService`                                                  | The Effect adapter (`@craft-ts/i18n-effect`)                           | [With Effect](/guide/i18n/effect)                                     |
 
 ## Tooling
@@ -29324,7 +29576,7 @@ nothing without the Vite plugin.
 
 | Example                                                                                                                                        | What it shows                                                                                                                                                                                |
 | ---------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Type-safe i18n](https://stackblitz.com/github/craft-ts/craft-ts-demo/tree/main/?file=src/app/examples/i18n/i18n.service.ts\&initialpath=/i18n) | `defineCatalog` + `msg` + `plural`, a second locale through `defineLocaleLike`, every shipped semantic token, a custom `defineToken`, and `runtime.bind` switching the whole page reactively |
+| [Type-safe i18n](https://stackblitz.com/github/craft-ts/craft-ts-demo/tree/main/?file=src/app/examples/i18n/i18n.service.ts\&initialpath=/i18n) | `defineCatalog` + `msg` + `plural`, a second locale through `defineLocaleLike`, every shipped semantic token, a custom `defineToken` that resolves a service and parses its parameter with a schema, and `runtime.bind` switching the whole page reactively |
 
 The guide is [Type-safe i18n](/guide/i18n/).
 

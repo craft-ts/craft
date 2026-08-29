@@ -134,6 +134,7 @@ Event listeners are automatically removed when the injection context is destroye
 
 ```ts
 import { craftComponent, p } from '@craft-ts/component';
+import { fromEventToSource$ } from '@craft-ts/core';
 
 export const Demo = craftComponent(
   'Demo',
@@ -318,6 +319,7 @@ export const Responsive = craftComponent(
 
 ```ts
 import { craftComponent, p } from '@craft-ts/component';
+import { fromEventToSource$ } from '@craft-ts/core';
 
 interface ShortcutEvent {
   key: string;
@@ -424,14 +426,8 @@ export const CursorTracker = craftComponent(
 ### Form Submission
 
 ```ts
-import {
-  button,
-  craftComponent,
-  form,
-  input,
-  p,
-} from '@craft-ts/component';
-import { state } from '@craft-ts/core';
+import { button, craftComponent, form, input, p } from '@craft-ts/component';
+import { craftComputed, fromEventToSource$, on$, state } from '@craft-ts/core';
 
 export const SubmitDemo = craftComponent(
   'SubmitDemo',
@@ -448,9 +444,12 @@ export const SubmitDemo = craftComponent(
     const formData = yield* state(
       'formData',
       null as Record<string, unknown> | null,
-      ({ set }) => ({
+      ({ state, set }) => ({
         // bound to the source, so NOT exposed on the ref
         handleSubmit: on$(submit$, (data) => set(data)),
+        formDataJson: craftComputed('formDataJson', function* () {
+          return JSON.stringify(yield* state());
+        }),
       }),
     );
 
@@ -460,9 +459,7 @@ export const SubmitDemo = craftComponent(
     form([
       input('username', { type: 'text', name: 'username' }),
       button('submit', { type: 'submit' }, 'Submit'),
-      p(function* () {
-        return JSON.stringify(yield* formData());
-      }),
+      p(formData.formDataJson),
     ]),
 );
 ```

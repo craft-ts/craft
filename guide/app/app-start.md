@@ -137,7 +137,12 @@ application initialization, and the app renders once they have settled.
 Here it is end to end:
 
 ```ts
-import { Console, craftAppConfig, craftService, onAppStart } from '@craft-ts/core';
+import {
+  Console,
+  craftAppConfig,
+  craftService,
+  onAppStart,
+} from '@craft-ts/core';
 
 const { AppStartLog } = craftService(
   {
@@ -162,6 +167,7 @@ declare module '@craft-ts/core' {
 }
 
 export const appConfig = craftAppConfig({
+  routingDeps: [],
   appStart: { AppStartLog },
 });
 ```

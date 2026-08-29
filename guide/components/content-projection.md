@@ -329,8 +329,8 @@ import {
 
 craftComponent(
   'InvalidStyles',
+  // @ts-expect-error "footer" is not a declared content slot.
   {
-    // @ts-expect-error "footer" is not a declared content slot.
     contentStyles: { footer: ':scope { color: red; }' },
   },
   (input: { readonly body: ContentSlot }) => input,

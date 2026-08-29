@@ -90,11 +90,10 @@ export const UserRepositoryLive = Layer.succeed(UserRepositoryService, {
       : Effect.fail(new UserNotFound({ userId })),
 });
 
-export const loadUser = (userId: string) =>
-  Effect.gen(function* () {
-    const repository = yield* UserRepositoryService;
-    return yield* repository.find(userId);
-  });
+export const loadUser = Effect.fnUntraced(function* (userId: string) {
+  const repository = yield* UserRepositoryService;
+  return yield* repository.find(userId);
+});
 ```
 
 The component will call `loadUser`, but it will not resolve
@@ -139,10 +138,7 @@ the same Craft scope where the operation is used.
 
 ```ts
 import { provideCraftRootComponent, bootstrapCraft } from '@craft-ts/component';
-import {
-  craftAppConfig,
-  provideAppInitializer,
-} from '@craft-ts/core';
+import { craftAppConfig, provideAppInitializer } from '@craft-ts/core';
 
 export const appConfig = craftAppConfig({
   routingDeps: [],

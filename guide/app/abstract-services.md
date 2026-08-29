@@ -10,7 +10,7 @@ test — instead of a hard import.
 
 ## Abstract Requirements
 
-Use `scope: 'abstract'` to declare a contract that must be implemented elsewhere.
+Use `providedIn: 'abstract'` to declare a contract that must be implemented elsewhere.
 
 ```ts
 import { abstract, craftService } from '@craft-ts/core';
@@ -21,7 +21,7 @@ type CounterContract = {
 };
 
 const { CounterRequirement } = craftService(
-  { name: 'Counter', scope: 'abstract' },
+  { name: 'Counter', providedIn: 'abstract' },
   abstract<CounterContract>(),
 );
 ```
@@ -41,7 +41,7 @@ import { abstract, craftService } from '@craft-ts/core';
 type User = { name: string };
 
 const { User, provideUser } = craftService(
-  { name: 'User', scope: 'abstract' },
+  { name: 'User', providedIn: 'abstract' },
   abstract<User>(),
 );
 

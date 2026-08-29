@@ -98,10 +98,10 @@ export const Tasks = craftComponent(
       return `Tasks — ${yield* tasks.remaining()} left`;
     }),
     ul(
-      forNode(
-        tasks,
-        { track: (task) => task.id },
-        (task) => li(task.title),
+      forNode(tasks, { track: (task) => task.id }, (task) =>
+        li(function* () {
+          return (yield* task()).title;
+        }),
       ),
     ),
   ],

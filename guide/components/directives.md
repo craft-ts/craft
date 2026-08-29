@@ -39,8 +39,9 @@ import {
   Input,
   craftDirective,
 } from '@craft-ts/component';
+import { craftUse } from '@craft-ts/core';
 
-type User = { id?: string; name: string };
+type User = { id?: string; name: string; permissions: readonly string[] };
 
 type RequiresUser = {
   user: Input<User>;
@@ -61,7 +62,7 @@ const InteractivePermissions = craftDirective(
     return {
       ...context,
       permissions: {
-        canEdit: () => user().permissions.includes('edit'),
+        canEdit: () => craftUse(user()).permissions.includes('edit'),
       },
     };
   },
@@ -197,6 +198,9 @@ import {
   div,
   p,
 } from '@craft-ts/component';
+import { craftSignal } from '@craft-ts/core';
+
+const isVisible = craftSignal(true);
 
 const whenDirective = craftDirective(
   'whenDirective',
@@ -223,7 +227,9 @@ const Panel = craftComponent(
 ).pipe(whenDirective);
 
 Panel({
-  when: () => isVisible(),
+  when: function* () {
+    return isVisible();
+  },
 });
 ```
 

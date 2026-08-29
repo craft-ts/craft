@@ -220,6 +220,8 @@ declared the element, and compose in registration order. A hook must call
 import { craftComponent, button } from '@craft-ts/component';
 import { provideCraftDomEventHook } from '@craft-ts/core';
 
+const save = () => console.debug('saved');
+
 export const SavePanel = craftComponent(
   'SavePanel',
   {

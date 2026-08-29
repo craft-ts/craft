@@ -16,18 +16,16 @@ import { CraftHttpClient, craftService, mutation } from '@craft-ts/core';
 export const { TaskWrites } = craftService(
   { name: 'TaskWrites', providedIn: 'function' },
   function* () {
-    const { createTask } =
-      yield *
-      mutation('createTask', {
-        method: (payload: { title: string }) => payload,
-        loader: function* ({ params }) {
-          return yield* CraftHttpClient.post(({ response }) => ({
-            url: '/api/tasks',
-            body: params,
-            success: response<Task>(),
-          }));
-        },
-      });
+    const createTask = yield* mutation('createTask', {
+      method: (payload: { title: string }) => payload,
+      loader: function* ({ params }) {
+        return yield* CraftHttpClient.post(({ response }) => ({
+          url: '/api/tasks',
+          payload: params,
+          success: response<Task>(),
+        }));
+      },
+    });
 
     return { createTask };
   },
@@ -55,34 +53,32 @@ import {
 export const { TaskSync } = craftService(
   { name: 'TaskSync', providedIn: 'function' },
   function* () {
-    const { createTask } = yield* mutation('createTask', {
+    const createTask = yield* mutation('createTask', {
       method: (payload: { title: string }) => payload,
       loader: function* ({ params }) {
         return yield* CraftHttpClient.post(({ response }) => ({
           url: '/api/tasks',
-          body: params,
+          payload: params,
           success: response<Task>(),
         }));
       },
     });
 
-    const { tasksQuery } =
-      yield *
-      query(
-        'tasksQuery',
-        {
-          params: () => ({ done: false }),
-          loader: function* () {
-            return yield* CraftHttpClient.get(({ response }) => ({
-              url: '/api/tasks',
-              success: response<Task[]>(),
-            }));
-          },
+    const tasksQuery = yield* query(
+      'tasksQuery',
+      {
+        params: () => ({ done: false }),
+        loader: function* () {
+          return yield* CraftHttpClient.get(({ response }) => ({
+            url: '/api/tasks',
+            success: response<Task[]>(),
+          }));
         },
-        insertReactOnMutation(createTask, {
-          reload: { onMutationSuccess: true },
-        }),
-      );
+      },
+      insertReactOnMutation(createTask, {
+        reload: { onMutationResolved: true },
+      }),
+    );
 
     return { createTask, tasksQuery };
   },

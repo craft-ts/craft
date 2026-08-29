@@ -34,14 +34,12 @@ export class UserRepositoryService extends Context.Service<
   UserRepository
 >()('app/UserRepository') {}
 
-export function loadUser(userId: string) {
-  return Effect.gen(function* () {
-    const repository = yield* UserRepositoryService;
-    const user = yield* repository.find(userId);
-    if (!user) return yield* new UserNotFound({ userId });
-    return user;
-  });
-}
+export const loadUser = Effect.fnUntraced(function* (userId: string) {
+  const repository = yield* UserRepositoryService;
+  const user = yield* repository.find(userId);
+  if (!user) return yield* new UserNotFound({ userId });
+  return user;
+});
 ```
 
 The program has the shape `Effect<User, UserNotFound, UserRepositoryService>`.
@@ -55,7 +53,7 @@ business exception.
 idiomatic form inside `Effect.gen`:
 
 ```typescript
-if (!user) return yield* new UserNotFound({ userId });
+if (!user) return yield * new UserNotFound({ userId });
 ```
 
 The explicit equivalent is `yield* Effect.fail(new UserNotFound({ userId }))`;
@@ -70,7 +68,9 @@ Use `Context.Service` for the contract and a `Layer` for the implementation:
 import { Context, Effect, Layer } from 'effect';
 
 type AccessPolicy = {
-  readonly decide: (userId: string) => Effect.Effect<AccessDecision, UserNotFound>;
+  readonly decide: (
+    userId: string,
+  ) => Effect.Effect<AccessDecision, UserNotFound>;
 };
 
 export class AccessPolicyService extends Context.Service<
@@ -82,12 +82,10 @@ export const AccessPolicyLive = Layer.sync(AccessPolicyService)(() => ({
   decide: (userId) => findAccessDecision(userId),
 }));
 
-export function checkUserAccess(userId: string) {
-  return Effect.gen(function* () {
-    const policy = yield* AccessPolicyService;
-    return yield* policy.decide(userId);
-  });
-}
+export const checkUserAccess = Effect.fnUntraced(function* (userId: string) {
+  const policy = yield* AccessPolicyService;
+  return yield* policy.decide(userId);
+});
 ```
 
 The component calls `checkUserAccess`; it does not call `AccessPolicyService`
@@ -99,10 +97,8 @@ When a Craft factory genuinely needs a service member, narrow it explicitly with
 ```typescript
 import { effectService } from '@craft-ts/effect';
 
-const { decide } = yield* effectService(
-  AccessPolicyService,
-  ({ decide }) => ({ decide }),
-);
+const { decide } =
+  yield * effectService(AccessPolicyService, ({ decide }) => ({ decide }));
 ```
 
 Prefer exposing a domain operation such as `checkUserAccess` to a component. The
@@ -119,10 +115,12 @@ query resource:
 import { craftComputed } from '@craft-ts/core';
 import { queryEffect } from '@craft-ts/effect';
 
-const accessQuery = yield* queryEffect('accessQuery', {
-  params: () => 'user-ada',
-  loader: ({ params }) => checkUserAccess(params),
-});
+const accessQuery =
+  yield *
+  queryEffect('accessQuery', {
+    params: () => 'user-ada',
+    loader: ({ params }) => checkUserAccess(params),
+  });
 
 const accessLabel = craftComputed('accessLabel', function* () {
   return (yield* accessQuery.value())?.label ?? 'Loading…';
@@ -172,11 +170,10 @@ export class CartPricing extends Context.Service<
 >()('learn-effect/CartPricing') {}
 
 export const CartPricingLive = Layer.sync(CartPricing)(() => ({
-  fetchCatalog: (skus) =>
-    Effect.gen(function* () {
-      yield* Effect.sleep('50 millis');
-      return new Map(skus.map((sku) => [sku, 1_000]));
-    }),
+  fetchCatalog: Effect.fnUntraced(function* (skus: readonly string[]) {
+    yield* Effect.sleep('50 millis');
+    return new Map(skus.map((sku) => [sku, 1_000]));
+  }),
 
   // The shape already declares these synchronous, so the implementations need
   // no ceremony: Effect<A, E, never> is assignable to Effect<A, E, SyncOp>.
@@ -199,26 +196,26 @@ the marker; one that calls nothing marked spells it out with `yield* SyncOp`:
  * `R` is inferred here: `CartPricing` from the tag, `SyncOp` from the members.
  * Composition propagates the declaration — nothing to maintain by hand.
  */
-export function cartTotalLabel(lines: readonly CartLine[]) {
-  return Effect.gen(function* () {
-    const pricing = yield* CartPricing;
+export const cartTotalLabel = Effect.fnUntraced(function* (
+  lines: readonly CartLine[],
+) {
+  const pricing = yield* CartPricing;
 
-    let cents = 0;
-    for (const line of lines) {
-      cents += yield* pricing.lineTotal(line);
-    }
+  let cents = 0;
+  for (const line of lines) {
+    cents += yield* pricing.lineTotal(line);
+  }
 
-    return yield* pricing.formatPrice(cents);
-  });
-}
+  return yield* pricing.formatPrice(cents);
+});
 
 /** No marked call to inherit from, so the marker is spelled out. */
-export function cartWeight(lines: readonly CartLine[]) {
-  return Effect.gen(function* () {
-    yield* SyncOp;
-    return lines.reduce((total, line) => total + line.qty * 250, 0);
-  });
-}
+export const cartWeight = Effect.fnUntraced(function* (
+  lines: readonly CartLine[],
+) {
+  yield* SyncOp;
+  return lines.reduce((total, line) => total + line.qty * 250, 0);
+});
 ```
 
 `CartPricing` in `R` is not a problem: the level in force satisfies it, exactly
@@ -328,7 +325,7 @@ preserving its typed error channel:
 import { Effect } from 'effect';
 import { runEffect } from '@craft-ts/effect';
 
-const name = yield* runEffect(Effect.succeed('Ada'));
+const name = yield * runEffect(Effect.succeed('Ada'));
 ```
 
 Use the adapters in the next chapters for application data. They resolve the

@@ -104,7 +104,7 @@ Use a `craftService` as the dependency handle when a source is shared by
 multiple consumers:
 
 ```ts
-import { craftService, source, state } from '@craft-ts/core';
+import { craftService, on$, source$, state } from '@craft-ts/core';
 
 const { Reset } = craftService(
   { name: 'Reset', providedIn: 'global' },

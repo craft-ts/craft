@@ -105,11 +105,7 @@ directly. `craftService` drives it and the generated service helper returns the
 primitive reference:
 
 ```typescript
-import {
-  craftService,
-  query,
-  type CraftServiceInput,
-} from '@craft-ts/core';
+import { craftService, query, type CraftServiceInput } from '@craft-ts/core';
 
 const { UserQuery } = craftService(
   { name: 'UserQuery', providedIn: 'global' },
@@ -231,9 +227,12 @@ single one. See **[Shaping a service's public API](/guide/app/expose-api)**.
 The callback can be a plain function or a generator function. Use the generator form when startup logic needs to `yield*` crafted dependencies:
 
 ```ts
-import { craftAppConfig } from '@craft-ts/core';
-
-import { Console, craftService, onAppStart } from '@craft-ts/core';
+import {
+  Console,
+  craftAppConfig,
+  craftService,
+  onAppStart,
+} from '@craft-ts/core';
 
 const { AppStartLog } = craftService(
   {
@@ -251,19 +250,15 @@ const { AppStartLog } = craftService(
   },
 );
 
-// register the current service to the AppStartRegistry
-// it is auto-generated when used with the craft-ts ESLint plugin
 declare module '@craft-ts/core' {
   interface CraftAppStartRegistry {
     AppStartLog: typeof AppStartLog;
   }
 }
 
-// inside craftAppConfig
 export const appConfig = craftAppConfig({
-  appStart: {
-    AppStartLog,
-  },
+  routingDeps: [],
+  appStart: { AppStartLog },
 });
 ```
 

@@ -52,6 +52,9 @@ export default [
       'craft-ts/no-render-writes': 'error',
       'craft-ts/require-reactive-template-bindings': 'error',
       'craft-ts/no-craft-use': 'error',
+      'craft-ts/no-craft-component-return-type': 'error',
+      'craft-ts/require-craft-component-for-exported-node-factory': 'error',
+      'craft-ts/no-raw-craft-router-url': 'error',
       'craft-ts/no-type-assertions-in-template': 'error',
       'craft-ts/no-ephemeral-template-form-state': 'error',
       'craft-ts/template-element-name-unique': 'error',
@@ -66,6 +69,7 @@ export default [
       'craft-ts/prefer-craft-http-transport': 'error',
       'craft-ts/no-injection-token': 'error',
       'craft-ts/require-primitive-derived-property': 'error',
+      'craft-ts/no-reused-primitive-method': 'error',
       'craft-ts/no-async-await': 'error',
       'craft-ts/no-throw': 'error',
       'craft-ts/no-imperative-craft-resource-trigger': 'error',
@@ -73,7 +77,7 @@ export default [
       'craft-ts/no-remote-work-in-craft-method': 'error',
       'craft-ts/no-type-assertions-in-resource-loader': 'error',
       'craft-ts/no-imperative-template-action-chain': 'error',
-      'craft-ts/prefer-route-query-params-for-filter-state': 'error',
+      'craft-ts/prefer-route-query-params-for-filter-state': 'warn',
       'craft-ts/no-imperative-storage-in-craft-method': 'error',
       'craft-ts/no-transition-actions': 'error',
       'craft-ts/require-craft-resource-trigger-yield': 'error',
@@ -96,6 +100,37 @@ What each rule does:
 * `craft-ts/no-render-writes`: rejects detectable `set()`, `update()`, and `mutate()` calls in component templates and render bindings while allowing DOM event and `onXxx` output callbacks
 * `craft-ts/require-reactive-template-bindings`: requires signals, named Craft values, and component inputs to be read inside granular binding callbacks instead of during VNode construction; static values remain valid
 * `craft-ts/no-craft-use`: forbids the synchronous `craftUse(...)` escape hatch in Craft TypeScript files; use a generator and delegate the reader with `yield*` instead
+* `craft-ts/require-craft-component-for-exported-node-factory`: requires an exported function that directly returns a Craft node, such as `button(...)`, to be declared with `craftComponent(...)` so Craft directives and composition remain available
+
+Small node factories are valid when they stay private to the file:
+
+```ts
+function filterButton(filter: TodoFilter, label: string) {
+  return button('todoFilterButton', { type: 'button' }, label);
+}
+```
+
+Once the function is exported, use a Craft component so directives and
+composition can be applied at the module boundary:
+
+```ts
+// ❌ craft-ts/require-craft-component-for-exported-node-factory
+export function filterButton(filter: TodoFilter, label: string) {
+  return button('todoFilterButton', { type: 'button' }, label);
+}
+
+// ✅
+export const FilterButton = craftComponent(
+  'FilterButton',
+  {},
+  (filter: Input<TodoFilter>, label: Input<string>) => ({ filter, label }),
+  ({ label }) => button('todoFilterButton', { type: 'button' }, label),
+);
+```
+
+The rule also follows named exports such as `export { filterButton }` and
+checks exported arrow functions.
+
 * `craft-ts/no-type-assertions-in-template`: forbids `as ...` and angle-bracket type assertions in Craft templates; fix the type in the logic factory or expose a correctly typed derived value
 * `craft-ts/no-ephemeral-template-form-state`: forbids `let` / `const` / `var` in the fourth argument of `craftComponent(...)` and `craftDirective(...)` (inline or a same-file identifier). Declare that state in the logic factory with `state()` or `craftComputed()` instead
 * `craft-ts/template-element-name-unique`: requires named HTML helpers to use a static, unique local name within a component; use the object-first helper form for unnamed elements such as `p({ id: 'hint' }, ...)`
@@ -114,6 +149,7 @@ What each rule does:
 * `craft-ts/prefer-craft-http-transport`: forbids direct `fetch()` and `XMLHttpRequest`; use `query()` for reads or `mutation()` for writes with `CraftHttpClient`
 * `craft-ts/prefer-craft-input-output`: keeps component inputs and outputs in the `Input`/`Output` model used by `craftComponent(...)`
 * `craft-ts/require-primitive-derived-property`: requires a `computed` or `craftComputed` that only depends on one primitive in the same component/service to be exposed by that primitive's insertion; simple cases are autofixed
+* `craft-ts/no-reused-primitive-method`: requires an exposed primitive insertion method to have one call site per file; create a context-specific method for each distinct use
 * `craft-ts/no-async-await`: forbids `async` functions, `await`, and `for await...of`; use generator-based Craft primitives, `craftSleep`, and `CraftHttpClient` instead
 * `craft-ts/no-throw`: forbids `throw` in Craft code and offers a Quick Fix that returns `craftException({ _tag: 'UNEXPECTED_ERROR' }, { error: ... })`; keep technical boundaries and tests outside this rule when their contracts require thrown errors
 * `craft-ts/no-imperative-craft-resource-trigger`: forbids `query.call(...)`, `mutation.mutate(...)`, and `asyncProcess.method(...)` in a `craftEffect` dependency graph, including through `craftGen(...)`. The graph-wide counterpart, including `state` / `source$` writes, is [`assertCraftEffectNoImperativeSync`](/guide/testing/architecture#assertcrafteffectnoimperativesync).
@@ -121,7 +157,7 @@ What each rule does:
 * `craft-ts/no-remote-work-in-craft-method`: forbids `CraftHttpClient.*(...)` inside `craftMethod`; define the request directly in the `query` or `mutation` loader so the resource owns its remote lifecycle.
 * `craft-ts/no-type-assertions-in-resource-loader`: forbids `as ...` and angle-bracket assertions inside `query`, `mutation`, and `asyncProcess` loaders; repair the request or adapter typing instead of forcing a `PromiseLike<...>` contract.
 * `craft-ts/no-imperative-template-action-chain`: forbids chaining multiple Craft actions in one template event callback; emit one `source$` event and let the query, mutation, and state react through `on$`.
-* `craft-ts/prefer-route-query-params-for-filter-state`: flags local `state()` declarations whose name is `filter`/`filters`; declare route-visible filters with route-level `queryParams` and feed the query reactively.
+* `craft-ts/prefer-route-query-params-for-filter-state`: warns when a local `state()` is used directly or through a local derivation as `params` for `query`, `queryEffect`, `asyncProcess`, or `asyncProcessEffect`; use `queryParams()` for values that should survive reloads and be represented in the URL. The graph-wide counterpart, which also sees cross-file dependencies, is [`assertResourceParamsPreferQueryParams`](/guide/testing/architecture/resource-params-query-state).
 * `craft-ts/no-imperative-storage-in-craft-method`: forbids direct storage access and imperative location changes in a `craftMethod`; use `insertReactOnMutation(...)` with `optimisticUpdate: () => undefined` to clear the affected query and let its persistence follow the query state.
 * `craft-ts/no-transition-actions`: forbids `query.call(...)`, `mutation.mutate(...)`, and `asyncProcess.method(...)` inside `transitionStep(...)`; validate the event and emit a source, then let the resource react to that source.
 * `craft-ts/require-craft-resource-trigger-yield`: requires those triggers to use `yield*` inside generator functions, while ordinary UI callbacks may keep imperative calls
@@ -146,6 +182,8 @@ What each rule does:
 * `craft-ts/require-cascade-route-di-check`: rejects any `craftRoutes(...)` collection without a same-file `ValidateCascadeRoutesFile + CanRun` proof; its autofix adds the conservative `<never, Router>` context, which should be adjusted when the mount inherits providers
 * `craft-ts/global-exception-registry-match`: keeps `CraftGlobalExceptionRegistry` synchronized with handlers delegating to `globalError()`
 * `craft-ts/prefer-craft-router-link`: requires `CraftRouterLink` for internal `a(..., { href: ... })` navigation; external URLs, fragment links, downloads, `_blank`, and links marked with `data-navigation: 'external'` remain native
+* `craft-ts/no-raw-craft-router-url`: rejects reading `CraftRouter.url`; use the typed route parameter helper generated by `craftRoutes(...)` instead of parsing the URL
+* `craft-ts/no-craft-component-return-type`: rejects explicit annotations on `craftComponent(...)` results so dependency and template inference remains intact
 
 ### Accessibility (`craft-ts/a11y`)
 

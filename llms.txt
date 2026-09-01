@@ -208,3 +208,6 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 
 - [Create a CraftTS project](https://craft-ts.github.io/craft/guide/create-project.md)
 - [Guide](https://craft-ts.github.io/craft/guide.md)
+- [Primitive method usage](https://craft-ts.github.io/craft/guide/testing/architecture/primitive-method-usage.md)
+- [Resource params should prefer URL-backed state](https://craft-ts.github.io/craft/guide/testing/architecture/resource-params-query-state.md)
+- [Unused primitive methods](https://craft-ts.github.io/craft/guide/testing/architecture/unused-primitive-method.md)

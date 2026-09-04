@@ -27,34 +27,39 @@ npm install @craft-ts/core
 npm install -D @craft-ts/dev-tools
 ```
 
-## 1. Add a cascade DI check to every routes file
+## 1. Add a DI check to every routed component
 
-DI is checked next to the routes it covers. Every file containing `craftRoutes(...)` must pair its
-collection with `ValidateCascadeRoutesFile` and `CanRun`; a parent check deliberately does not descend
-through `loadChildren`.
+DI is checked next to the route it covers. Every routed component must pair its
+`RouteCheckedDI` check with `CanRun`; checks do not cross a `loadChildren`
+boundary.
 
 ```ts
 import {
   craftRoutes,
   type CanRun,
-  type ValidateCascadeRoutesFile,
+  type RouteCheckedDI,
 } from '@craft-ts/core';
 
 export const { appRoutes } = craftRoutes('app', [
   /* routes */
 ]);
 
-type _CheckAppDI = ValidateCascadeRoutesFile<
+type _CheckAppDI = RouteCheckedDI<
+  {
+    deps: Record<never, never>;
+    provided: Record<never, never>;
+    publicProperties: Record<never, never>;
+  },
   never,
   CraftRouter,
-  typeof appRoutes
+  'app route'
 >;
 type _CanRunApp = CanRun<_CheckAppDI>;
 ```
 
-`ValidateCascadeRoutesFile` compares:
+`RouteCheckedDI` compares:
 
-* the generated dependencies declared on every route
+* the dependencies declared by the routed component
 * the providers available from the app, parent mount, route and component
 
 If a route depends on a service that is not provided, or if a routed component expects an input that
@@ -93,7 +98,7 @@ The important part is:
 componentDeps: {} as import('./test').GenDeps_TestComponent,
 ```
 
-That line connects the generated `GenDeps_*` type of the component to the same-file cascade check.
+That line connects the component dependency metadata to its per-route DI check.
 
 ### Prefer the route CLI for day-to-day authoring
 
@@ -135,7 +140,6 @@ import { craftAppConfig, provideCraftRouter } from '@craft-ts/core';
 import { appRoutes } from './app.routes';
 
 export const appConfig = craftAppConfig({
-  routingDeps: appRoutes.META_DATA,
   providers: [provideCraftRouter(appRoutes.toRoutes())],
 });
 ```
@@ -143,7 +147,6 @@ export const appConfig = craftAppConfig({
 Notes:
 
 * `appRoutes.toRoutes()` gives the router the real runtime routes.
-* `appRoutes.META_DATA` gives `craftAppConfig(...)` the compile-time route dependency graph.
 * Route params are bound to component inputs by name; there is nothing to opt into.
 * `provideCraftRouter(...)` also takes the craft loading features
   (`withErrorComponent`, `withRouteLoadError`, `withTransitionTimings`, …) in
@@ -161,10 +164,10 @@ Notes:
 
 ### When a routes file gets big
 
-The cascade check has a per-file budget, and past it TypeScript reports
-`TS2589` and silently degrades inference in the whole file. The fix is to split
-into lazy child collections, each with its own check — see
-**[Scaling routes](/guide/routing/scaling)**.
+`RouteCheckedDI` checks one component at a time, so its cost does not grow with
+the number of sibling routes. Split routes with `loadChildren` when code
+splitting or ownership boundaries make that useful — each child still needs
+its own per-route checks. See **[Scaling routes](/guide/routing/scaling)**.
 
 ## 3. Generate dependency metadata
 

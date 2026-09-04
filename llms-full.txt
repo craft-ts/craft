@@ -1804,7 +1804,6 @@ just disappear](/guide/concepts/exceptions). Everything else is on
 import { craftAppConfig } from '@craft-ts/core';
 
 export const appConfig = craftAppConfig({
-  routingDeps: appRoutes.META_DATA,
   providers: [provideRouter(appRoutes.toRoutes(), )],
 });
 ```
@@ -1840,7 +1839,6 @@ immediately while the chain runs behind it:
 import { craftAppConfig, provideCraftRouter, withTransitionTimings } from '@craft-ts/core';
 
 export const appConfig = craftAppConfig({
-  routingDeps: appRoutes.META_DATA,
   providers: [
     provideCraftRouter(
       appRoutes.toRoutes(),
@@ -2410,7 +2408,6 @@ import { provideCraftRootComponent, bootstrapCraft } from '@craft-ts/component';
 import { craftAppConfig, provideAppInitializer } from '@craft-ts/core';
 
 export const appConfig = craftAppConfig({
-  routingDeps: [],
   providers: [
     provideCraftRootComponent(Profile),
     provideLayer(UserRepositoryLive),
@@ -4137,7 +4134,7 @@ The generator presents menus in this order:
 * the design system;
 * typed CSS;
 * a standalone or Nx workspace;
-* integrations for Codex, Cursor, or Cloud Code.
+* integrations for Codex, Cursor, or Claude Code.
 
 The frontend and backend choices are independent. To create a plain browser
 application whose server functions use Effect v4, choose `plain` for the
@@ -4157,7 +4154,8 @@ select or deselect an integration, and `Enter` to confirm. Codex starts
 selected, preserving the default used by scripted creation. Every starter
 receives an `AGENTS.md` project guide describing its selected runtimes and
 features; selected integrations additionally receive their editor-specific
-project instructions and skills.
+project instructions and skills. Claude Code receives `CLAUDE.md` and skills
+under `.claude/skills/`.
 
 ## Agent-assisted creation
 
@@ -4325,6 +4323,9 @@ enforce the same architecture as the generated project guide:
 
 * remote reads and writes stay directly in query or mutation loaders; they
   must not be hidden in `craftMethod`;
+* `query`, `mutation` and `asyncProcess` loaders are generator functions;
+  express asynchronous work with `yield*`, never with `async` or a native
+  `Promise` return;
 * resource loaders infer their result instead of using casts such as
   `as PromiseLike<...>`;
 * route-visible filters, search, sort and pagination use route-level
@@ -5168,6 +5169,52 @@ const users = yield* query(
 
 The typed helper supplies the query context to each member and keeps the
 primitive call free of context plumbing.
+
+## Deep-yieldable collection items
+
+When a component reads several properties from the same `forNode` item, expose
+an explicit deep-yieldable view of the collection. The original collection
+keeps its existing contract, while the named view gives the item callback lazy
+readers for the item's properties:
+
+Before:
+
+```typescript
+forNode(catalog.products, { track: (product) => product.id }, (product) =>
+  article([
+    span(function* () {
+      return (yield* product()).category;
+    }),
+    span(function* () {
+      return (yield* product()).name;
+    }),
+  ]),
+);
+```
+
+After:
+
+```typescript
+import { insertDeepYieldable, state } from '@craft-ts/core';
+
+const catalog = yield* state(
+  'catalog',
+  { products },
+  insertDeepYieldable('products'),
+);
+
+forNode(
+  catalog.deepYieldableProducts,
+  { track: (product) => product.id },
+  (product) => article([span(product.category), span(product.name)]),
+);
+```
+
+`insertDeepYieldable('products')` leaves `catalog.products` unchanged and adds
+`catalog.deepYieldableProducts`. `forNode` applies the item projection only to
+the named deep reader; ordinary lists keep their existing `yield* item()`
+contract. The `craft-ts/prefer-deep-yieldable-for-item` ESLint rule warns when
+the before pattern is repeated in a component template.
 
 ## Deep projections of query values
 
@@ -6203,6 +6250,71 @@ declarative as well: the transition is still described by its event and its
 accepted predicate, rather than by an imperative event handler that manually
 coordinates state.
 
+### Effect services in a guard
+
+In an Effect-enabled frontend, use `transitionGuardEffect` when the decision is
+declared synchronous and needs an Effect service. It is the Effect-aware form
+of `transitionGuard`:
+
+```typescript
+import { Context, Effect, Layer } from 'effect';
+import { SyncOp, transitionGuardEffect } from '@craft-ts/effect';
+
+type CheckoutPolicyShape = {
+  readonly canSubmit: (total: number) => Effect.Effect<boolean, never, SyncOp>;
+};
+
+class CheckoutPolicy extends Context.Service<
+  CheckoutPolicy,
+  CheckoutPolicyShape
+>()('app/CheckoutPolicy') {}
+
+const CheckoutPolicyLive = Layer.succeed(CheckoutPolicy, {
+  canSubmit: (total) =>
+    Effect.gen(function* () {
+      yield* SyncOp;
+      return total > 0;
+    }),
+});
+
+editing: transitionStep(function* () {
+  yield* on$(context.submit$, () =>
+    transit().pipe(
+      transitionGuardEffect(() =>
+        Effect.gen(function* () {
+          yield* SyncOp;
+          const policy = yield* CheckoutPolicy;
+          return yield* policy.canSubmit(context.total());
+        }),
+      ),
+    ),
+  );
+});
+```
+
+`transitionGuardEffect` runs through `syncEffect`, so `SyncOp` is required at
+compile time and an Effect that suspends is rejected. The Effect service used by
+the guard is also carried into the machine's dependency graph. Provide its
+implementation with `provideLayer(...)` at the application, component or
+route scope:
+
+```typescript
+const routes = craftRoutes('checkout', [
+  {
+    path: '',
+    ...loadCraftComponent(
+      () => import('./checkout').then(({ default: component }) => component),
+      [provideLayer(CheckoutPolicyLive)] as const,
+    ),
+  },
+]);
+```
+
+For an asynchronous policy check, do not put the Effect in a guard. Use
+`asyncProcessEffect`, `queryEffect` or `mutationEffect`, then model the
+`pending`, success and failure outcomes as explicit machine steps. A transition
+guard must answer synchronously; an asynchronous decision is a workflow state.
+
 ## Composition and extensions
 
 The final machine insertion has the same role as an insertion on `state`,
@@ -6260,6 +6372,7 @@ primitives in its context when the workflow needs them.
 | `transit()`              | Creates an attempt to enter the surrounding step       |
 | `initStateMachine`       | Declares the attempt that establishes the initial step |
 | `transitionGuard`        | Accepts or rejects a transition attempt                |
+| `transitionGuardEffect`  | Effect-aware guard for declared-synchronous Effects     |
 | `currentStep`            | Reactive union of step names                           |
 | `currentStepWithContext` | Reactive discriminated union of step contexts          |
 | `insertStateMachinePipe` | Composes machine insertions                            |
@@ -6309,6 +6422,44 @@ const { userQuery } =
     },
   });
 ```
+
+## Uploading a raw binary body
+
+`CraftHttpClient` is the JSON transport: it serializes `payload` as JSON. For
+an upload whose body is already a `Blob`, `ArrayBuffer`, `FormData`, or another
+`BodyInit`, use `CraftBinaryHttpClient.put(...)` instead:
+
+```typescript
+import {
+  CraftBinaryHttpClient,
+  mutation,
+  response,
+} from '@craft-ts/core';
+
+type UploadResult = { id: string };
+
+const { uploadFile } =
+  yield *
+  mutation('uploadFile', {
+    method: (file: Blob) => file,
+    loader: function* ({ params: file }) {
+      return yield* CraftBinaryHttpClient.put(({ response }) => ({
+        url: '/api/files',
+        payload: file,
+        success: response<UploadResult>(),
+      }));
+    },
+  });
+```
+
+The request remains owned by the mutation: loading state, cancellation,
+response decoding, typed exceptions, tracing, and dependency tracking work the
+same way as with `CraftHttpClient`. `CraftBinaryHttpClient` currently exposes
+`PUT` for raw bodies; use `CraftHttpClient.post(...)`, `.put(...)`, or
+`.patch(...)` when the server expects a JSON payload.
+
+Do not replace this with `fetch(...)` in the loader. Direct transport loses the
+Craft request lifecycle and is rejected by `prefer-craft-http-transport`.
 
 `params` is reactive: when what it returns changes, the loader runs again. The
 result carries the full async state:
@@ -6833,7 +6984,8 @@ deleteUser.select('5')?.value();
 
 ::: details Advanced — yielding dependencies
 `method`, `loader` and the insertion can all be generators, and `providers`
-scopes dependencies to this mutation alone:
+scopes dependencies to this mutation alone. A loader must not be `async` or
+return a native `Promise`; use `yield*` for asynchronous Craft operations:
 
 ```typescript
 const { saveUser } =
@@ -7324,8 +7476,9 @@ debouncedById.select('2')?.value(); // data2
 :::
 
 ::: details Advanced — yielding dependencies
-`method` and `loader` can be generators, and `providers` scopes dependencies to
-this process alone:
+`method` and `loader` are generators, and `providers` scopes dependencies to
+this process alone. A loader must not be `async` or return a native `Promise`:
+use `yield*` for asynchronous Craft operations:
 
 ```typescript
 const { loadProfile } =
@@ -10103,7 +10256,6 @@ declare module '@craft-ts/core' {
 }
 
 export const appConfig = craftAppConfig({
-  routingDeps: [],
   appStart: { AppStartLog },
 });
 ```
@@ -10661,7 +10813,6 @@ declare module '@craft-ts/core' {
 }
 
 export const appConfig = craftAppConfig({
-  routingDeps: [],
   appStart: { AppStartLog },
 });
 ```
@@ -11744,34 +11895,39 @@ npm install @craft-ts/core
 npm install -D @craft-ts/dev-tools
 ```
 
-## 1. Add a cascade DI check to every routes file
+## 1. Add a DI check to every routed component
 
-DI is checked next to the routes it covers. Every file containing `craftRoutes(...)` must pair its
-collection with `ValidateCascadeRoutesFile` and `CanRun`; a parent check deliberately does not descend
-through `loadChildren`.
+DI is checked next to the route it covers. Every routed component must pair its
+`RouteCheckedDI` check with `CanRun`; checks do not cross a `loadChildren`
+boundary.
 
 ```ts
 import {
   craftRoutes,
   type CanRun,
-  type ValidateCascadeRoutesFile,
+  type RouteCheckedDI,
 } from '@craft-ts/core';
 
 export const { appRoutes } = craftRoutes('app', [
   /* routes */
 ]);
 
-type _CheckAppDI = ValidateCascadeRoutesFile<
+type _CheckAppDI = RouteCheckedDI<
+  {
+    deps: Record<never, never>;
+    provided: Record<never, never>;
+    publicProperties: Record<never, never>;
+  },
   never,
   CraftRouter,
-  typeof appRoutes
+  'app route'
 >;
 type _CanRunApp = CanRun<_CheckAppDI>;
 ```
 
-`ValidateCascadeRoutesFile` compares:
+`RouteCheckedDI` compares:
 
-* the generated dependencies declared on every route
+* the dependencies declared by the routed component
 * the providers available from the app, parent mount, route and component
 
 If a route depends on a service that is not provided, or if a routed component expects an input that
@@ -11810,7 +11966,7 @@ The important part is:
 componentDeps: {} as import('./test').GenDeps_TestComponent,
 ```
 
-That line connects the generated `GenDeps_*` type of the component to the same-file cascade check.
+That line connects the component dependency metadata to its per-route DI check.
 
 ### Prefer the route CLI for day-to-day authoring
 
@@ -11852,7 +12008,6 @@ import { craftAppConfig, provideCraftRouter } from '@craft-ts/core';
 import { appRoutes } from './app.routes';
 
 export const appConfig = craftAppConfig({
-  routingDeps: appRoutes.META_DATA,
   providers: [provideCraftRouter(appRoutes.toRoutes())],
 });
 ```
@@ -11860,7 +12015,6 @@ export const appConfig = craftAppConfig({
 Notes:
 
 * `appRoutes.toRoutes()` gives the router the real runtime routes.
-* `appRoutes.META_DATA` gives `craftAppConfig(...)` the compile-time route dependency graph.
 * Route params are bound to component inputs by name; there is nothing to opt into.
 * `provideCraftRouter(...)` also takes the craft loading features
   (`withErrorComponent`, `withRouteLoadError`, `withTransitionTimings`, …) in
@@ -11878,10 +12032,10 @@ Notes:
 
 ### When a routes file gets big
 
-The cascade check has a per-file budget, and past it TypeScript reports
-`TS2589` and silently degrades inference in the whole file. The fix is to split
-into lazy child collections, each with its own check — see
-**[Scaling routes](/guide/routing/scaling)**.
+`RouteCheckedDI` checks one component at a time, so its cost does not grow with
+the number of sibling routes. Split routes with `loadChildren` when code
+splitting or ownership boundaries make that useful — each child still needs
+its own per-route checks. See **[Scaling routes](/guide/routing/scaling)**.
 
 ## 3. Generate dependency metadata
 
@@ -12258,6 +12412,7 @@ export default [
       'craft-ts/no-craft-computed-side-effects': 'error',
       'craft-ts/require-craft-method-for-yieldable-callback': 'error',
       'craft-ts/prefer-direct-yieldable-callback': 'error',
+      'craft-ts/prefer-deep-yieldable-for-item': 'warn',
       'craft-ts/require-yieldable-reactive-read': 'error',
       'craft-ts/require-yieldable-template-method': 'error',
       'craft-ts/require-yieldable-insertion-write': 'error',
@@ -12284,7 +12439,6 @@ export default [
       'craft-ts/require-pending-component-di-check': 'error',
       'craft-ts/require-child-route-mount-check': 'error',
       'craft-ts/require-lazy-load-with-retry': 'error',
-      'craft-ts/require-cascade-route-di-check': 'error',
       'craft-ts/global-exception-registry-match': 'error',
     },
   },
@@ -12343,16 +12497,17 @@ checks exported arrow functions.
 * `craft-ts/max-craft-declarations-per-file`: reports the third and subsequent `craftComponent(...)`, `craftService(...)`, or `craftDirective(...)` declaration of the same kind in a file; keep Craft entities split across focused files
 * `craft-ts/no-injection-token`: forbids authored `InjectionToken` contracts; declare them with `craftService({ name, providedIn: 'abstract' }, abstract<Contract>())`
 * `craft-ts/prefer-craft-http-client`: forbids direct transport usage in favor of `CraftHttpClient`
-* `craft-ts/prefer-craft-http-transport`: forbids direct `fetch()` and `XMLHttpRequest`; use `query()` for reads or `mutation()` for writes with `CraftHttpClient`
+* `craft-ts/prefer-craft-http-transport`: forbids direct `fetch()` and `XMLHttpRequest` because they bypass typed responses and exceptions, tracing, cancellation, and the architecture graph; use `query()` for reads or `mutation()` for writes with `CraftHttpClient`, or `CraftBinaryHttpClient` for raw binary bodies
 * `craft-ts/prefer-craft-input-output`: keeps component inputs and outputs in the `Input`/`Output` model used by `craftComponent(...)`
 * `craft-ts/require-primitive-derived-property`: requires a `computed` or `craftComputed` that only depends on one primitive in the same component/service to be exposed by that primitive's insertion; simple cases are autofixed
 * `craft-ts/no-reused-primitive-method`: requires an exposed primitive insertion method to have one call site per file; create a context-specific method for each distinct use
-* `craft-ts/no-async-await`: forbids `async` functions, `await`, and `for await...of`; use generator-based Craft primitives, `craftSleep`, and `CraftHttpClient` instead
-* `craft-ts/no-throw`: forbids `throw` in Craft code and offers a Quick Fix that returns `craftException({ _tag: 'UNEXPECTED_ERROR' }, { error: ... })`; keep technical boundaries and tests outside this rule when their contracts require thrown errors
+* `craft-ts/no-async-await`: forbids `async` functions, `await`, and `for await...of` because native Promise suspension hides Craft dependencies and can lose cancellation or exception tracking; use generator-based Craft primitives, `craftSleep`, and `CraftHttpClient` instead
+* `craft-ts/require-generator-resource-loader`: requires `query`, `mutation`, and `asyncProcess` loaders to be generator functions because a plain or async return hides remote dependencies from the resource lifecycle; use `yield*` to keep each suspension tracked
+* `craft-ts/no-throw`: forbids `throw` in Craft code because it bypasses the typed resource exception channel, and offers a Quick Fix that returns `craftException({ _tag: 'UNEXPECTED_ERROR' }, { error: ... })`; keep technical boundaries and tests outside this rule when their contracts require thrown errors
 * `craft-ts/no-imperative-craft-resource-trigger`: forbids `query.call(...)`, `mutation.mutate(...)`, and `asyncProcess.method(...)` in a `craftEffect` dependency graph, including through `craftGen(...)`. The graph-wide counterpart, including `state` / `source$` writes, is [`assertCraftEffectNoImperativeSync`](/guide/testing/architecture#assertcrafteffectnoimperativesync).
 * `craft-ts/no-imperative-craft-method-actions`: forbids composing multiple imperative actions in a `craftMethod`; emit a `source$` event and let the affected query react with `insertReactOnMutation(...)` instead. A handler such as `event.preventDefault()` followed by one `mutation.mutate(...)` remains valid.
-* `craft-ts/no-remote-work-in-craft-method`: forbids `CraftHttpClient.*(...)` inside `craftMethod`; define the request directly in the `query` or `mutation` loader so the resource owns its remote lifecycle.
-* `craft-ts/no-type-assertions-in-resource-loader`: forbids `as ...` and angle-bracket assertions inside `query`, `mutation`, and `asyncProcess` loaders; repair the request or adapter typing instead of forcing a `PromiseLike<...>` contract.
+* `craft-ts/no-remote-work-in-craft-method`: forbids `CraftHttpClient.*(...)` inside `craftMethod` because that action boundary does not own request loading, cancellation, exceptions, or graph dependencies; define the request directly in the `query` or `mutation` loader.
+* `craft-ts/no-type-assertions-in-resource-loader`: forbids `as ...` and angle-bracket assertions inside `query`, `mutation`, and `asyncProcess` loaders because assertions only silence TypeScript and can hide Promise, response, or transport mismatches; repair the request or adapter typing instead.
 * `craft-ts/no-imperative-template-action-chain`: forbids chaining multiple Craft actions in one template event callback; emit one `source$` event and let the query, mutation, and state react through `on$`.
 * `craft-ts/prefer-route-query-params-for-filter-state`: warns when a local `state()` is used directly or through a local derivation as `params` for `query`, `queryEffect`, `asyncProcess`, or `asyncProcessEffect`; use `queryParams()` for values that should survive reloads and be represented in the URL. The graph-wide counterpart, which also sees cross-file dependencies, is [`assertResourceParamsPreferQueryParams`](/guide/testing/architecture/resource-params-query-state).
 * `craft-ts/no-imperative-storage-in-craft-method`: forbids direct storage access and imperative location changes in a `craftMethod`; use `insertReactOnMutation(...)` with `optimisticUpdate: () => undefined` to clear the affected query and let its persistence follow the query state.
@@ -12360,6 +12515,7 @@ checks exported arrow functions.
 * `craft-ts/require-craft-resource-trigger-yield`: requires those triggers to use `yield*` inside generator functions, while ordinary UI callbacks may keep imperative calls
 * `craft-ts/require-craft-method-for-yieldable-callback`: requires callbacks returned by a `craftComponent` factory to wrap yieldable Craft method calls in `craftMethod(...)`
 * `craft-ts/prefer-direct-yieldable-callback`: replaces a template generator or generator method that only delegates `yield* callback()` with the callback reference itself (`callback` or `object.method`)
+* `craft-ts/prefer-deep-yieldable-for-item`: warns when a `forNode` item is read repeatedly through `yield* item()` property accesses; expose a named `insertDeepYieldable('property')` collection and use direct item property readers
 * `craft-ts/require-yieldable-reactive-read`: requires Craft reactive readers to be delegated with `yield*` inside generator functions; a function that reads a Craft reader must itself be a generator
 * `craft-ts/require-yieldable-template-method`: requires yieldable Craft method calls in a `craftComponent` template to be delegated with `yield*`, or passed as a reference (`click: counter.increment`)
 * `craft-ts/require-yieldable-insertion-write`: requires `set(...)`, `patch(...)`, and `update(...)` to be delegated with `yield*` when they are used inside a generator method
@@ -12372,15 +12528,69 @@ checks exported arrow functions.
 * `craft-ts/no-free-has`: forbids a hand-written `:has()` in styles. It reaches across the component boundary, so what a component looks like depends on markup it does not own — a state the matrix cannot enumerate. Use the `descendant` axis, which is a closed set and carries its own test driver
 * `craft-ts/style-file-boundary`: restricts a `*.style.ts` to style-vocabulary imports. The [build plugin](/guide/style/setup) imports the file in Node to read what it registered, so an application import would run application code at build time
 * `craft-ts/craft-css-token-registry`: reports a custom property registered with `@property` by two different components. A custom property may have only one owner; two silently fight over its syntax and initial value
-* `craft-ts/require-effect-adapters`: requires the Effect-aware adapters — `queryEffect`, `mutationEffect`, `asyncProcessEffect` — instead of the plain primitives in an Effect application. See [Choose the right adapter](/guide/advanced/effect#choose-the-right-adapter)
+* `craft-ts/require-effect-adapters`: requires the Effect-aware adapters — `queryEffect`, `mutationEffect`, `asyncProcessEffect`, and `transitionGuardEffect` — instead of the plain primitives and `transitionGuard` in an Effect application. See [Choose the right adapter](/guide/advanced/effect#choose-the-right-adapter)
 * `craft-ts/craft-signal-source-name-match`: requires `signalSource(name, ...)` to take a string literal matching the variable, class property or object property it is assigned to, so the name in a trace is the name in the source. A computed name defeats the [architecture graph](/guide/testing/architecture), which reads these names statically
 * `craft-ts/require-child-route-mount-check`: adds the missing `assertChildRouteMounts(...)` call + import (Quick Fix) for any `craftRoutes(...)` collection that mounts lazy `loadChildren`, so a `.withParent`-pinned child mounted under the wrong path is a compile error
 * `craft-ts/require-lazy-load-with-retry`: wraps route `loadComponent` and `loadChildren` imports with the generated `withRetry(...)` loader helper while preserving a statically analyzable import specifier
-* `craft-ts/require-cascade-route-di-check`: rejects any `craftRoutes(...)` collection without a same-file `ValidateCascadeRoutesFile + CanRun` proof; its autofix adds the conservative `<never, Router>` context, which should be adjusted when the mount inherits providers
 * `craft-ts/global-exception-registry-match`: keeps `CraftGlobalExceptionRegistry` synchronized with handlers delegating to `globalError()`
 * `craft-ts/prefer-craft-router-link`: requires `CraftRouterLink` for internal `a(..., { href: ... })` navigation; external URLs, fragment links, downloads, `_blank`, and links marked with `data-navigation: 'external'` remain native
 * `craft-ts/no-raw-craft-router-url`: rejects reading `CraftRouter.url`; use the typed route parameter helper generated by `craftRoutes(...)` instead of parsing the URL
 * `craft-ts/no-craft-component-return-type`: rejects explicit annotations on `craftComponent(...)` results so dependency and template inference remains intact
+
+## Promise and transport boundaries
+
+These rules protect the same boundary: asynchronous work must remain visible to
+the Craft resource that owns it. A native `Promise` may eventually resolve, but
+it does not describe which Craft dependencies were read, where suspension
+occurred, or which resource should be cancelled and receive the exception.
+
+### Keep resource loaders generator-based
+
+```ts
+// Incorrect: the native Promise hides the request from the Craft lifecycle.
+query('usersQuery', {
+  loader: async () => (await fetch('/api/users')).json(),
+});
+
+// Correct: the resource owns a tracked, yieldable request.
+query('usersQuery', {
+  loader: function* () {
+    return yield* CraftHttpClient.get(({ response }) => ({
+      url: '/api/users',
+      success: response<User[]>(),
+    }));
+  },
+});
+```
+
+`no-async-await` rejects `async`, `await`, and `for await...of` in Craft code.
+`require-generator-resource-loader` additionally checks that `query`,
+`mutation`, and `asyncProcess` loaders are generators. Use `yield*` for Craft
+operations so every suspension stays tracked.
+
+### Keep transport and types honest
+
+```ts
+// Incorrect: direct fetch bypasses Craft response/error tracking.
+const result = await fetch('/api/users');
+
+// Correct: use the Craft client in the owning resource loader.
+return yield* CraftHttpClient.get(({ response }) => ({
+  url: '/api/users',
+  success: response<User>(),
+}));
+```
+
+For a raw binary body, use `CraftBinaryHttpClient.put(...)`; do not use a type
+assertion to force `CraftHttpClient` to accept a `Blob`. An assertion only
+silences TypeScript — it does not change the runtime value or transport.
+That is why `prefer-craft-http-transport` and
+`no-type-assertions-in-resource-loader` report these patterns.
+
+Expected failures should use `craftException(...)` so they remain typed and
+available through the resource's exception state. `no-throw` keeps technical
+throws limited to explicit adapter boundaries, where they can be translated
+into the Craft exception channel.
 
 ### Accessibility (`craft-ts/a11y`)
 
@@ -12575,6 +12785,46 @@ The rule leaves callbacks with parameters, extra statements, or additional
 computation unchanged. In those cases the generator contains behavior that
 cannot be represented by passing the callback reference alone.
 
+### Prefer deep-yieldable `forNode` items
+
+`prefer-deep-yieldable-for-item` detects when a component reads several
+properties from the same `forNode` item through repeated `yield* item()` calls.
+Keep the original collection available, and expose a named deep-yieldable
+view for the component:
+
+```ts
+import { insertDeepYieldable, state } from '@craft-ts/core';
+
+// Before: every property read yields the whole item again.
+forNode(catalog.products, { track: (product) => product.id }, (product) =>
+  article([
+    span(function* () {
+      return (yield* product()).category;
+    }),
+    span(function* () {
+      return (yield* product()).name;
+    }),
+  ]),
+);
+
+// After: the named view keeps each property read lazy and reactive.
+const catalog = yield* state(
+  'catalog',
+  { products },
+  insertDeepYieldable('products'),
+);
+
+forNode(
+  catalog.deepYieldableProducts,
+  { track: (product) => product.id },
+  (product) => article([span(product.category), span(product.name)]),
+);
+```
+
+The rule is diagnostic-only because choosing the insertion belongs to the
+primitive that owns the collection. `insertDeepYieldable('products')` leaves
+`catalog.products` unchanged and adds `catalog.deepYieldableProducts`.
+
 ### Yield insertion writes from generator methods
 
 `require-yieldable-insertion-write` requires `set(...)`, `patch(...)`, and
@@ -12598,7 +12848,6 @@ maintain by hand:
 
 | Rule                                         | Generates                                                     |
 | -------------------------------------------- | ------------------------------------------------------------- |
-| `require-cascade-route-di-check`             | the same-file DI proof for a `craftRoutes(...)` collection    |
 | `require-assert-exhaustive-route-exceptions` | the collection-level exhaustiveness assert                    |
 | `require-child-route-mount-check`            | the `assertChildRouteMounts(...)` call and its import         |
 | `require-lazy-load-with-retry`               | the `withRetry(...)` wrapper on lazy route imports            |
@@ -12760,8 +13009,8 @@ import { DemoUserIdParams } from './demo.routes';
 const userId = yield* DemoUserIdParams(); // Signal<string>
 ```
 
-The older synchronous `injectDemoUserIdParams()` helper remains only as a migration alias. New code
-must use `DemoUserIdParams()` so URL parameters participate in Craft's normal yieldable DI graph.
+Path parameters are exposed only through the service-shaped `DemoUserIdParams()` helper, so URL
+parameters participate in Craft's normal yieldable DI graph.
 
 ## Pairing with an abstract service
 
@@ -12789,10 +13038,10 @@ const { User, provideUser } = craftService(
 const user = yield* User(); // User
 ```
 
-## Dependency tracking & cascade DI
+## Dependency tracking & route DI
 
 Everything yielded inside a `withProviders` factory is tracked at the type level and folded into the
-route's dependency graph used by [`ValidateCascadeRoutesFile`](/guide/routing/setup):
+route's dependency graph used by [`RouteCheckedDI`](/guide/routing/setup):
 
 * The route's **auto-provisioned** tokens (guarded data, params, query params, data) are recognized
   as provided by the route itself — yielding them is always valid.
@@ -12831,7 +13080,7 @@ the route's `providers` array.
 
 ## See Also
 
-* [Setup](/guide/routing/setup) — the app-wide cascade DI check
+* [Setup](/guide/routing/setup) — per-route DI checks
 * [craftService](/guide/app/craft-service) — `abstract` scope, `provideX`, requirements
 
 ---
@@ -13007,7 +13256,7 @@ never re-runs `resolve` (no new pending). Opt out per route with `reactiveGuards
 `craftGen(factory)` returns a factory you invoke and delegate to with `yield*`:
 
 * The guard's **dependency yields** (`CraftAuth`, `CraftRouter`, …) flow up to the
-  route exactly as in a plain generator guard, so [cascade DI tracking](/guide/routing/setup)
+  route exactly as in a plain generator guard, so [route DI tracking](/guide/routing/setup)
   still sees them.
 * As soon as a composed guard produces a `craftException`, the enclosing generator
   **short-circuits**: `yield* roleGuard(...)` interrupts the whole `function*`, and the exception is
@@ -13046,7 +13295,7 @@ and typed per code.
 A handler may be a **generator** that `yield*`s craft services before building the redirect — for
 example to read the login URL from a config service. Those yields are tracked exactly like the
 guards' own dependencies, so a service used only at redirect-time still flows into the route's
-[cascade DI](/guide/routing/setup) (yield an unprovided service and it surfaces as a
+[route DI](/guide/routing/setup) (yield an unprovided service and it surfaces as a
 missing-provider error on the route):
 
 ```ts
@@ -13284,7 +13533,7 @@ for. Guards stop at the first failure and hand off to a handler.
 ## See Also
 
 * [Route Providers](/guide/routing/route-providers) — consume guarded data in route providers
-* [Setup](/guide/routing/setup) — the app-wide cascade DI check
+* [Setup](/guide/routing/setup) — per-route DI checks
 * [craftService](/guide/app/craft-service) — services yielded inside guards
 
 ---
@@ -13508,7 +13757,8 @@ Here `payload` is inferred from `craftException({ _tag: 'RATE_LIMITED' }, { retr
 ```
 
 The descriptor is checked independently with the O(1)
-`RouteExceptionComponentCheckedDI`; it is not added to `ValidateCascadeRoutesFile`.
+`RouteExceptionComponentCheckedDI`; it is not part of the routed component's
+`RouteCheckedDI` proof.
 [Architecture tests](/guide/testing/architecture#assertroutediproofs) fail if
 that proof is missing or not armed with `CanRun`.
 
@@ -13529,7 +13779,7 @@ guards and resolvers.
 ## Exhaustiveness
 
 The union is only resolvable once the whole collection is inferred, so exhaustiveness is asserted
-**after** `craftRoutes` (mirroring the cascade DI check) rather than inline on each route:
+**after** `craftRoutes` rather than inline on each route:
 
 ```ts
 export const { demoRoutes } = craftRoutes('demo', [
@@ -13785,7 +14035,8 @@ export const { photosRoutes, injectPhotosPhotoIdViewTransition } = craftRoutes(
 ).withParent<ParentRoutes<'photos'>>();
 ```
 
-This collection is a lazy child mounted via `loadChildren` (kept out of the parent's cascade DI budget).
+This collection is a lazy child mounted via `loadChildren`; its routed
+components carry their own per-route DI checks.
 Because its components depend on the `:photoId` param **and** the declared view-transition payload, it is
 only correct under the `photos` route — so it is **pinned** to that mount with
 `.withParent<ParentRoutes<'photos'>>()`, and the parent enforces it with `assertChildRouteMounts(...)`.
@@ -13803,12 +14054,14 @@ a({}, 'Photo').pipe(
 );
 ```
 
-The skeleton (and/or the target) reads it through the **route-generated typed helper** and wears the
-matching `view-transition-name`:
+The skeleton receives `photoId` as a route-bound input and reads the payload through the
+**route-generated typed helper**:
 
 ```ts
+import { input } from '@angular/core';
+
 export default class PhotoSkeleton {
-  protected readonly photoId = injectPhotosPhotoIdParams();
+  protected readonly photoId = input.required<string>();
   // Signal<{ name: string; image: string | null } | null> — typed by the route.
   private readonly viewTransition = injectPhotosPhotoIdViewTransition();
   protected readonly image = computed(
@@ -13829,23 +14082,13 @@ skip the blank phase for **every** route, not just opted-in ones.
 ### Verifying the skeleton's DI
 
 The pending skeleton is a real component that injects dependencies (route params, the typed payload,
-monitoring, …), but the aggregated cascade (`ValidateCascadeRoutesFile`) only sees the **target**
-component — it never descends into `pendingComponent`. So the skeleton is verified **directly**, with
-the per-component, O(1) [`RouteCheckedDI`](/guide/routing/setup#escape-hatch-the-o-1-per-route-check) escape
-hatch (not a second aggregated pass — that would add to the instantiation-count budget the cascade is
-already spending):
+monitoring, …). It is verified independently with the per-component, O(1)
+[`RouteCheckedDI`](/guide/routing/setup) check:
 
 ```ts
-type _CheckTargetDI = ValidateCascadeRoutesFile<
-  AppNames,
-  AppValues,
-  typeof photosRoutes
->;
-type _CanRunTarget = CanRun<_CheckTargetDI>;
-
 // The skeleton injects the `:photoId` param and the typed payload — both
 // auto-provided by the route, so list those service names as available; the
-// parent context (`AppValues` here) is the same one the cascade check uses.
+// parent context (`AppValues` here) is the same one the route uses.
 type _CheckPendingDI = RouteCheckedDI<
   import('./photo-skeleton').GenDeps_PhotoSkeletonComponent,
   'PhotosPhotoIdParams' | 'PhotosPhotoIdViewTransition',
@@ -13858,9 +14101,8 @@ type _CanRunPending = CanRun<_CheckPendingDI>;
 A service the skeleton injects but nothing provides becomes a TypeScript error on `_CanRunPending`
 (`The X service is not provided in pending component: photos/:photoId`). The
 `craft-ts/require-pending-component-di-check` ESLint rule **generates and refreshes this whole block**
-from `pendingComponent` on `--fix` — resolving the skeleton's `GenDeps_*`, deriving the auto-provided
-service names from the route's path params + payload, and borrowing the parent context from the
-collection's own `ValidateCascadeRoutesFile` — so you never hand-write or stale it.
+from `pendingComponent` on `--fix` — resolving the skeleton's dependency metadata and deriving the
+auto-provided service names from the route's path params + payload.
 
 [Architecture tests](/guide/testing/architecture#assertroutediproofs) (`assertRouteDiProofs`) fail
 if that pending proof is missing or not armed with `CanRun`.
@@ -14291,159 +14533,19 @@ url: https://craft-ts.github.io/craft/guide/routing/scaling.md
 ---
 # Scaling routes
 
-`ValidateCascadeRoutesFile` walks every route in a collection **at the type
-level**, so a single routes file has a finite budget before TypeScript's
-instantiation ceiling. This page is about what happens at that ceiling, and how
-to organise routes so you never reach it.
+`RouteCheckedDI` validates one routed component at a time. Its cost does not
+grow with the number of sibling routes, so a large route file keeps the same
+DI safety as a small one.
 
-::: tip You don't need this yet
-If your app has one routes file with a handful of routes,
-[Setup](/guide/routing/setup) is enough. Come back when a file grows past a few
-dozen routes, or when you see `TS2589`.
+::: tip Keep route ownership clear
+Use `loadChildren` when a feature deserves its own lazy boundary or team
+ownership. Every route file remains independently checked.
 :::
 
-## Large route files — the cascade DI depth limit
+## Large route files
 
-`ValidateCascadeRoutesFile<…, typeof appRoutes>` walks **every** route in the collection at the type
-level. TypeScript caps how deeply it will instantiate a recursive type, so a single collection has a
-**finite route budget**. Past it (in practice a few dozen routes, sooner if routes carry guards /
-`resolve` / `handleExceptions`), the check overflows:
-
-```
-TS2589: Type instantiation is excessively deep and possibly infinite.
-  app.routes.ts → ValidateCascadeRoutesFile<never, CraftRouter, typeof appRoutes>
-```
-
-::: warning Watch out for the knock-on collapse
-A `TS2589` makes TypeScript abandon that type and fall back to `any`, which **poisons inference of
-neighbouring `const`s in the same file**. The visible symptoms are misleading: `craftRoute(...)` calls
-collapse to `RouteWithProvidersBuilder<{ path }>`, the `craftRoutes(...)` helpers go missing
-(`Property 'injectXxx' does not exist`), and `craftRouterLink` targets type as `never`. The root
-cause is the overflowing check, not those routes.
-:::
-
-**Solution — split into a lazy child collection, and keep its own DI check.** The cascade check
-reads only the *current* collection's metadata; it does **not** descend into `loadChildren`. So move
-the extra routes into their own `craftRoutes(...)` file and reference it via `loadChildren`. That
-keeps the parent file under budget — **but a child collection ships with *no* DI checking unless you
-add one**, so re-declare the check in the child file to keep DI sound. [Architecture
-tests](/guide/testing/architecture#assertroutediproofs) fail if that child proof is missing.
-
-```ts
-// feature.routes.ts — its own lazy collection
-import {
-  craftRoutes,
-  craftRoute,
-  type CanRun,
-  type ValidateCascadeRoutesFile,
-} from '@craft-ts/core';
-import type { CraftRouter } from '@craft-ts/core';
-
-export const { featureRoutes } = craftRoutes('feature', [
-  craftRoute('', {
-    componentDeps: {} as import('./feature').GenDeps_Feature,
-    loadComponent: ({ withRetry }) => withRetry(import('./feature')),
-    // guards / resolve / handleExceptions …
-  }),
-]);
-
-// DI safety for THIS collection — `app.routes.ts` does NOT cover loadChildren.
-// Same parent context the parent route runs under: app-level `CraftRouter` by value,
-// no extra named providers.
-type _CheckFeatureDI = ValidateCascadeRoutesFile<
-  never,
-  CraftRouter,
-  typeof featureRoutes
->;
-type _CanRunFeature = CanRun<_CheckFeatureDI>;
-```
-
-```ts
-// app.routes.ts — a cheap loadChildren entry, outside the parent's budget
-{
-  path: 'feature',
-  loadChildren: ({ withRetry }) =>
-    withRetry(import('./feature.routes')).then((m) => m.featureRoutes),
-},
-```
-
-A missing provider in the child collection now surfaces as a TypeScript error **in the child file**,
-exactly like the main one:
-
-```
-The SomeService service is not provided in path: ""
-```
-
-If a single feature is itself large, repeat the split, or break one big collection into several
-`craftRoutes(...)` collections each with its own check — every check then validates a smaller slice
-and stays under the depth limit. The takeaway: **DI is always verified — never drop the check; move
-it next to the routes it covers.**
-
-### Why the budget exists (the mechanism)
-
-`ValidateCascadeRoutesFile` recurses over the route tuple **4 routes per step**, so a file of `N`
-routes recurses to depth `N / 4`. Two distinct TypeScript ceilings are in play:
-
-* **Instantiation *depth*** (the `TS2589` "excessively deep" error). The 4-at-a-time unrolling is what
-  fights this: it quarters the recursion depth, so the wall moves from ~50 routes to a few hundred —
-  but it is still a per-file ceiling.
-* **Total instantiation *count***. Each route pays one full `RouteCheckedDI` instantiation (walking its
-  `GenDeps`, the `missingProvider` map, the parent context). The total cost is therefore roughly
-  **`N × cost-per-route`**, and a route carrying guards / `resolve` / `handleExceptions` costs several
-  times more than a trivial one. This is why "a few dozen" is only a rough figure — the real budget is
-  in route-*cost*, not route-*count*.
-
-## Scaling to hundreds of routes
-
-The split above is not a one-off patch — it is the architecture. Organise routes as a **tree of feature
-files joined by `loadChildren`** (which you want anyway for code-splitting):
-
-```
-app.routes.ts                 # "manifest": ~N cheap { path, loadChildren } entries
-├── billing.routes.ts         # ~15–20 leaf routes + its own check
-├── admin.routes.ts           # ~15–20 leaf routes + its own check
-└── reporting.routes.ts       # if itself large → re-split into sub-loadChildren (level 3+)
-```
-
-* A `{ path, loadChildren }` entry has no `componentDeps`, so it is **nearly free** in the parent's
-  cascade check — the manifest can list dozens of them.
-* Each feature file pays the budget for **its own leaves only**. ~500 routes ÷ ~17 per file ≈ ~30
-  files; two levels are plenty, and you can nest further without limit.
-* **Every `craftRoutes(...)` file re-declares its own check** (see the iron rule above). With many
-  files this is easy to forget and fails silently, so enable
-  `craft-ts/require-cascade-route-di-check`.
-
-::: tip Threading the parent DI context
-The child check's parent context (`ParentNames`, `ParentValues`) is everything provided **at its mount
-point** — app providers **plus** every ancestor route's providers. When no ancestor adds `providers`,
-this is just the app context (`<never, CraftRouter, …>`, as in the examples above), identical in every file.
-When an ancestor route *does* add providers, re-export its cumulative context and union your own onto it:
-
-```ts
-// billing.routes.ts (mounted under a route with providers: [provideBilling()])
-export type BillingChildNames = AppProvidedNames | 'BillingService';
-export type BillingChildValues = AppProvidedValues;
-
-// sub-billing.routes.ts
-type _Check = ValidateCascadeRoutesFile<
-  BillingChildNames,
-  BillingChildValues,
-  typeof subRoutes
->;
-```
-
-Forgetting to fold in an ancestor's provider makes the child check wrong (a real missing-provider bug
-slips through, or a provided service is flagged as missing), so keep the re-export next to the route
-that adds the providers.
-:::
-
-### Escape hatch — the `O(1)`-per-route check
-
-If a single file genuinely must hold a large flat list (no natural `loadChildren` boundary), switch it
-from the aggregated `ValidateCascadeRoutesFile` to the **per-route** `RouteCheckedDI`. It validates one
-component at a time with **no recursion between routes**, so it never hits the depth ceiling and scales
-to thousands of routes in one file — at the cost of one check block per component instead of one per
-file:
+The per-route check does not recursively instantiate the complete route tuple.
+Add one `RouteCheckedDI` / `CanRun` pair for each routed component:
 
 ```ts
 import { type CanRun, type RouteCheckedDI } from '@craft-ts/core';
@@ -14455,21 +14557,63 @@ type _CheckItem0 = RouteCheckedDI<
   'Item0Component'
 >;
 type _CanRunItem0 = CanRun<_CheckItem0>;
-// …one pair per route component
+
+type _CheckItem1 = RouteCheckedDI<
+  import('./item-1').GenDeps_Item1Component,
+  AppProvidedNames,
+  AppProvidedValues,
+  'Item1Component'
+>;
+type _CanRunItem1 = CanRun<_CheckItem1>;
 ```
 
-Prefer the tree-of-`loadChildren` approach (it also lazy-loads); reach for `RouteCheckedDI` only when a
-single big file is unavoidable.
+If a component starts depending on a service that is not provided, or expects
+an input that the route does not supply, its `CanRun` alias becomes a
+TypeScript error in the route file.
+
+## Scaling to hundreds of routes
+
+Organise routes as a tree of feature files joined by `loadChildren` when that
+improves lazy loading or ownership:
+
+```
+app.routes.ts
+├── billing.routes.ts
+├── admin.routes.ts
+└── reporting.routes.ts
+```
+
+The parent registers a child collection with a lazy entry:
+
+```ts
+{
+  path: 'billing',
+  loadChildren: ({ withRetry }) =>
+    withRetry(import('./billing.routes')).then((m) => m.billingRoutes),
+},
+```
+
+The child file declares its own routes and its own per-route checks. A parent
+proof never covers a component inside a `loadChildren` collection.
+
+::: tip Threading the parent DI context
+The second and third `RouteCheckedDI` parameters are the names and values
+provided at the route's mount point — app providers plus ancestor route
+providers. When an ancestor adds providers, re-export that cumulative context
+and pass it to the child route checks.
+:::
 
 ## Pinning a lazy child to its mount path (`.withParent` + `assertChildRouteMounts`)
 
-Splitting into `loadChildren` keeps each file under budget, but nothing yet guarantees a child is wired
-under the **right** parent route. A child whose components rely on a specific mount — its `:photoId`
-param, a declared view-transition payload, an ancestor's `providers` — is only correct under that path.
-Mount it elsewhere and its DI assumptions break silently.
+Splitting into `loadChildren` keeps route ownership clear, but nothing yet
+guarantees a child is wired under the right parent route. A child whose
+components rely on a specific mount — its `:photoId` param, a declared
+view-transition payload, or an ancestor's providers — is only correct under
+that path.
 
-Pin a collection to its mount path with `.withParent<ParentRoutes<'path'>>()`, then enforce it once in
-the parent with `assertChildRouteMounts(parentRoutes)`:
+Pin a collection to its mount path with `.withParent<ParentRoutes<'path'>>()`,
+then enforce it once in the parent with
+`assertChildRouteMounts(parentRoutes)`:
 
 ```ts
 // view-transitions.routes.ts — the child declares where it belongs
@@ -14479,13 +14623,12 @@ export const { viewTransitionsRoutes } = craftRoutes('viewTransitions', [
   craftRoute(':photoId', {
     componentDeps: {} as import('./photo-detail').GenDeps_PhotoDetailComponent,
     loadComponent: ({ withRetry }) => withRetry(import('./photo-detail')),
-    // …
   }),
 ]).withParent<ParentRoutes<'view-transitions'>>();
 ```
 
-```typescript
-// app.routes.ts — the parent enforces placement (scoped to this file)
+```ts
+// app.routes.ts — the parent enforces placement
 import { assertChildRouteMounts, craftRoutes } from '@craft-ts/core';
 
 export const { demoRoutes } = craftRoutes('demo', [
@@ -14501,7 +14644,7 @@ export const { demoRoutes } = craftRoutes('demo', [
 assertChildRouteMounts(demoRoutes);
 ```
 
-Mount the pinned collection under any other path and the **parent file** fails to compile:
+Mounting the pinned collection under another path fails in the parent file:
 
 ```
 craftRoutes(...).withParent<ParentRoutes<'view-transitions'>>() must be
@@ -14510,44 +14653,17 @@ loadChildren-mounted under the route with path 'view-transitions', not 'admin'
 
 Notes:
 
-* **Opt-in.** A collection without `.withParent` is *unpinned* and mountable anywhere — fully backward
-  compatible. Pin only the children whose placement actually matters.
-* **Scoped to the parent.** `assertChildRouteMounts` reads the parent's **own** routes (`_routes`) — it
-  does **not** descend into / re-validate the child (already checked in its own file), so it adds nothing
-  to the child's instantiation budget.
-* **Type-only.** `.withParent<…>()` returns the same object at runtime; `ParentRoutes<'path'>` carries no
-  value, only the path string — so importing it creates no runtime coupling between the files.
-* **Enforced by ESLint.** `craft-ts/require-child-route-mount-check` adds the missing
-  `assertChildRouteMounts(...)` call + import on `--fix`. (Whether a child opts in with `.withParent`
-  stays your decision — it expresses the "this belongs here" intent the rule can't guess.)
-
-::: details Design notes — two approaches we rejected
-Reaching the standalone-assert design above took two dead ends, both defeated by TypeScript's
-instantiation ceiling. They're recorded here because the failure modes are instructive.
-
-**1. Enforcing placement inside `craftRoutes(...)` itself.** The first attempt wove the mount check into
-the `routes` argument type of **every** `craftRoutes(...)` call, so a wrong mount would error right at
-the route literal. It type-checked — but the extra per-collection instantiation tipped an
-already-at-ceiling file into `TS2589`, and even a 2-route child with **no** `loadChildren` paid the cost
-(every collection runs the same inference). The lesson: the check must be **scoped to the parent that
-actually mounts children** — a standalone `assertChildRouteMounts(...)` reading the raw `_routes` — not
-folded into the hot `craftRoutes` inference that every file pays on every build.
-
-**2. A `loadChildrenType` carrier to speed up the check.** To avoid inferring the child's type through the
-dynamic `import('./x').then((m) => m.xRoutes)`, we tried an explicit
-`loadChildrenType: {} as typeof import('./x').xRoutes` field on the lazy route. In isolation it built
-fine — but applied across the board it **materialises the child's full type (components included)**,
-which creates a **circular reference** for any child whose components inject the *parent's* route data
-(`TS2615` "circularly references itself" + `TS2589`): `parent → typeof childRoutes → child components →
-inject parent data → parent`. Since the dynamic-import resolution it replaced was both cycle-safe and —
-once measured against build-time noise — no slower, the carrier was dropped. `assertChildRouteMounts`
-resolves the child's pin through the existing `loadChildren` instead.
-:::
+* A collection without `.withParent` is unpinned and can be mounted anywhere.
+* `assertChildRouteMounts` reads only the parent's own routes; it does not
+  re-validate the child.
+* `.withParent<…>()` is type-only and creates no runtime coupling.
+* `craft-ts/require-child-route-mount-check` adds the missing
+  `assertChildRouteMounts(...)` call and import on `--fix`.
 
 ## See Also
 
 * [Setup](/guide/routing/setup)
-* [Architecture rules](/guide/testing/architecture) — `assertRouteDiProofs` catches a split file with no check
+* [Architecture rules](/guide/testing/architecture) — `assertRouteDiProofs` catches a routed component with no check
 * [Route providers](/guide/routing/route-providers)
 
 ---
@@ -20986,7 +21102,7 @@ import {
 
 `analyzeDependencyGraph` reads the application sources with the TypeScript
 program — routes, services, components, HTTP calls, `craftUnique` identities,
-route DI proofs (`CanRun`, `ValidateCascadeRoutesFile`, `RouteCheckedDI`) —
+route DI proofs (`CanRun`, `RouteCheckedDI`) —
 and builds a graph of nodes and edges.
 
 `createArchitectureGraph` wraps that graph with typed lookups. Names come from
@@ -21378,8 +21494,7 @@ it('keeps the app declarative', () => {
 
 ### `assertRouteDiProofs`
 
-The routing DI contract is type-level by design. `CanRun`,
-`ValidateCascadeRoutesFile`, `RouteCheckedDI` and
+The routing DI contract is type-level by design. `CanRun`, `RouteCheckedDI` and
 `RouteExceptionComponentCheckedDI` are unused aliases unless they stay in the
 file: comment one out and TypeScript still compiles. That is the one fragile
 step in an otherwise compile-time guarantee.
@@ -27316,16 +27431,15 @@ url: https://craft-ts.github.io/craft/guide/deployment/alchemy.md
 ---
 # Alchemy provider
 
-::: warning Experimental — never run against a live account
+::: warning Experimental — validate in a non-production account first
 This provider is the least validated part of the deployment tooling. The
 presets, the plan, the credential checks and the refusal paths are covered by
 tests through a runtime port, so what CraftTS *decides* is verified.
 
-What is **not** verified is the last hop: the adapter that calls Alchemy itself
-has never run against a real Cloudflare or AWS account from this repository.
-Treat your first deployment as the validation of that adapter — run
-`deploy preview` first, read the plan, and expect to adjust
-`ALCHEMY_RESOURCE_EXPORTS` if the installed Alchemy renamed a resource.
+What is **not** verified is the last hop: the adapter that invokes Alchemy's
+current CLI has never run against a real Cloudflare or AWS account from this
+repository. Treat your first deployment as the validation of that adapter —
+run `deploy preview` first and read the plan.
 :::
 
 `@craft-ts/deploy-alchemy` deploys a CraftTS manifest to Cloudflare or AWS
@@ -27352,15 +27466,13 @@ with `--provider-module`.
 Credentials are read from the environment. The tooling checks that they are
 set, never reads their value beyond that, and never writes one to disk.
 
-| Platform     | Variables                                                                                      |
-| ------------ | ---------------------------------------------------------------------------------------------- |
-| `cloudflare` | `CLOUDFLARE_API_TOKEN` (or `CLOUDFLARE_API_KEY`), `CLOUDFLARE_ACCOUNT_ID`                      |
-| `aws`        | `AWS_ACCESS_KEY_ID` (or `AWS_PROFILE`, `AWS_ROLE_ARN`), `AWS_REGION` (or `AWS_DEFAULT_REGION`) |
-| both         | `ALCHEMY_PASSWORD`                                                                             |
+| Platform     | Variables                                                                                               |
+| ------------ | ------------------------------------------------------------------------------------------------------- |
+| `cloudflare` | `CLOUDFLARE_API_TOKEN` (or `CLOUDFLARE_API_KEY`), `CLOUDFLARE_ACCOUNT_ID` (or `ALCHEMY_PROFILE`)        |
+| `aws`        | `AWS_ACCESS_KEY_ID` (or `AWS_PROFILE`, `AWS_ROLE_ARN`), `AWS_REGION` (or `AWS_DEFAULT_REGION`)          |
 
-`ALCHEMY_PASSWORD` encrypts the secrets Alchemy records in its state. Deploying
-without it would write a state nobody can read back, so the provider refuses.
-Keep the same value across every deployment of a given stage.
+Alchemy 2 uses its provider state store and profile configuration. The adapter
+does not require the legacy `ALCHEMY_PASSWORD` variable.
 
 ## State and stages
 
@@ -27385,12 +27497,12 @@ npx craft-ts deploy preview --provider alchemy --stage staging
 
 ```text
 plan: alchemy → stage staging (2 resource(s))
-  create    cloudflare:KVNamespace demo-staging-sessions
+  create    cloudflare:KV.Namespace demo-staging-sessions
     binding: SESSIONS
   update    cloudflare:Worker demo-staging-worker
     entrypoint: dist/apps/demo/worker.js
     assets: dist/apps/demo
-  note: Alchemy 0.70.0, stage `staging`.
+  note: Alchemy 2.0.0-beta.76, stage `staging`.
 Preview only: nothing was created, updated or deleted.
 ```
 
@@ -27422,13 +27534,13 @@ Use `--json` to get `{ applied, plan, result, diagnostics }` for a CI step.
 
 ## What each manifest becomes
 
-| Manifest                 | Resources                                                      |
-| ------------------------ | -------------------------------------------------------------- |
-| `static` on `cloudflare` | `StaticSite`, with the SPA fallback or the pre-rendered routes |
-| `worker` on `cloudflare` | the resources the bindings name, then the `Worker`             |
-| `static` on `aws`        | a private `Bucket` behind a `CloudFrontDistribution`           |
-| `lambda` on `aws`        | a `Function` and its `FunctionUrl`                             |
-| `node` on `aws`          | a Fargate `Cluster` and `Service`                              |
+| Manifest                 | Resources                                             |
+| ------------------------ | ----------------------------------------------------- |
+| `static` on `cloudflare` | `Website.StaticSite`                                  |
+| `worker` on `cloudflare` | binding resources, then `Worker`                     |
+| `static` on `aws`        | `Website.StaticSite`                                 |
+| `lambda` on `aws`        | `Lambda.Function` with its built-in Function URL     |
+| `node` on `aws`          | refused; use the Docker provider or an image preset  |
 
 Bindings map to the resource their `type` names — `kv`, `r2`, `d1`, `queue`,
 `durable_object`. A binding typed `secret` is never created: its value must
@@ -27465,10 +27577,9 @@ does not pass `craft-ts check`.
 Alchemy owns the resources, the state, the credentials handling and the
 reconciliation. It decides *how* what CraftTS declared comes to exist.
 
-Everything version-specific lives in one table, `ALCHEMY_RESOURCE_EXPORTS`,
-which maps a planned resource type to the Alchemy module and export that
-creates it. An Alchemy release that renames a resource is a change to that
-table, not to the presets or the manifest.
+The adapter generates a temporary Alchemy 2 stack and invokes the installed
+Alchemy CLI. `ALCHEMY_RESOURCE_EXPORTS` maps each planned resource type to the
+current module and nested export used in that generated stack.
 
 ## Limits
 
@@ -27667,6 +27778,7 @@ boundary.
 | Derive a reactive value from a synchronous Effect  | `computedEffect`                 | runs a `SyncOp` Effect in place — a value, not a resource        |
 | Expose a synchronous Effect as a callable method   | `methodEffect`                   | the Effect counterpart of `craftMethod`                          |
 | Run a synchronous Effect in a lower-level position | `syncEffect`                     | `params`, a `craftMethod`, a `state` updater                     |
+| Guard a state-machine transition with an Effect    | `transitionGuardEffect`          | a declared-synchronous Effect service decision                   |
 | Write data with an Effect loader                   | `mutationEffect`                 | explicit writes and mutation reactions                           |
 | Run an explicit command                            | `asyncProcessEffect`             | export, refresh, share action or other non-resource process      |
 | Provide Effect services                            | `provideLayer`                   | app and route injectors own Layer scope                          |
@@ -29434,8 +29546,7 @@ already receive those methods as arguments — see
 | Symbol                                                                                                                                   | What it does                                                               | Page                                                  |
 | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------- |
 | `craftRoute`, `craftRoutes`                                                                                                              | Declares typed routes and collections                                      | [Setup](/guide/routing/setup)                         |
-| `ValidateCascadeRoutesFile`, `CanRun`                                                                                                    | Compile-time DI check for a routes file                                    | [Setup](/guide/routing/setup)                         |
-| `RouteCheckedDI`                                                                                                                         | Per-route `O(1)` variant of the check                                      | [Scaling routes](/guide/routing/scaling)              |
+| `RouteCheckedDI`, `CanRun`                                                                                                              | Compile-time DI check for a routed component                               | [Setup](/guide/routing/setup)                         |
 | `.withParent`, `ParentRoutes`, `assertChildRouteMounts`                                                                                  | Pins a child collection to its mount                                       | [Scaling routes](/guide/routing/scaling)              |
 | `withRetry`                                                                                                                              | Retryable lazy `loadComponent` / `loadChildren`                            | [Setup](/guide/routing/setup)                         |
 | `provideCraftRouter`, `provideCraftLoading`                                                                                              | Router with craft loading features                                         | [Pending UI](/guide/routing/pending-ui)               |
@@ -29484,6 +29595,7 @@ already receive those methods as arguments — see
 | Symbol                                                                 | What it does                                              | Page                                                    |
 | ---------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------- |
 | `CraftHttpClient`                                                      | Tracked HTTP client with typed exceptions                 | [query](/guide/state/server-state)                      |
+| `CraftBinaryHttpClient`                                                | Tracked raw-body HTTP PUT for binary uploads             | [query](/guide/state/server-state)                      |
 | `browserBoundary`                                                      | Marks a service as a browser boundary                     | [Browser boundaries](/guide/testing/browser-boundaries) |
 | `BrowserDocument`, `BrowserDocument.setLang`, `BrowserDocument.setDir` | Reads and updates document title, language, and direction | [Browser boundaries](/guide/testing/browser-boundaries) |
 | `Console`                                                              | Yieldable console, overridable for tracing                | [Observability](/guide/advanced/observability)          |
@@ -29511,6 +29623,7 @@ integration](/guide/advanced/effect).
 | `queryEffect`, `mutationEffect`, `asyncProcessEffect`, `computedEffect`, `methodEffect`              | The Effect-backed adapters of the Craft primitives               | [Choose the right adapter](/guide/advanced/effect#choose-the-right-adapter)            |
 | `runEffect`, `CraftEffectInterrupted`                                                                | Yields one Effect and maps its exit onto Craft's channels        | [runEffect](/guide/advanced/effect#runeffect-the-low-level-form)                       |
 | `syncEffect`, `SyncOp`, `CraftEffectNotSynchronous`, `NotDeclaredSynchronous`                        | Declares and runs an Effect that never suspends                  | [Synchronous members](/guide/advanced/effect#run-a-synchronous-member-from-a-computed) |
+| `transitionGuardEffect`                                                                                | Guards a state-machine transition with a synchronous Effect      | [State-machine guards](/guide/state/state-machines#effect-services-in-a-guard)              |
 | `provideLayer`                                                                                       | Attaches a built Effect context to a Craft injector              | [Provide services with Layer](/guide/advanced/effect#provide-services-with-layer)      |
 | `effectService`, `SelectedMembers`                                                                   | Selects a service from a Craft factory, recording the dependency | [Select a service](/guide/advanced/effect#select-an-effect-service-from-craft)         |
 | `mockEffectService`, `UnstubbedEffectMember`                                                         | A focused Layer for tests; an unstubbed member fails loudly      | [Testing](/guide/advanced/effect#testing)                                              |
@@ -30162,7 +30275,7 @@ teams evaluating CraftTS, not a promise that beta APIs will remain unchanged.
 | Craft runtime | `@craft-ts/core` `0.7.0-beta.11` | Beta |
 | Craft components | `@craft-ts/component` on the same Craft version | Beta |
 | Effect bridge | `@craft-ts/effect` `0.7.0-beta.11` | Beta / experimental integration |
-| Effect runtime | `effect` `^4.0.0-rc.110` | Effect 4 release candidate |
+| Effect runtime | `effect` `^4.0.0-rc.112` | Effect 4 release candidate required by current Alchemy |
 | Effect 3 projects | No compatibility contract | Migrate or isolate before adopting |
 | Node.js | 20.19+ or 22.12+ | Required by the current docs |
 | TypeScript | Use the version supported by the selected Craft beta; verify with the project lockfile | Toolchain-sensitive |

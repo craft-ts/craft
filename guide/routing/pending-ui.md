@@ -199,7 +199,8 @@ export const { photosRoutes, injectPhotosPhotoIdViewTransition } = craftRoutes(
 ).withParent<ParentRoutes<'photos'>>();
 ```
 
-This collection is a lazy child mounted via `loadChildren` (kept out of the parent's cascade DI budget).
+This collection is a lazy child mounted via `loadChildren`; its routed
+components carry their own per-route DI checks.
 Because its components depend on the `:photoId` param **and** the declared view-transition payload, it is
 only correct under the `photos` route — so it is **pinned** to that mount with
 `.withParent<ParentRoutes<'photos'>>()`, and the parent enforces it with `assertChildRouteMounts(...)`.
@@ -217,12 +218,14 @@ a({}, 'Photo').pipe(
 );
 ```
 
-The skeleton (and/or the target) reads it through the **route-generated typed helper** and wears the
-matching `view-transition-name`:
+The skeleton receives `photoId` as a route-bound input and reads the payload through the
+**route-generated typed helper**:
 
 ```ts
+import { input } from '@angular/core';
+
 export default class PhotoSkeleton {
-  protected readonly photoId = injectPhotosPhotoIdParams();
+  protected readonly photoId = input.required<string>();
   // Signal<{ name: string; image: string | null } | null> — typed by the route.
   private readonly viewTransition = injectPhotosPhotoIdViewTransition();
   protected readonly image = computed(
@@ -243,23 +246,13 @@ skip the blank phase for **every** route, not just opted-in ones.
 ### Verifying the skeleton's DI
 
 The pending skeleton is a real component that injects dependencies (route params, the typed payload,
-monitoring, …), but the aggregated cascade (`ValidateCascadeRoutesFile`) only sees the **target**
-component — it never descends into `pendingComponent`. So the skeleton is verified **directly**, with
-the per-component, O(1) [`RouteCheckedDI`](/guide/routing/setup#escape-hatch-the-o-1-per-route-check) escape
-hatch (not a second aggregated pass — that would add to the instantiation-count budget the cascade is
-already spending):
+monitoring, …). It is verified independently with the per-component, O(1)
+[`RouteCheckedDI`](/guide/routing/setup) check:
 
 ```ts
-type _CheckTargetDI = ValidateCascadeRoutesFile<
-  AppNames,
-  AppValues,
-  typeof photosRoutes
->;
-type _CanRunTarget = CanRun<_CheckTargetDI>;
-
 // The skeleton injects the `:photoId` param and the typed payload — both
 // auto-provided by the route, so list those service names as available; the
-// parent context (`AppValues` here) is the same one the cascade check uses.
+// parent context (`AppValues` here) is the same one the route uses.
 type _CheckPendingDI = RouteCheckedDI<
   import('./photo-skeleton').GenDeps_PhotoSkeletonComponent,
   'PhotosPhotoIdParams' | 'PhotosPhotoIdViewTransition',
@@ -272,9 +265,8 @@ type _CanRunPending = CanRun<_CheckPendingDI>;
 A service the skeleton injects but nothing provides becomes a TypeScript error on `_CanRunPending`
 (`The X service is not provided in pending component: photos/:photoId`). The
 `craft-ts/require-pending-component-di-check` ESLint rule **generates and refreshes this whole block**
-from `pendingComponent` on `--fix` — resolving the skeleton's `GenDeps_*`, deriving the auto-provided
-service names from the route's path params + payload, and borrowing the parent context from the
-collection's own `ValidateCascadeRoutesFile` — so you never hand-write or stale it.
+from `pendingComponent` on `--fix` — resolving the skeleton's dependency metadata and deriving the
+auto-provided service names from the route's path params + payload.
 
 [Architecture tests](/guide/testing/architecture#assertroutediproofs) (`assertRouteDiProofs`) fail
 if that pending proof is missing or not armed with `CanRun`.

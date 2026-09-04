@@ -167,7 +167,6 @@ declare module '@craft-ts/core' {
 }
 
 export const appConfig = craftAppConfig({
-  routingDeps: [],
   appStart: { AppStartLog },
 });
 ```

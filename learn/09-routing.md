@@ -193,7 +193,6 @@ just disappear](/guide/concepts/exceptions). Everything else is on
 import { craftAppConfig } from '@craft-ts/core';
 
 export const appConfig = craftAppConfig({
-  routingDeps: appRoutes.META_DATA,
   providers: [provideRouter(appRoutes.toRoutes(), )],
 });
 ```
@@ -229,7 +228,6 @@ immediately while the chain runs behind it:
 import { craftAppConfig, provideCraftRouter, withTransitionTimings } from '@craft-ts/core';
 
 export const appConfig = craftAppConfig({
-  routingDeps: appRoutes.META_DATA,
   providers: [
     provideCraftRouter(
       appRoutes.toRoutes(),

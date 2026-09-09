@@ -101,6 +101,8 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 - [Axes and the visual matrix](https://craft-ts.github.io/craft/guide/style/variants.md)
 - [Context obligations](https://craft-ts.github.io/craft/guide/style/obligations.md)
 - [Testing what you built](https://craft-ts.github.io/craft/guide/style/testing.md)
+- [Attestation: a judgement that survives a refactor](https://craft-ts.github.io/craft/guide/style/attestation.md)
+- [Template obligations](https://craft-ts.github.io/craft/guide/style/template-obligations.md)
 - [Typed CSS variables and design tokens](https://craft-ts.github.io/craft/guide/components/css-variables.md)
 - [Fine-grained reactivity](https://craft-ts.github.io/craft/guide/components/fine-grained-reactivity.md)
 - [Progressive rendering with `scheduleFor`](https://craft-ts.github.io/craft/guide/components/schedule-for.md)

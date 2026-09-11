@@ -121,18 +121,14 @@ grouped below by the questions it helps answer:
 | Application structure | `route`, `route-hook`, `route-check`, `app-config`, `component`, `service` | Navigation, route-level checks, application configuration, UI entry points and injectable units. |
 | Reactive structure | `primitive`, `property`, `source`, `template-element` | A `state`, `query`, `mutation`, `craftComputed`, `craftEffect`, `craftMethod`, `queryParams`, or an exposed member/source/template element. A primitive's `details.name` keeps its concrete primitive name. |
 | Boundaries and identities | `http-endpoint`, `unique` | A verb + URL boundary and a canonical `craftUnique` identity, such as a persisted query key. |
-| Server functions | `server-function-family`, `server-function-contract`, `server-function-client`, `server-function-server`, `server-function-middleware` and their `*-misnamed` variants, `client-function-middleware` and its misnamed variant | The client/server contract, implementation, middleware and naming checks around server functions. |
-| Protocol and extensions | `handshake`, plus optional backend kinds such as `effect-service`, `effect-operation`, `effect-layer`, `data-classification`, and `external-output` | Protocol facts or concepts contributed by an adapter. The Effect and data-flow vocabularies are still queried through the same graph API. |
+| Server functions | `server-function-family`, `server-function-contract`, `server-function-client`, `server-function-server`, `server-function-misnamed`, `server-function-middleware`, `server-function-middleware-misnamed`, `client-function-middleware`, `client-function-middleware-misnamed` | The client/server contract, implementation, middleware and naming checks around server functions. |
+| Protocol and extensions | `handshake`, plus adapter/contributed kinds such as `effect-service`, `effect-operation`, `effect-layer`, `data-classification`, and `external-output` | Protocol facts or backend concepts. Effect and data-flow extensions are still queried through the same graph API. |
 
-For example, a page that loads a `UserList` component, which uses a
-`UsersApi` service and calls `GET users`, can be represented at this level:
-
-```text
-route      --loads------>    component    --contains--> query
-service    --calls------>    http-endpoint
-service    --depends-on-->  browser boundary
-mutation   --triggers---->  query
-```
+For example, a page can be represented as these facts: a `route` **loads** a
+`component`; the component **contains** a `query`; a `service` **calls** the
+`GET users` `http-endpoint`; a consumer service **depends-on** a browser
+boundary; and a `mutation` **triggers** a query. These are independent,
+typed relations that a rule can inspect directly.
 
 The labels are deliberately semantic. A rule can ask “which service calls this
 endpoint?” or “which mutation triggers this query?” without matching file text

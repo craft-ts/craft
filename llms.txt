@@ -189,6 +189,7 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 - [Pattern matching](https://craft-ts.github.io/craft/guide/advanced/pattern-matching.md)
 - [Observability](https://craft-ts.github.io/craft/guide/advanced/observability.md)
 - [Live page MCP](https://craft-ts.github.io/craft/guide/ai/dev-page.md)
+- [Send context to an AI webhook](https://craft-ts.github.io/craft/guide/ai/send-context-webhook.md)
 - [Temporal runtime](https://craft-ts.github.io/craft/guide/advanced/temporal-runtime.md)
 
 ### Reference

@@ -68,6 +68,7 @@ export default [
       'craft-ts/no-explicit-craft-template-return-type': 'error',
       'craft-ts/no-extracted-craft-component-parts': 'error',
       'craft-ts/no-ephemeral-template-form-state': 'error',
+      'craft-ts/require-form-for-input-action': 'error',
       'craft-ts/template-element-name-unique': 'error',
       'craft-ts/no-craft-computed-side-effects': 'error',
       'craft-ts/require-craft-method-for-yieldable-callback': 'error',
@@ -220,6 +221,8 @@ checks exported arrow functions.
   logic factory.
 
 * `craft-ts/no-ephemeral-template-form-state`: forbids `let` / `const` / `var` in the fourth argument of `craftComponent(...)` and `craftDirective(...)` (inline or a same-file identifier). Declare that state in the logic factory with `state()` or `craftComputed()` instead
+
+* `craft-ts/require-form-for-input-action`: rejects a button's direct `mutate(...)` or `method(...)` call when it consumes an input-bound value, including through a local record or variable; use `insertForm`, `insertFormAttributes`, and `insertFormSubmit` for mutation-backed forms, then submit a native `form(...)` with a `type: 'submit'` button
 
 * `craft-ts/template-element-name-unique`: requires named HTML helpers to use a static, unique local name within a component; use the object-first helper form for unnamed elements such as `p({ id: 'hint' }, ...)`
 

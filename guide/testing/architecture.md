@@ -26,6 +26,7 @@ Use an architecture rule when the requirement sounds like one of these:
 * **must not depend on** — a feature must not reach into another feature;
 * **must be owned once** — an HTTP endpoint or persisted identity has one owner;
 * **must declare a relationship** — a mutation must refresh a query;
+* **must model input-driven work as a form** — a button must not send input state directly into a mutation or async process;
 * **must remain pure** — reading a computed value must not perform work.
 
 A green architecture suite does not prove that a button works. It proves that
@@ -65,6 +66,7 @@ import {
   assertCraftUnique,
   assertDeclarativeArchitecture,
   assertHttpEndpointUnique,
+  assertInputActionForms,
   assertInsertSelectUnique,
   assertInteractiveElementNamed,
   assertMutationHasReactOn,
@@ -421,6 +423,7 @@ rules that express your application's boundaries.
 | [`assertNoUnusedPrimitiveMethods`](/guide/testing/architecture/unused-primitive-method)            | an exposed primitive insertion method has no call site anywhere in the project                                                                                                                                                                         |
 | [`assertNoDependencyCycles`](/guide/testing/architecture/dependency-cycles)                        | a directed cycle exists on `depends-on` (services, components, computeds)                                                                                                                                                                              |
 | [`assertMutationHasReactOn`](/guide/testing/architecture/mutation-reactions)                       | a `mutation` has no query `insertReactOnMutation` edge (`allow` skips named fire-and-forget mutations)                                                                                                                                                 |
+| [`assertInputActionForms`](/guide/testing/architecture/declarative-baseline)                       | a button directly triggers an input-dependent mutation or async process instead of using the form submission boundary, including when the primitive is declared in a service                                                                                 |
 | [`assertDeclarativeArchitecture`](/guide/testing/architecture/declarative-baseline)                | any of the baseline checks fail                                                                                                                                                                                                                        |
 | [`assertRouteDiProofs`](/guide/testing/architecture/route-di-proofs)                               | a routed component, pending UI or error screen has no armed `CanRun` mapper, a collection is missing `assertExhaustiveRouteExceptions`, or `app.config.ts` registers a global / route-load error screen without its `RouteExceptionComponentCheckedDI` |
 | [`assertRouteComponentsInSeparateFiles`](/guide/testing/architecture/route-component-files)        | a route loads its page component from the routing file, or multiple routed page components share one component file                                                                                                                                    |
@@ -431,6 +434,7 @@ rules that express your application's boundaries.
 | [`assertCraftEffectNoNetwork`](/guide/testing/architecture/craft-effect-network)                   | a `craftEffect` `calls` HTTP or a `mutation`                                                                                                                                                                                                           |
 | [`assertCraftEffectNoImperativeSync`](/guide/testing/architecture/craft-effect-imperative-sync)    | a `craftEffect` writes a `state` / `source$` or triggers a `query` / `mutation` / `asyncProcess`                                                                                                                                                       |
 | [`assertInteractiveElementNamed`](/guide/testing/architecture/interactive-element-names)           | an interactive element lacks a literal name or duplicates a `data-craft-name`                                                                                                                                                                          |
+| [`assertMetricThresholds`](/guide/testing/architecture/metric-thresholds)                          | **opt-in:** a selected node exceeds a team-defined complexity, size or coupling threshold                                                                                                                                                                                                                            |
 | [`assertQueryMutationHasServerState`](/guide/testing/architecture/server-state-loader)             | a `query` or `mutation` does not reach an allowed server-state boundary                                                                                                                                                                                |
 | [`assertPrimitiveLoaderRequirements`](/guide/testing/architecture/primitive-loader-requirements)   | an Effect-aware primitive does not declare an allowed dependency boundary                                                                                                                                                                              |
 | [`assertResourceParamsPreferQueryParams`](/guide/testing/architecture/resource-params-query-state) | a `query` or `asyncProcess` params graph depends on a `state` instead of URL-backed `queryParams`                                                                                                                                                      |
@@ -724,6 +728,69 @@ it('requires a unique literal data-craft-name on every interactive element', () 
 });
 ```
 
+## Metric thresholds
+
+Every node of the graph carries `metrics`: cyclomatic complexity (its own and
+with everything it contains), line count, fan-in and fan-out. No threshold
+applies by default; put the ones your team agrees on in the suite. See the
+[focused rule guide](/guide/testing/architecture/metric-thresholds) for
+before-and-after examples:
+
+```typescript
+import { assertMetricThresholds } from '@craft-ts/dev-tools/architecture-graph';
+
+it('keeps services and primitives small', () => {
+  assertMetricThresholds(graph.graph, {
+    kinds: ['service', 'primitive'],
+    max: { cyclomaticOwn: 15, fanOut: 12 },
+    allow: ['src/legacy/**', 'ReportingService'],
+  });
+});
+```
+
+`allow` takes node ids, labels, or path globs. A metric the graph could not
+compute — a node without a source range — is skipped, never treated as `0`;
+`graph.diagnostics` lists the unmeasured kinds. The assertion refuses a graph
+that carries no metrics at all, such as a JSON file written by an older
+version. `metricThresholdViolations` returns the same findings as data.
+
+See [Graph insights](/guide/testing/graph-insights) for how the metrics are
+computed, the hotspot ranking and the report.
+
+## Documentation rules
+
+The graph reads the JSDoc of each declaration and, with the opt-in Markdown
+collector, the pages that cite a node. `assertNodesDocumented` turns that into
+a rule:
+
+```typescript
+import { assertNodesDocumented } from '@craft-ts/dev-tools/architecture-graph';
+import {
+  analyzeDependencyGraph,
+  createMarkdownDocsCollector,
+} from '@craft-ts/dev-tools/dependency-graph';
+
+const documented = analyzeDependencyGraph({
+  rootDir: workspaceRoot,
+  tsConfigFilePath: 'apps/shop/tsconfig.graph.json',
+  collectors: [createMarkdownDocsCollector({ include: ['docs/**/*.md'] })],
+});
+
+it('documents every service', () => {
+  assertNodesDocumented(documented, {
+    kinds: ['service'],
+    requireDocPage: true,
+    allow: ['src/legacy/**'],
+  });
+});
+```
+
+A node fails without a JSDoc summary, and with `requireDocPage` when no page
+cites it in inline code. A node without a source range is skipped: its
+documentation is unknown, not missing. `requireDocPage` refuses a graph built
+without the collector. `undocumentedNodeViolations` returns the findings as
+data.
+
 ## Writing your own rules
 
 Start from a node you care about and assert what should be true of its
@@ -808,9 +875,12 @@ npx craft-graph \
 | `mermaid`  | a `.mmd` diagram                              |
 | `html`     | a standalone explorer (no server, no runtime) |
 | `both`     | JSON + catalog + Mermaid                      |
-| `all`      | JSON + catalog + Mermaid + HTML               |
+| `all`      | JSON + catalog + Mermaid + HTML + report      |
+| `report`   | `.report.md` and `.report.json`               |
 
-`--include <text>` restricts analysis to matching source paths. Use the HTML
+`--include <text>` restricts analysis to matching source paths.
+`--feature-glob`, `--churn-since` and `--coverage` shape the
+[report](/guide/testing/graph-insights#report). Use the HTML
 explorer to see a route expand into components and services before you write
 the assertion.
 

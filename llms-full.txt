@@ -1490,7 +1490,7 @@ field tree, the validity, and the exception types are all derived from the state
 type — you never restate them.
 
 ```typescript
-const form = taskForm.form();
+const form = taskForm.form;
 const title = form.selectTitle();
 
 title()().exceptions.list; // typed list of this field's exceptions
@@ -1547,17 +1547,22 @@ insertFormSubmit(createTask);
 ```
 
 ```typescript
-form({ submit: () => taskForm.form().submit() }, [
+form('TaskForm', {
+  *submit(event) {
+    event.preventDefault();
+    yield* taskForm.form.submit();
+  },
+}, [
   /* fields */
 ]);
 ```
 
-The form now knows when it is submitting (`form().submitting()`), whether a
-submit was attempted (`form().hasAttemptedSubmit()`), and — the point — **which
+The form now knows when it is submitting (`form.submitting()`), whether a
+submit was attempted (`form.hasAttemptedSubmit()`), and — the point — **which
 exceptions submission can produce**, inferred from the mutation:
 
 ```typescript
-taskForm.form().submitExceptions();
+taskForm.form.submitExceptions();
 ```
 
 If your mutation declares a `TITLE_ALREADY_EXISTS` exception, that code is in the
@@ -3616,7 +3621,7 @@ const draft = yield* state(
   ),
 );
 
-const form = draft.form();
+const form = draft.form;
 ```
 
 The exact field insertions depend on the shape of your component, but the
@@ -3955,6 +3960,834 @@ contracts until the POC is replaced by a final server-function API.
 ---
 
 ---
+url: https://craft-ts.github.io/craft/guide/ai.md
+---
+# AI agents
+
+This section gathers everything that gives an AI agent access to CraftTS
+knowledge, application state, runtime behavior, or debugging context.
+
+There are three complementary layers:
+
+1. **Knowledge**: documentation, examples, `llms.txt`, and Agent Skills.
+2. **Observation and control**: MCP tools for the live browser, the runtime
+   registry, and application logs.
+3. **Application context**: `provideSendContextToAi`, which lets a developer
+   assemble a selected screen, timeline, snapshot, and optional DOM/CSS capture
+   before copying or sending it to an AI service.
+
+## Choose the right surface
+
+| Need                                                        | Start here                                           | Access                                     |
+| ----------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------ |
+| Learn CraftTS conventions or find an API                    | [Coding agents](/resources/ai-agents)                | `@craft-ts/mcp`                            |
+| Fill, click, navigate, or inspect the running app           | [Live page MCP](/guide/ai/dev-page)                  | `@craft-ts/function-registry-mcp` → `page` |
+| Read or change a published primitive during development     | [MCP tools](/guide/ai/mcp-tools)                     | `registry.*` tools                         |
+| Search logs from a reproducible flow                        | [MCP tools](/guide/ai/mcp-tools)                     | `@craft-ts/log-mcp` → `logs.*`             |
+| Ask what a node depends on, or what a change can break      | [MCP tools](/guide/ai/mcp-tools)                     | `@craft-ts/graph-mcp` → `graph.*`          |
+| Give an AI a human-selected debugging context               | [Send context to AI](/guide/ai/send-context-webhook) | `provideSendContextToAi`                   |
+| Understand the tracing and snapshot data behind the context | [Observability](/guide/advanced/observability)       | Craft providers and runtime hooks          |
+
+The tools are deliberately separated by boundary. The documentation MCP is
+read-only and works offline. The registry MCP can mutate development state and
+must only be connected to a local development app. The logs MCP reads local
+JSONL files; its `logs.clear` operation is destructive. The graph MCP reads the
+static dependency graph of the project and only writes the graph file it
+rebuilds.
+
+## MCP servers
+
+CraftTS has four MCP servers, each with a different responsibility:
+
+* [`@craft-ts/mcp`](https://www.npmjs.com/package/@craft-ts/mcp) gives an agent
+  the published documentation, examples, skills, and LLM entry points.
+* [`@craft-ts/function-registry-mcp`](/guide/ai/mcp-tools) bridges a running
+  browser tab to `page` and `registry.*` tools.
+* [`@craft-ts/log-mcp`](/guide/ai/mcp-tools) exposes the local log store through
+  `logs.*` tools.
+* [`@craft-ts/graph-mcp`](/guide/ai/mcp-tools) answers architecture questions
+  from the static dependency graph through `graph.*` tools.
+
+See [MCP tools](/guide/ai/mcp-tools) for the complete tool inventory and the
+boundary between read-only and mutating operations.
+
+## Context integrations
+
+This section is also the home for context providers and future agent-facing
+integrations. `provideSendContextToAi` is the first application-facing context
+surface: it turns an interaction into structured context that can be copied or
+sent to a protected webhook.
+
+Lucene and Context Workbook are not present as packages, tools, or documented
+integrations in this repository yet. When they are introduced, their setup,
+permissions, context model, and MCP tools should be documented under this
+section and added to the table above rather than creating another AI-related
+navigation branch.
+
+---
+
+---
+url: https://craft-ts.github.io/craft/resources/ai-agents.md
+description: >-
+  Point Cursor, Claude, Copilot, and other coding agents at CraftTS docs, MCP
+  tools, and Agent Skills after you import @craft-ts/core.
+---
+
+# Coding agents
+
+CraftTS has a deliberate vocabulary. After you import `@craft-ts/core`, give
+the agent three layered entry points — `llms.txt`, the MCP server, and Agent
+Skills — so it can use the documented primitives and conventions.
+
+| Layer | What it is | When the agent uses it |
+| --- | --- | --- |
+| **LLM files** | [`/llms.txt`](https://craft-ts.github.io/craft/llms.txt), [`/llms-full.txt`](https://craft-ts.github.io/craft/llms-full.txt), and a `.md` sibling for every docs page | Discovery on the internet, no install |
+| **MCP server** | [`@craft-ts/mcp`](https://www.npmjs.com/package/@craft-ts/mcp) — `get_best_practices`, `search_documentation`, `find_examples`, skills | Live lookup in Cursor, Claude Code, VS Code, Copilot |
+| **Agent Skills** | `skills/` inside `@craft-ts/mcp`, plus an [Agent Plugin](https://agent-plugins.org/) manifest | Multi-step workflows (architecture tests, routes, spec → primitives, migration) |
+| **Live page MCP** | Local `@craft-ts/function-registry-mcp` tool `page` — fill, click, and inspect the development tab already open | Dev only, on the running app. Not shipped in `@craft-ts/mcp`. See [Live page MCP](/guide/ai/dev-page) |
+
+Do not scrape the HTML docs. Start from `llms.txt` or the MCP tools.
+
+## 1. LLM files
+
+These follow the [llms.txt](https://llmstxt.org/) spec and are generated from
+this VitePress site at build time.
+
+* Index (curated links): https://craft-ts.github.io/craft/llms.txt
+* Concatenated docs: https://craft-ts.github.io/craft/llms-full.txt
+* One page, as markdown: append `.md` to any docs URL, for example
+  [local state](https://craft-ts.github.io/craft/guide/state/local-state.md)
+
+Paste this into an `AGENTS.md` (or `CLAUDE.md`) at the root of the app that
+imports Craft:
+
+```md
+# CraftTS
+
+This application uses `@craft-ts/core`.
+
+- Docs index: https://craft-ts.github.io/craft/llms.txt
+- MCP: `npx -y @craft-ts/mcp@beta` (`get_best_practices`, `search_documentation`)
+- Skills: `node_modules/@craft-ts/mcp/skills`
+
+yield* every Craft reader. Keep authored code within Craft's primitives and
+service model. craftRoutes files need componentDeps and
+a per-file DI check. The architecture/ suite is the graph contract: scaffold
+at bootstrap, run it during a feature. Do not add an architecture rule for
+the feature.
+```
+
+The same snippet is returned by the MCP tool `get_best_practices` (field
+`agentsMd`) and lives in the package as `content/agents.md`.
+
+## 2. MCP server
+
+```bash
+npm install -D @craft-ts/mcp@beta
+```
+
+Add a project `.mcp.json` (Cursor, Claude Code, and VS Code all understand it):
+
+```json
+{
+  "mcpServers": {
+    "craft-ts": {
+      "command": "npx",
+      "args": ["-y", "@craft-ts/mcp@beta"]
+    }
+  }
+}
+```
+
+Claude Code, from the app directory:
+
+```shell
+claude mcp add craft-ts -- npx -y @craft-ts/mcp@beta
+```
+
+### Tools
+
+| Tool | Use it to |
+| --- | --- |
+| `get_best_practices` | Load the coding-agent guide and the `AGENTS.md` snippet |
+| `search_documentation` | Find a Guide / Learn / Reference page by API or task |
+| `get_documentation_page` | Read one page as markdown (`/guide/state/local-state`) |
+| `find_examples` | Find Learn + demo examples |
+| `list_skills` / `get_skill` | Load a workflow skill and its `references/*.md` |
+| `get_llms_txt` | Get the public `llms.txt` URLs and the bundled path index |
+
+The server is **read-only**. It searches documentation bundled at publish time,
+so it works offline. It is not the runtime registry MCP used to mutate a live
+demo tab, and it does not expose the `page` tool. Driving the open development
+tab is [Live page MCP](/guide/ai/dev-page) (dev only, function-registry MCP).
+
+## 3. Agent Skills
+
+Skills follow the [Agent Skills](https://agentskills.io/specification) layout
+(`SKILL.md` + optional `references/`). The package is also an Agent Plugin
+(`plugin.json` + `mcp.json` + `skills/`).
+
+| Skill | Trigger |
+| --- | --- |
+| `craft-ts` | Any authored Craft code |
+| `craft-ts-architecture-tests` | Scaffold or run `architecture/`, or freeze a graph smell |
+| `translate-spec-to-craft-ts` | Spec / CRUD / filters / forms → primitives |
+| `craft-ts-routes` | `craftRoutes`, `componentDeps`, `TS2589` |
+| `craft-ts-service-migration` | legacy services → `craftService` |
+| `migrate-to-craft-ts` | `craft-migrate` then manual diagnostics |
+
+The [architecture suite](/guide/testing/architecture) is the app's graph
+contract (unique HTTP, unique identities, armed route DI proofs, folder
+lanes). Scaffold it at app start or at the end of `craft-migrate`. During a
+feature, run the suite that already exists. Do not add an architecture rule for the feature.
+Add a new `it()` only when a bad pattern is spotted, so it cannot recur. If
+`architecture/` is missing mid-feature, offer the scaffold; do not impose it.
+
+Point the agent at `node_modules/@craft-ts/mcp/skills`, or let it call
+`get_skill`. Cursor can also install a skill from that folder.
+
+## Verify the agent can see Craft
+
+Ask it to add a `state` counter, a paged `query`, or a `craftRoutes` file.
+It should `yield*` readers, compose insertions with `craftPipe`, and put a DI
+check in the routes file. If the app already has `architecture/`, it should
+run that suite rather than invent a new rule. If it emits legacy runtime APIs
+or a plain routes array, the MCP server or `AGENTS.md`
+snippet is not in context.
+
+## See also
+
+* [Which primitive should I use?](/guide/concepts/choose-primitive)
+* [The mental model](/guide/concepts/mental-model)
+* [Architecture rules](/guide/testing/architecture)
+* [CLI automation](/guide/routing/automation)
+* [Migration](/resources/migration)
+
+---
+
+---
+url: https://craft-ts.github.io/craft/guide/ai/mcp-tools.md
+---
+# MCP tools
+
+CraftTS exposes separate MCP servers for documentation, a running application,
+local logs, and the static dependency graph. Connect only the server required
+for the task.
+
+## Documentation MCP: `@craft-ts/mcp`
+
+Install it in an application or run it without adding a dependency:
+
+```bash
+npm install -D @craft-ts/mcp@beta
+npx -y @craft-ts/mcp@beta
+```
+
+Register it in `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "craft-ts": {
+      "command": "npx",
+      "args": ["-y", "@craft-ts/mcp@beta"]
+    }
+  }
+}
+```
+
+| Tool                     | Purpose                                                |
+| ------------------------ | ------------------------------------------------------ |
+| `get_best_practices`     | Load CraftTS rules and the `AGENTS.md` snippet         |
+| `search_documentation`   | Search Learn, Guide, Reference, Resources, or examples |
+| `get_documentation_page` | Read one documentation page as Markdown                |
+| `find_examples`          | Find tutorial and demo examples for a task             |
+| `list_skills`            | List the Agent Skills shipped with the package         |
+| `get_skill`              | Load a skill or one of its reference files             |
+| `get_llms_txt`           | Get the public `llms.txt` URLs and bundled page index  |
+
+This server is read-only and searches the documentation bundled at publish
+time. It is the right starting point when an agent needs to understand the
+CraftTS API or conventions.
+
+## Live page and registry MCP
+
+`@craft-ts/function-registry-mcp` connects over stdio to an MCP client and over
+WebSocket to the running development tab:
+
+```bash
+npm run registry:mcp
+```
+
+The [Live page MCP](/guide/ai/dev-page) page explains the named-control
+contract, client selection, and `page` actions.
+
+### Browser surface
+
+| Tool               | Purpose                                                                                |
+| ------------------ | -------------------------------------------------------------------------------------- |
+| `page`             | Read named controls, then `goto`, `fill`, `click`, or `press` and return the new state |
+| `registry.clients` | List connected tabs and their `ready`, `connecting`, or `reloading` state              |
+
+If multiple tabs are ready, pass the explicit `clientId`. Never guess based on
+which tab connected most recently.
+
+### Registry surface
+
+| Tool                     | Purpose                                                                      |
+| ------------------------ | ---------------------------------------------------------------------------- |
+| `registry.list`          | List active registry entries                                                 |
+| `registry.get`           | Read one registry entry                                                      |
+| `registry.call`          | Invoke an active registry entry                                              |
+| `registry.logs`          | Read registry and bridge events                                              |
+| `registry.override`      | Replace a primitive method at runtime for development                        |
+| `registry.restore`       | Remove a runtime override                                                    |
+| `registry.<primitive>.*` | Read or mutate `query`, `mutation`, `asyncProcess`, and `queryParams` values |
+
+The primitive-specific tools are:
+
+```text
+registry.query.get / set / update / patch
+registry.mutation.get / set / update / patch
+registry.asyncProcess.get / set / update / patch
+registry.queryParams.get / set / update / patch
+```
+
+`query`, `mutation`, and `asyncProcess` support an optional `id` for grouped
+instances. `queryParams` does not use grouped instance IDs. Runtime overrides
+and mutating value tools are development-only operations and should never be
+connected to an untrusted or production browser.
+
+## Logs MCP: `@craft-ts/log-mcp`
+
+The logs server reads JSONL files written by the Craft log server. It does not
+talk to the browser or ingest logs itself:
+
+```bash
+npm run logs:mcp
+```
+
+| Tool          | Purpose                                                                     |
+| ------------- | --------------------------------------------------------------------------- |
+| `logs.stats`  | Summarise levels, host tags, client IDs, files, and time range              |
+| `logs.search` | Filter by text, level, host ancestry, correlation ID, client, or time range |
+| `logs.tail`   | Read the most recent entries                                                |
+| `logs.clear`  | Delete all active and rotated log files                                     |
+
+Use `logs.stats` before `logs.search` to understand what is available. The
+`from` filter follows Craft host-tag ancestry, and `correlationId` finds all
+entries from one correlated flow.
+
+`logs.clear` is the only destructive tool in this server. Use it only when a
+clean reproduction is intentional.
+
+## Graph MCP: `@craft-ts/graph-mcp`
+
+The graph server answers architecture questions about **your** project from the
+same static analysis as the [architecture rules](/guide/testing/architecture):
+routes, components, services, primitives and the proven relations between them.
+It needs no running application. It reads `craft-dependency-graph.json` when the
+file exists and otherwise analyses the TypeScript program.
+
+```bash
+npm install -D @craft-ts/graph-mcp
+```
+
+Projects created with `craft create` already register it. In an existing
+project, add it to `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "craft-ts-graph": { "command": "npx", "args": ["craft-ts-graph-mcp"] }
+  }
+}
+```
+
+| Tool               | Purpose                                                                          |
+| ------------------ | -------------------------------------------------------------------------------- |
+| `graph.status`     | Source and build time of the graph, counts per kind, diagnostics                 |
+| `graph.rebuild`    | Re-analyse the program and overwrite the graph file                              |
+| `graph.search`     | Find nodes by label or id                                                        |
+| `graph.node`       | One node: metrics, relations with their proofs, optionally its source            |
+| `graph.neighbors`  | The subgraph around a node, up to three relations away                           |
+| `graph.path`       | The shortest relation chains between two nodes                                   |
+| `graph.impact`     | Every node whose output may change when this node changes                        |
+| `graph.hotspots`   | God nodes and hotspots, optionally weighted by git churn                         |
+| `graph.report`     | The [graph report](/guide/testing/graph-insights#report) as JSON                 |
+| `graph.violations` | The rules `assertArchitecture` enforces, by name, with their messages            |
+
+Every answer carries `stale`: `true` when a source file changed after the graph
+was built, `unknown` when no tsconfig is available to check. An agent calls
+`graph.rebuild` before answering about recent code.
+
+| Variable               | Default                                                               |
+| ---------------------- | --------------------------------------------------------------------- |
+| `CRAFT_GRAPH_ROOT`     | The current directory                                                 |
+| `CRAFT_GRAPH_TSCONFIG` | First of `tsconfig.graph.json`, `tsconfig.app.json`, `tsconfig.json` |
+| `CRAFT_GRAPH_FILE`     | `craft-dependency-graph.json`                                         |
+| `CRAFT_GRAPH_COVERAGE` | Unset; a `coverage-final.json` to attach coverage per node and route  |
+| `CRAFT_GRAPH_DOCS`     | Unset; comma-separated Markdown globs linked to the nodes they cite   |
+| `CRAFT_GRAPH_READONLY` | Unset; `1` removes `graph.rebuild`, for CI or shared environments     |
+
+All tools except `graph.rebuild` are read-only, and `graph.rebuild` only writes
+the graph file.
+
+### Projects created earlier
+
+`craft agents sync` adds today's agent wiring to a project generated by an
+older CraftTS:
+
+```bash
+npx craft agents sync --dry-run   # list what would change
+npx craft agents sync
+npm install && npm run graph
+```
+
+It adds the skills and hooks of the agents the project already uses (detected
+from `.agents/`, `.claude/`, `.cursor/` and `.gemini/`, or named with
+`--agents`), registers the graph server in `.mcp.json` without touching the
+servers already there, adds the `graph` and `graph:mcp` scripts and the
+dependency, and ignores the graph output. It never writes application code, and
+a second run reports that nothing changed.
+
+Do not use `craft create --force` for this: it rewrites every generated file,
+`src/` included.
+
+## Which server should an agent use?
+
+| Situation                                   | Server                                                  |
+| ------------------------------------------- | ------------------------------------------------------- |
+| “How should I write this Craft code?”       | Documentation MCP                                       |
+| “What is visible on the running page?”      | Function registry MCP → `page`                          |
+| “What value does this query have?”          | Function registry MCP → `registry.query.get`            |
+| “What happened during this flow?”           | Logs MCP → `logs.stats`, then `logs.search`             |
+| “What does this service depend on?”         | Graph MCP → `graph.search`, then `graph.node`           |
+| “What can this change break?”               | Graph MCP → `graph.impact`                              |
+| “What context should I send to an AI?”      | `provideSendContextToAi`, then copy or send the payload |
+
+---
+
+---
+url: https://craft-ts.github.io/craft/guide/ai/dev-page.md
+---
+# Live page MCP
+
+The running development tab publishes its named controls. A coding agent fills,
+clicks, and inspects **that** page — no second browser, no DOM reverse-engineering.
+
+**Use it when** a Cursor agent must drive or inspect the `ng serve` tab you
+already have open.
+**Not when** you are writing Craft away from a running app — use
+[`@craft-ts/mcp`](/resources/ai-agents) for docs and skills. **Not when** you
+want to mutate a primitive without the UI — use the `registry.*` tools on the
+same local MCP.
+
+## Connect the local MCP
+
+The tool lives on `@craft-ts/function-registry-mcp`, not on the published
+`@craft-ts/mcp` docs server. From the craft-ts repo:
+
+```sh
+npm run registry:mcp
+```
+
+Point Cursor at that stdio server. It already listens on `ws://127.0.0.1:3333`
+for the demo tab. Each tab keeps a stable `clientId` in `sessionStorage`.
+
+## One ready tab
+
+Each tab has a `clientId` in `sessionStorage`. Duplicating a tab copies it; the
+broker assigns a new id (`hello/ok`) so the two tabs do not fight.
+
+Omit `clientId` when **exactly one tab is `ready`**. A ghost `reloading` card
+(HMR, F5) does not count. Two `ready` tabs → pass `clientId` from
+`registry.clients` (id, status, url). Never pick “latest”. The error is
+`Multiple ready page clients; clientId is required. Available clients: <id> ready <url>, <id> ready <url>`.
+Zero ready with several ghosts is
+`No ready page client. Reloading: <id> (last url <url>), <id> (last url <url>)`.
+Zero cards is `page client is not connected`.
+
+Closing the tab sends `page/goodbye`; the card is dropped. Opening a new tab is
+a new id. If `page client "<id>" is not connected`, call `registry.clients` and
+retry without id when a single ready remains.
+
+Closing without goodbye (crash) looks like reload for up to 20s.
+
+## One tool: `page`
+
+Omit `act` to read the current surface. The broker **always asks the live tab**
+— a Craft `value:` that changed without a DOM mutation is still current. Pass
+`act` to run a batch, then receive the **new** state in the same round-trip.
+
+Default `detail` is `"controls"`: the named interactive surface (id, role,
+accessible name, value, enabled, index, and `track` when the node is inside
+`forNode`). Pass `detail: "dom-styles"` only to debug layout or CSS — it is large
+and opt-in.
+
+`id` is the literal local name from the helper:
+
+```ts
+import { button, craftComponent } from '@craft-ts/component';
+
+const SaveToolbar = craftComponent(
+  'SaveToolbar',
+  {},
+  () => ({}),
+  () => button('save', { type: 'button' }, 'Save'),
+);
+```
+
+That name is unique in the app graph
+(`assertInteractiveElementNamed`). The renderer writes `data-craft-name="save"`.
+Do not prefix it with the component name. When `forNode` repeats the same id, pass
+`match.index` or `match.track`.
+
+## Fill, click, goto, ready
+
+`act: [{ "goto": "/login-form" }]` navigates in the tab (Craft router).
+The WebSocket stays up. Prefer `goto` over clicking `navLink` — every nav item
+shares that id. Paths like `/login-form` and full URLs both work.
+
+A `fill` sets the control and dispatches one `input` or `change` (then blur), so
+`CraftFieldDirective` validation and touched state run. A click is `act` with
+only `id`. The batch runs in order and stops on the first error.
+
+While `ng serve` rebuilds, the socket drops but the broker **keeps** the client
+card. `page` waits until the tab is `ready` again (up to `timeoutMs`, default
+20s). You do not poll.
+
+## See also
+
+* [Coding agents](/resources/ai-agents) — which MCP to use for docs vs the live tab
+* [Architecture rules](/guide/testing/architecture) — unique interactive names
+* [Observability](/guide/advanced/observability) — primitive traces, not DOM
+
+---
+
+---
+url: https://craft-ts.github.io/craft/guide/ai/send-context-webhook.md
+---
+# Send application context to AI
+
+`provideSendContextToAi` adds a developer-oriented context inspector to a Craft
+application. It is useful when an AI assistant needs more than a copied error
+message: the selected component, the recent user journey, the relevant app
+state, and optionally the DOM and computed CSS.
+
+Typical uses include:
+
+* asking an AI assistant to explain or fix a broken screen;
+* preparing a reproducible bug report or a support ticket;
+* investigating a failed HTTP request, navigation, mutation, or query;
+* sending a consistent, structured context to an internal debugging agent.
+
+The feature is user-driven. It does not call an AI service by itself. Without
+an `endpoint`, everything stays in the browser and the user copies the prompt
+or the timeline when they choose to.
+
+## Minimal setup
+
+Register the provider once in the application providers. The default UI then
+adds an `AI context` launcher in the bottom-right corner and a context menu to
+Craft component hosts.
+
+```ts
+export const minimalAiContextProviders = [provideSendContextToAi()];
+```
+
+The two entry points are equivalent:
+
+* open the launcher to start with an empty context, then interact with the app;
+* right-click a component to start with that component already selected.
+
+From the chat, the user can add more elements with another right-click, remove
+selected elements, write an instruction, record or clear the timeline, and
+choose which sections to include in the generated Markdown prompt.
+
+## What is collected
+
+The session combines several kinds of context:
+
+* **Selected elements**: tag name, text, outer HTML, and optionally a selector.
+* **Component information**: the host name, Craft host tags, click coordinates,
+  the clicked element, and truncated host HTML.
+* **Timeline**: DOM interactions, HTTP requests, router activity, primitive
+  activity, and app snapshot reports. HTTP and navigation entries are linked by
+  operation and correlation IDs when those services provide them.
+* **App snapshots**: the reports emitted by the app snapshot registry while the
+  context is being prepared.
+* **DOM and CSS captures**: the selected component or the full page, including
+  computed styles. These captures are optional because they can be large and
+  briefly pause the page while they are collected.
+
+The default prompt contains selected elements, component information, the
+timeline summary, and app snapshots when they exist. Timeline JSON and DOM/CSS
+captures are opt-in. The checkboxes in the chat change the Markdown prompt;
+the webhook also receives the structured fields so an agent can process them
+without parsing Markdown.
+
+The chat also supports recording a named **clip**. A clip is a subset of the
+timeline, which is useful when an investigation contains several unrelated
+interactions. `Copy JSON` exports the visible timeline (or the selected clip),
+whereas `Copy prompt` builds the AI-oriented Markdown document.
+
+## Send the context to an agent
+
+Pass a browser-accessible webhook URL to enable the `Send` action:
+
+```ts
+export const aiContextProviders = provideSendContextToAi({
+  endpoint: 'https://agent.example.com/hooks/context',
+});
+```
+
+The browser sends a JSON `POST` with this versioned shape:
+
+```json
+{
+  "version": 1,
+  "prompt": "# Instruction\nInvestigate this screen",
+  "instruction": "Investigate this screen",
+  "selectedElements": [],
+  "events": [],
+  "snapshot": [],
+  "captures": {},
+  "component": {
+    "hostName": "OrdersPage",
+    "tagList": ["component:OrdersPage#1"],
+    "coords": { "x": 120, "y": 80 },
+    "outerHTML": "<section>…</section>"
+  }
+}
+```
+
+`prompt` is generated from the instruction, the selected options, and the
+structured fields. `component` is omitted when the chat was opened from the
+launcher without a captured component. `captures.component` and
+`captures.page` are present only when their corresponding DOM/CSS options were
+selected. Events generated by the webhook request itself are excluded from
+the context sent to that webhook.
+
+Any `2xx` response is successful, including `200`, `202`, and `204`. Network
+failures, timeouts, and non-`2xx` responses are shown in the chat. `Retry`
+reuses the exact same payload, and `Copy payload` copies that payload only
+after a failed request.
+
+The endpoint is application configuration shipped to the browser, not a
+secret. It must allow the application's origin through CORS and accept JSON
+`POST` requests. Put authentication and secret management in a protected
+same-origin proxy or agent gateway.
+
+## Customize the collected context with DI
+
+`provideSendContextToAi()` installs the default session, but the session reads
+its policy and extensions from injection tokens. These providers can be placed
+alongside it in `appConfig`:
+
+```ts
+export const customizedAiContextProviders = [
+  provideSendContextToAi(),
+  {
+    provide: SEND_CONTEXT_RETENTION_POLICY,
+    useValue: { maxEvents: 250, maxBytes: 1024 * 1024 },
+  },
+  {
+    provide: SEND_CONTEXT_REDACTOR,
+    useValue: (value: unknown) =>
+      typeof value === 'object' && value !== null
+        ? Object.fromEntries(
+            Object.entries(value).map(([key, entry]) =>
+              /tenantId|email/i.test(key) ? [key, '[REDACTED]'] : [key, entry],
+            ),
+          )
+        : value,
+  },
+  {
+    provide: SEND_CONTEXT_VALUE_SERIALIZER,
+    useValue: (value: unknown) =>
+      value instanceof Date ? value.toISOString() : value,
+  },
+  provideSendContextEventEnricher((event) => ({
+    ...event,
+    source: 'checkout',
+  })),
+  provideSendContextEventFilter(
+    (event) => event.name !== 'healthcheck' || event.kind !== 'custom',
+  ),
+  provideSendContextEventSource((session) => {
+    session.capture('custom', 'emitted', {
+      name: 'checkout.context-ready',
+    });
+    return () => undefined;
+  }),
+];
+```
+
+### Retention, redaction, and serialization
+
+`SEND_CONTEXT_RETENTION_POLICY` limits the number and approximate size of
+events kept in memory. The default is 500 events and 2 MiB.
+
+`SEND_CONTEXT_REDACTOR` runs before values are serialized. Use it to remove
+application-specific secrets or personal data. The built-in redactor already
+redacts keys matching `password`, `secret`, `token`, `authorization`, and
+`cookie`; replacing it means taking responsibility for the complete policy.
+
+`SEND_CONTEXT_VALUE_SERIALIZER` converts values that are not naturally JSON
+friendly, such as `Date`, `Error`, `BigInt`, functions, or circular objects.
+Both hooks apply to event `payload`, `response`, and `state` values.
+
+### Add, enrich, or filter events
+
+Use the multi providers to extend the timeline without changing feature code:
+
+* `provideSendContextEventSource(...)` connects an application event bus to the
+  session. The source may return a cleanup function.
+* `provideSendContextEventEnricher(...)` adds common metadata such as a tenant,
+  release, route, or feature flag to every event.
+* `provideSendContextEventFilter(...)` drops noisy or sensitive events before
+  they enter the session.
+
+An event source emits through `session.capture(...)` or `session.emit(...)`.
+The `kind` can be one of the built-in kinds (`dom`, `http`, `navigation`,
+`primitive`, `snapshot`, `custom`) or an application-specific string.
+
+The session and its record controller are also injectable:
+
+```ts
+import {
+  SEND_CONTEXT_RECORD_CONTROLLER,
+  SEND_CONTEXT_SESSION,
+} from '@craft-ts/component';
+import { ɵinject as inject } from '@craft-ts/core';
+
+const record = inject(SEND_CONTEXT_RECORD_CONTROLLER);
+record.startRecord('Checkout failure');
+
+// Later, from the same application flow:
+record.stopRecord();
+const summary = record.exportSummary();
+const json = record.exportJson();
+
+const session = inject(SEND_CONTEXT_SESSION);
+session.capture('custom', 'emitted', {
+  name: 'checkout.validation',
+  state: { step: 'payment' },
+});
+```
+
+Use the record controller for clips and the session for low-level event
+emission, subscription, clearing, and programmatic export.
+
+## Customize the UI with DI
+
+There are three levels of UI customization:
+
+| Provider                                                                  | What it replaces or adds                  | When to use it                                                     |
+| ------------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------ |
+| `provideSendContextChatComponent(() => MyChat)`                           | The default chat panel                    | Keep the built-in launcher and context menu, but replace the panel |
+| `provideSendContextUiRenderer(() => MyRenderer)`                          | The complete renderer                     | Own the launcher/chat lifecycle and render the whole experience    |
+| `SEND_CONTEXT_LAUNCHER_COMPONENT` / `SEND_CONTEXT_CONTEXT_MENU_COMPONENT` | The floating launcher or right-click menu | Match the application's controls or visual language                |
+
+The complete renderer receives `SendContextUiContext`. It exposes the live
+session, events, clips, selected targets, captured payload, DOM capture element,
+recording state, endpoint, and operations such as `addTarget`, `removeTarget`,
+`selectClip`, and `close`.
+
+```ts
+import {
+  provideSendContextChatComponent,
+  provideSendContextUiRenderer,
+  type SendContextUiContext,
+} from '@craft-ts/component';
+
+// A chat replacement keeps the default surrounding behavior.
+provideSendContextChatComponent(() => MyChat);
+
+// A complete renderer receives the live context as its `context` input.
+provideSendContextUiRenderer(() => MyRenderer);
+
+// MyRenderer's input contract is:
+// { context: Input<SendContextUiContext>; onClose: Output<() => void> }
+```
+
+`provideSendContextChatSection`, `provideSendContextChatAction`, and
+`provideSendContextExportSection` are multi providers intended for a custom
+renderer. They let feature libraries contribute sections, commands, or export
+views without depending on one global renderer. The built-in chat does not
+render those extension entries itself; a custom renderer reads them from
+`SendContextUiContext`.
+
+For example, a feature can contribute an action that starts a named clip:
+
+```ts
+import { provideSendContextChatAction } from '@craft-ts/component';
+
+const providers = [
+  provideSendContextChatAction({
+    id: 'record-checkout',
+    label: 'Record checkout flow',
+    run: (context) => context.session.startRecord('Checkout flow'),
+  }),
+];
+```
+
+The UI provider tokens are regular DI contracts, so a custom launcher or menu
+can be registered directly:
+
+```ts
+import {
+  SEND_CONTEXT_CONTEXT_MENU_COMPONENT,
+  SEND_CONTEXT_LAUNCHER_COMPONENT,
+} from '@craft-ts/component';
+
+const providers = [
+  {
+    provide: SEND_CONTEXT_LAUNCHER_COMPONENT,
+    useValue: MyLauncher,
+  },
+  {
+    provide: SEND_CONTEXT_CONTEXT_MENU_COMPONENT,
+    useValue: MyContextMenu,
+  },
+];
+```
+
+## Complete integration example
+
+An application can combine the default UI, a protected endpoint, stricter
+retention, and application-specific event filtering:
+
+```ts
+import { craftAppConfig } from '@craft-ts/core';
+import {
+  provideSendContextEventFilter,
+  provideSendContextToAi,
+  SEND_CONTEXT_RETENTION_POLICY,
+} from '@craft-ts/component';
+
+export const appConfig = craftAppConfig({
+  providers: [
+    provideSendContextToAi({
+      endpoint: '/internal/ai/context',
+    }),
+    {
+      provide: SEND_CONTEXT_RETENTION_POLICY,
+      useValue: { maxEvents: 250, maxBytes: 1024 * 1024 },
+    },
+    provideSendContextEventFilter((event) => event.name !== 'healthcheck'),
+  ],
+});
+```
+
+The server-side endpoint should validate `version`, authenticate the user,
+apply any additional server-side redaction, and then forward either `prompt`
+or the structured context to the selected agent.
+
+---
+
+---
 url: https://craft-ts.github.io/craft/guide.md
 ---
 # Guide
@@ -4066,9 +4899,15 @@ non-interactive starters, configuration options, and first checks
 [SSR and hydration](/guide/advanced/ssr-hydration) ·
 [Program operators](/guide/advanced/program-operators) ·
 [Pattern matching](/guide/advanced/pattern-matching) ·
-[Observability](/guide/advanced/observability) ·
+[Observability](/guide/advanced/observability)
+
+### AI agents
+
+[AI agents overview](/guide/ai/) ·
+[Coding agents](/resources/ai-agents) ·
+[MCP tools](/guide/ai/mcp-tools) ·
 [Live page MCP](/guide/ai/dev-page) ·
-[Coding agents](/resources/ai-agents)
+[Send context to AI](/guide/ai/send-context-webhook)
 
 ## Looking for one symbol?
 
@@ -12440,6 +13279,7 @@ export default [
       'craft-ts/no-explicit-craft-template-return-type': 'error',
       'craft-ts/no-extracted-craft-component-parts': 'error',
       'craft-ts/no-ephemeral-template-form-state': 'error',
+      'craft-ts/require-form-for-input-action': 'error',
       'craft-ts/template-element-name-unique': 'error',
       'craft-ts/no-craft-computed-side-effects': 'error',
       'craft-ts/require-craft-method-for-yieldable-callback': 'error',
@@ -12592,6 +13432,8 @@ checks exported arrow functions.
   logic factory.
 
 * `craft-ts/no-ephemeral-template-form-state`: forbids `let` / `const` / `var` in the fourth argument of `craftComponent(...)` and `craftDirective(...)` (inline or a same-file identifier). Declare that state in the logic factory with `state()` or `craftComputed()` instead
+
+* `craft-ts/require-form-for-input-action`: rejects a button's direct `mutate(...)` or `method(...)` call when it consumes an input-bound value, including through a local record or variable; use `insertForm`, `insertFormAttributes`, and `insertFormSubmit` for mutation-backed forms, then submit a native `form(...)` with a `type: 'submit'` button
 
 * `craft-ts/template-element-name-unique`: requires named HTML helpers to use a static, unique local name within a component; use the object-first helper form for unnamed elements such as `p({ id: 'hint' }, ...)`
 
@@ -15248,17 +16090,22 @@ This page is the one to follow before the other four.
 
 ```bash
 npm install @craft-ts/style
+npm install --save-dev @craft-ts/dev-tools
+# Optional, for visual scenario matrices and attestation:
 npm install --save-dev @craft-ts/style-testing
 ```
 
 `@craft-ts/style` carries the vocabulary — tokens, kinds, typed custom
-properties, axes, sheets, obligations. `@craft-ts/style-testing` carries the
-scenario matrix and the drivers that reach each of its points; it never ships to
-the browser, so it belongs in `devDependencies`.
+properties, axes, sheets, obligations. `@craft-ts/dev-tools` carries the
+`craft-graph` contrast command and the ESLint guard rails.
+`@craft-ts/style-testing` carries the optional scenario matrix and the drivers
+that reach each of its points; it never ships to the browser, so it belongs in
+`devDependencies` when visual scenarios or attestation are enabled.
 
 `@craft-ts/style` declares `@craft-ts/core` as a peer dependency, and
-`@craft-ts/style-testing` declares `@craft-ts/style`. Both are `sideEffects:
-false`.
+`@craft-ts/style-testing` declares `@craft-ts/style`. Keep all installed
+`@craft-ts/*` packages on the same release line. The runtime style package and
+the optional testing package are both `sideEffects: false`.
 
 ## Wire the plugin
 
@@ -16334,19 +17181,31 @@ is where the contrast question gets settled once instead of per component.
 * static and dynamic text, wherever the element can be proven to hold text;
 * a component evaluated once per surface it is rendered on.
 
-### Not covered in v1
+### Seen but not solvable in v1
 
-Each of these produces `indeterminate` with its reason — never a pass.
+When one of these constructs reaches the graph, it produces `indeterminate`
+with its reason — never a pass:
 
-* images and gradients behind text;
-* `canvas`, text inside SVG, generated pseudo-element content;
-* `filter`, `backdrop-filter`, `mix-blend-mode`, and any `opacity` below 1;
+* images and gradients recorded as `background-image`;
+* an `opacity` below 1 on the text or an element behind it;
 * semi-transparent colours, which would need compositing;
-* CSS expressions the DSL does not model;
-* colours computed from runtime data that is not a finite set;
-* external stylesheets and inline styles outside CraftTS;
-* CJK metrics and unusual font geometry — the size in CSS pixels is not the
-  size on screen, and the large-text convention assumes latin faces.
+* a dynamic class the template graph cannot resolve;
+* an unknown foreground, background or font size;
+* a scenario or render context that exceeds the configured analysis limit.
+
+### Outside the observable boundary
+
+External stylesheets, inline styles outside CraftTS, `canvas`, text inside SVG,
+generated pseudo-element content, filters and blend modes do not necessarily
+enter the typed style dump. The analyser cannot emit an `indeterminate` for a
+declaration it never receives. The `typedCss` ESLint preset guards the raw
+component styles it can see, but this is not a general CSS crawler.
+
+The large-text threshold is calculated from CSS pixels and weight. The analyser
+does not inspect the script, font face or cap height, so it does not detect CJK
+or unusual font geometry and does not emit a CJK-specific diagnostic. Treat
+those surfaces as outside the v1 proof unless their typography convention has
+been validated separately.
 
 ### What `indeterminate` means, and why it fails by default
 
@@ -16357,7 +17216,6 @@ Each of these produces `indeterminate` with its reason — never a pass.
 | `unknown-font-size` | the size is not a length this can turn into pixels |
 | `unsupported-background` | an image, a gradient, a blend, or an alpha |
 | `dynamic-style` | the class is assembled at runtime |
-| `external-style` | the styles come from outside CraftTS |
 | `incomplete-render-context` | the component is rendered somewhere unanalysed |
 
 **Indeterminate results fail the run.** `--allow-indeterminate` downgrades them
@@ -16373,8 +17231,9 @@ summary prints all three counts for that reason:
 Text contrast: 41 pass, 0 fail, 3 indeterminate (44 checked).
 ```
 
-Zero checked is not a pass either, and the tool says so: it nearly always means
-the dump and the program describe different applications.
+Zero checked fails even with `--allow-indeterminate`: it nearly always means
+the dump and the program describe different applications, and there is no
+result to review or waive.
 
 ## Fixing a violation
 
@@ -16391,29 +17250,48 @@ the dump and the program describe different applications.
 
 ## Clearing an indeterminate
 
-You have three honest moves, and inventing a colour is not one of them.
+You have two honest moves, and inventing a colour is not one of them.
 
 * **Bring the surface into the model.** A `background-color` set in raw CSS is
   the common case; `no-unmodelled-text-color` points at it.
 * **Give the text a surface it can be measured against.** Text over a hero
   image has no ratio because it has no single background — put it on a panel,
   or accept that it cannot be proven.
-* **Declare the surface uncovered.** Add its path to the
-  `no-unmodelled-text-color` rule's `uncovered` option. The gap is then
-  counted as a gap rather than mistaken for a proof, which is the whole point.
+
+If a surface lives entirely outside the observable graph, it will not create an
+indeterminate to clear. You may add its path to the
+`no-unmodelled-text-color` rule's `uncovered` option as an explicit lint
+exemption. This does **not** add a row to the contrast report. Keep the
+exclusion visible in review and do not describe the strict check as covering
+it.
 
 ## Migrating an existing project
 
-1. Name your palette: `definePalette('ui', spec)`. Nothing else changes.
+You do not need to recreate the application or add Playwright. Align the
+installed `@craft-ts/*` packages on the same current version; the contrast CLI
+is provided by `@craft-ts/dev-tools`, while `@craft-ts/style-testing` is only
+needed for visual scenarios and attestation.
+
+1. Name each palette: `definePalette('ui', spec)`. Nothing else changes.
+
 2. Turn hand-written `:hover` rules into `when(interaction.hover, …)` and add
    `interaction` to those sheets' budgets. `prefer-hover-axis` finds them.
-3. Add `dumpPath: '.craft/style-graph.json'` to `craftStyle()` in
-   `vite.config.ts`.
-4. Replace `style:check` with a build followed by
-   `craft-graph --style-contrast`.
-5. Run it with `--allow-indeterminate` **once**, to see the size of the gap.
-6. Close the gaps, or declare them uncovered, and drop the flag. Leaving it on
-   permanently is the same as not having the check.
+
+3. Enable `craftRules.configs.typedCss.rules` in ESLint. It finds raw hover and
+   contrast properties in component styles that would otherwise be invisible.
+
+4. Add `dumpPath: '.craft/style-graph.json'` to `craftStyle()` in
+   `vite.config.ts` and keep `virtual:craft-style.css` imported at app entry.
+
+5. Make `style:check` build the app, then run the strict analysis:
+
+   ```bash
+   craft-graph --style-contrast --style-dump .craft/style-graph.json --project tsconfig.app.json
+   ```
+
+6. Run that command with `--allow-indeterminate` **once**, to inventory the
+   visible gaps. Close them and remove the flag before making the check a CI
+   gate. A lint `uncovered` exemption remains outside the proof.
 
 ---
 
@@ -17001,6 +17879,20 @@ are available as buttons.
 popovers, tooltips — which have no neighbourhood, and for purely pictorial axes,
 which have no layout consequence. Both are enumerable from the sheets alone,
 with no page in sight.
+
+## Application overview
+
+For full-page scenarios (including automatically opened dialogs), configure
+`visual.app.pages[].scenarios` in `defineReviewAttestConfig`. The default formats
+are mobile 390×844, tablet 834×1112, desktop 1440×1000 and wide 2560×1440; an
+explicit viewport record replaces them. Use `captureVisualApp` from
+`@craft-ts/style-testing/visual-app/playwright` to execute the recipes and mocks.
+
+The **Aperçu de l’application** view compares each page/scenario/capture/viewport
+independently. PNG comparisons use threshold 0.1 and maxDiffPixels 10, configured
+in the project. Tolerated changes retain the last human-accepted image as their
+reference. Missing captures, changed sources or failed generation require a new
+run. Template and matrix attestations stay separate.
 
 ---
 
@@ -19320,6 +20212,65 @@ insertSelectFormTree(
 );
 ```
 
+## When an input drives an action
+
+The recommended ESLint preset enables
+`craft-ts/require-form-for-input-action`. It catches the common interaction
+where an input writes a local value and a button later reads that value to call
+an action such as `mutation.mutate(...)` or `asyncProcess.method(...)`. The
+dependency may be nested in a record or pass through a local variable; it does
+not have to be the only argument.
+That interaction is a form workflow, even when it currently has only one
+field:
+
+```ts
+// ❌ input state is assembled by hand and consumed by a button action
+const title = yield* state('title', '');
+
+input({ value: title, input: (event) => setTitle(eventValue(event)) });
+button({ click: () => addTodo.mutate(title()) }, 'Add');
+```
+
+Model the value and the submit boundary together instead:
+
+```ts
+// ✅ state + insertForm + form submit
+const titleForm = yield* state(
+  'titleForm',
+  '',
+  insertForm(
+    insertFormAttributes(() => ({ validators: [cRequired()] })),
+    insertFormSubmit(addTodo),
+  ),
+);
+
+form('AddTodoForm', {
+  *submit(event) {
+    event.preventDefault();
+    yield* titleForm.form.submit();
+  },
+}, [
+  input('TodoTitleInput', { type: 'text' }).pipe(
+    CraftFieldDirective(titleForm.form),
+  ),
+  button('AddTodoButton', { type: 'submit' }, 'Add'),
+]);
+```
+
+The rule is intentionally conservative: it does not report an input unless an
+action in the same Craft template consumes the input's bound value. It also
+does not replace type checking: validation, `insertFormAttributes`,
+`CraftFieldDirective`, field errors, and the exact `insertFormSubmit` wiring
+remain the form author's responsibility. The architecture check adds the
+cross-file constraint: a mutation-backed form must use `insertFormSubmit` and a
+native `type: 'submit'` button; the button must not call `mutate(...)` directly.
+
+`insertForm()` by itself is a valid form insertion, but it is only the base
+derivation. Add `insertFormAttributes` when the form has validators or field
+rules, and add `insertFormSubmit(mutation)` when the form owns a mutation
+submission. `insertSelectFormTree` is needed for fields inside an object-valued
+form; it is not needed for a scalar string form.
+
 ## Native controls, one binding rule
 
 `CraftFieldDirective` supports text inputs, checkboxes, selects and textareas.
@@ -20074,10 +21025,10 @@ const { userFormState } = state(
 );
 
 // Submit the form
-userFormState.form().submit(); // Automatically triggers the mutation
+userFormState.form.submit(); // Automatically triggers the mutation
 
 // Submit exceptions are inferred from the mutation and the `exceptions` rules.
-const submitErrors = userFormState.form().submitExceptions();
+const submitErrors = userFormState.form.submitExceptions();
 const firstSubmitError = submitErrors[0]?.code; // 'EMAIL_NOT_AVAILABLE'
 ```
 
@@ -20122,8 +21073,8 @@ Returning a single `craftException(...)` adds it. The final inferred union is
 available through:
 
 ```ts
-const submitExceptions = userFormState.form().submitExceptions();
-const aggregatedSubmitExceptions = userFormState.form().exceptions().submit;
+const submitExceptions = userFormState.form.submitExceptions();
+const aggregatedSubmitExceptions = userFormState.form.exceptions().submit;
 ```
 
 ## See Also
@@ -20173,7 +21124,7 @@ const { productFormState } = state(
 );
 
 // Access sub-forms
-const form = productFormState.form();
+const form = productFormState.form;
 const variant0 = form.selectVariant(0);
 const allVariants = form.items();
 ```
@@ -20226,7 +21177,7 @@ const { appointmentFormState } = state(
   ),
 );
 
-const form = appointmentFormState.form();
+const form = appointmentFormState.form;
 const dateField = form.selectDate();
 const timeField = form.selectTime();
 
@@ -22366,6 +23317,7 @@ Use an architecture rule when the requirement sounds like one of these:
 * **must not depend on** — a feature must not reach into another feature;
 * **must be owned once** — an HTTP endpoint or persisted identity has one owner;
 * **must declare a relationship** — a mutation must refresh a query;
+* **must model input-driven work as a form** — a button must not send input state directly into a mutation or async process;
 * **must remain pure** — reading a computed value must not perform work.
 
 A green architecture suite does not prove that a button works. It proves that
@@ -22405,6 +23357,7 @@ import {
   assertCraftUnique,
   assertDeclarativeArchitecture,
   assertHttpEndpointUnique,
+  assertInputActionForms,
   assertInsertSelectUnique,
   assertInteractiveElementNamed,
   assertMutationHasReactOn,
@@ -22761,6 +23714,7 @@ rules that express your application's boundaries.
 | [`assertNoUnusedPrimitiveMethods`](/guide/testing/architecture/unused-primitive-method)            | an exposed primitive insertion method has no call site anywhere in the project                                                                                                                                                                         |
 | [`assertNoDependencyCycles`](/guide/testing/architecture/dependency-cycles)                        | a directed cycle exists on `depends-on` (services, components, computeds)                                                                                                                                                                              |
 | [`assertMutationHasReactOn`](/guide/testing/architecture/mutation-reactions)                       | a `mutation` has no query `insertReactOnMutation` edge (`allow` skips named fire-and-forget mutations)                                                                                                                                                 |
+| [`assertInputActionForms`](/guide/testing/architecture/declarative-baseline)                       | a button directly triggers an input-dependent mutation or async process instead of using the form submission boundary, including when the primitive is declared in a service                                                                                 |
 | [`assertDeclarativeArchitecture`](/guide/testing/architecture/declarative-baseline)                | any of the baseline checks fail                                                                                                                                                                                                                        |
 | [`assertRouteDiProofs`](/guide/testing/architecture/route-di-proofs)                               | a routed component, pending UI or error screen has no armed `CanRun` mapper, a collection is missing `assertExhaustiveRouteExceptions`, or `app.config.ts` registers a global / route-load error screen without its `RouteExceptionComponentCheckedDI` |
 | [`assertRouteComponentsInSeparateFiles`](/guide/testing/architecture/route-component-files)        | a route loads its page component from the routing file, or multiple routed page components share one component file                                                                                                                                    |
@@ -22771,6 +23725,7 @@ rules that express your application's boundaries.
 | [`assertCraftEffectNoNetwork`](/guide/testing/architecture/craft-effect-network)                   | a `craftEffect` `calls` HTTP or a `mutation`                                                                                                                                                                                                           |
 | [`assertCraftEffectNoImperativeSync`](/guide/testing/architecture/craft-effect-imperative-sync)    | a `craftEffect` writes a `state` / `source$` or triggers a `query` / `mutation` / `asyncProcess`                                                                                                                                                       |
 | [`assertInteractiveElementNamed`](/guide/testing/architecture/interactive-element-names)           | an interactive element lacks a literal name or duplicates a `data-craft-name`                                                                                                                                                                          |
+| [`assertMetricThresholds`](/guide/testing/architecture/metric-thresholds)                          | **opt-in:** a selected node exceeds a team-defined complexity, size or coupling threshold                                                                                                                                                                                                                            |
 | [`assertQueryMutationHasServerState`](/guide/testing/architecture/server-state-loader)             | a `query` or `mutation` does not reach an allowed server-state boundary                                                                                                                                                                                |
 | [`assertPrimitiveLoaderRequirements`](/guide/testing/architecture/primitive-loader-requirements)   | an Effect-aware primitive does not declare an allowed dependency boundary                                                                                                                                                                              |
 | [`assertResourceParamsPreferQueryParams`](/guide/testing/architecture/resource-params-query-state) | a `query` or `asyncProcess` params graph depends on a `state` instead of URL-backed `queryParams`                                                                                                                                                      |
@@ -23064,6 +24019,69 @@ it('requires a unique literal data-craft-name on every interactive element', () 
 });
 ```
 
+## Metric thresholds
+
+Every node of the graph carries `metrics`: cyclomatic complexity (its own and
+with everything it contains), line count, fan-in and fan-out. No threshold
+applies by default; put the ones your team agrees on in the suite. See the
+[focused rule guide](/guide/testing/architecture/metric-thresholds) for
+before-and-after examples:
+
+```typescript
+import { assertMetricThresholds } from '@craft-ts/dev-tools/architecture-graph';
+
+it('keeps services and primitives small', () => {
+  assertMetricThresholds(graph.graph, {
+    kinds: ['service', 'primitive'],
+    max: { cyclomaticOwn: 15, fanOut: 12 },
+    allow: ['src/legacy/**', 'ReportingService'],
+  });
+});
+```
+
+`allow` takes node ids, labels, or path globs. A metric the graph could not
+compute — a node without a source range — is skipped, never treated as `0`;
+`graph.diagnostics` lists the unmeasured kinds. The assertion refuses a graph
+that carries no metrics at all, such as a JSON file written by an older
+version. `metricThresholdViolations` returns the same findings as data.
+
+See [Graph insights](/guide/testing/graph-insights) for how the metrics are
+computed, the hotspot ranking and the report.
+
+## Documentation rules
+
+The graph reads the JSDoc of each declaration and, with the opt-in Markdown
+collector, the pages that cite a node. `assertNodesDocumented` turns that into
+a rule:
+
+```typescript
+import { assertNodesDocumented } from '@craft-ts/dev-tools/architecture-graph';
+import {
+  analyzeDependencyGraph,
+  createMarkdownDocsCollector,
+} from '@craft-ts/dev-tools/dependency-graph';
+
+const documented = analyzeDependencyGraph({
+  rootDir: workspaceRoot,
+  tsConfigFilePath: 'apps/shop/tsconfig.graph.json',
+  collectors: [createMarkdownDocsCollector({ include: ['docs/**/*.md'] })],
+});
+
+it('documents every service', () => {
+  assertNodesDocumented(documented, {
+    kinds: ['service'],
+    requireDocPage: true,
+    allow: ['src/legacy/**'],
+  });
+});
+```
+
+A node fails without a JSDoc summary, and with `requireDocPage` when no page
+cites it in inline code. A node without a source range is skipped: its
+documentation is unknown, not missing. `requireDocPage` refuses a graph built
+without the collector. `undocumentedNodeViolations` returns the findings as
+data.
+
 ## Writing your own rules
 
 Start from a node you care about and assert what should be true of its
@@ -23148,9 +24166,12 @@ npx craft-graph \
 | `mermaid`  | a `.mmd` diagram                              |
 | `html`     | a standalone explorer (no server, no runtime) |
 | `both`     | JSON + catalog + Mermaid                      |
-| `all`      | JSON + catalog + Mermaid + HTML               |
+| `all`      | JSON + catalog + Mermaid + HTML + report      |
+| `report`   | `.report.md` and `.report.json`               |
 
-`--include <text>` restricts analysis to matching source paths. Use the HTML
+`--include <text>` restricts analysis to matching source paths.
+`--feature-glob`, `--churn-since` and `--coverage` shape the
+[report](/guide/testing/graph-insights#report). Use the HTML
 explorer to see a route expand into components and services before you write
 the assertion.
 
@@ -23205,7 +24226,7 @@ url: >-
 
 `assertDeclarativeArchitecture` is the first architecture test to add to a
 Craft app. It is not a style check and it does not test the DOM. It reads the
-static Craft graph and verifies seven relationships that are easy to lose during
+static Craft graph and verifies eight relationships that are easy to lose during
 a refactor:
 
 ```ts
@@ -23214,7 +24235,7 @@ export function keepTheAppDeclarative(graph: ArchitectureGraph) {
 }
 ```
 
-The same test protects seven different failure modes:
+The same test protects eight different failure modes:
 
 | Rule | If it is missing, this can happen |
 | --- | --- |
@@ -23225,6 +24246,7 @@ The same test protects seven different failure modes:
 | `assertMutationHasReactOn` | a successful write leaves the visible list stale |
 | `assertPrimitiveMethodsUsedOnce` | one exposed method silently serves several call sites and loses their context |
 | `assertNoUnusedPrimitiveMethods` | an exposed method is never called and adds noise to the primitive interface |
+| `assertInputActionForms` | a button directly triggers an input-dependent mutation or async process instead of using the form submission boundary |
 
 The following examples show the actual code shape that each rule rejects.
 
@@ -23409,6 +24431,81 @@ important part is that it is declared where the query is defined.
 
 See [Mutation reactions](./mutation-reactions).
 
+## 6. An input-driven action bypasses a form
+
+This relationship can cross files. The component may own the input and button,
+while a service owns the mutation. The graph follows both sides:
+
+```typescript
+// todo-store.ts — avant
+const title = yield* state('title', '');
+const addTodo = yield* mutation('addTodo', {
+  method: function* () {
+    return { title: yield* title() };
+  },
+  loader: saveTodo,
+});
+```
+
+```typescript
+// todo-page.ts — avant
+input('TodoTitleInput', { value: store.title });
+button('AddTodoButton', { click: function* () {
+  yield* store.addTodo.mutate();
+} }, 'Add');
+```
+
+The mutation receives no argument at the click site, but it still depends on
+the input because its `method` reads the same state. `assertInputActionForms`
+rejects this shape. A file-local ESLint rule can catch the direct version in one
+file, but only the architecture graph can follow the input, button, service and
+resource method across files.
+
+The accepted shape makes the boundary explicit:
+
+```typescript
+// todo-store.ts — après
+import type { ValidatedFormValue } from '@craft-ts/core';
+
+const addTodo = yield* mutation('addTodo', {
+  method: (title: NonNullable<ValidatedFormValue<string>>) => ({
+    title: title.trim(),
+  }),
+  loader: saveTodo,
+});
+
+// todo-page.ts — après
+const titleForm = yield* state(
+  'titleForm',
+  '',
+  insertForm(
+    insertFormAttributes(() => ({ validators: [cRequired()] })),
+    insertFormSubmit(addTodo),
+  ),
+);
+
+form('AddTodoForm', {
+  *submit(event) {
+    event.preventDefault();
+    yield* titleForm.form.submit();
+  },
+}, [
+  input('TodoTitleInput', { type: 'text' }).pipe(
+    CraftFieldDirective(titleForm.form),
+  ),
+  button('AddTodoButton', { type: 'submit' }, 'Add'),
+]);
+```
+
+For an object-valued form, add `insertSelectFormTree` and bind the native input
+to `titleForm.form.selectTitle()` instead. The `insertFormAttributes` insertion
+is where validators and field attributes belong; `insertFormSubmit(addTodo)`
+connects the validated value to the mutation. The architecture assertion
+rejects a direct button call even when a `form` and `insertFormSubmit` are also
+present, so there is only one submit boundary. `insertForm()` alone is valid,
+but it is insufficient for this mutation-backed example: the submit insertion
+is what passes the validated form value to `addTodo`.
+
 ## What the aggregate test does — and does not do
 
 The aggregate test is now understandable as a compact CI gate:
@@ -23427,6 +24524,7 @@ It does **not** cover every architecture policy. Add focused assertions for:
 * Effect loader boundaries: [`assertPrimitiveLoaderRequirements`](./primitive-loader-requirements);
 * interactive control names: [`assertInteractiveElementNamed`](./interactive-element-names);
 * `craftEffect` network and imperative-sync constraints: [Effect rules](./craft-effect-network).
+* input-driven mutations and async processes: `assertInputActionForms` (this page).
 
 Keep the aggregate assertion for the common baseline, and keep focused rules for
 policies whose failure message should explain a product or team boundary.
@@ -24465,6 +25563,127 @@ local omissions; the architecture rule catches duplicates across components.
 
 ---
 url: >-
+  https://craft-ts.github.io/craft/guide/testing/architecture/metric-thresholds.md
+---
+# Metric thresholds
+
+`assertMetricThresholds` is an optional architecture rule inspired by the
+complexity checks in Sonar. It lets a team agree on limits for the graph nodes
+it owns, then keep those limits visible in the architecture suite. It is not
+part of `assertDeclarativeArchitecture`: no threshold is imposed by default.
+
+```ts
+export function keepOwnedNodesWithinAgreedLimits(graph: ArchitectureGraph) {
+  assertMetricThresholds(graph.graph, {
+    kinds: ['service', 'component', 'primitive'],
+    max: {
+      cyclomaticOwn: 12,
+      cyclomaticTotal: 30,
+      lines: 160,
+      fanOut: 12,
+    },
+    allow: ['src/legacy/**'],
+  });
+}
+```
+
+## Before: complexity grows in one node
+
+This code is valid TypeScript, but its decisions accumulate in one unit:
+
+```typescript
+function prepareCheckout(cart: Cart, user: User) {
+  if (!user.active) return rejected('inactive user');
+  if (cart.items.length === 0) return rejected('empty cart');
+
+  for (const item of cart.items) {
+    if (item.discountable && (user.vip || item.onSale)) {
+      item.discount = calculateDiscount(item);
+    }
+  }
+
+  try {
+    return persistCheckout(cart);
+  } catch (error) {
+    return rejected(error);
+  }
+}
+```
+
+The graph counts seven decision points here (`if` × 3, `for`, `&&`, `||`,
+plus `catch`), so the cyclomatic value is eight: one plus the decision points.
+As this logic grows, its tests and its callers have to understand the same
+branching unit.
+
+## After: split the responsibilities, then protect the limit
+
+The branching can be given clearer seams. Each module can then be tested
+through a smaller interface, while the architecture suite keeps the nodes from
+growing back silently:
+
+```typescript
+function prepareCheckout(cart: Cart, user: User) {
+  const rejection = checkoutRejection(cart, user);
+  if (rejection) return rejection;
+
+  applyDiscounts(cart, user);
+  return persistCheckout(cart);
+}
+
+function checkoutRejection(cart: Cart, user: User) {
+  if (!user.active) return rejected('inactive user');
+  if (cart.items.length === 0) return rejected('empty cart');
+  return undefined;
+}
+
+function applyDiscounts(cart: Cart, user: User) {
+  for (const item of cart.items) {
+    if (item.discountable && (user.vip || item.onSale)) {
+      item.discount = calculateDiscount(item);
+    }
+  }
+}
+```
+
+The exact limit is a team decision. A common starting point is to check local
+complexity (`cyclomaticOwn`) and keep a higher ceiling for the complete owned
+subtree (`cyclomaticTotal`):
+
+```typescript
+assertMetricThresholds(graph.graph, {
+  kinds: ['service', 'primitive'],
+  max: {
+    cyclomaticOwn: 12,
+    cyclomaticTotal: 30,
+    lines: 160,
+    fanOut: 12,
+  },
+});
+```
+
+## What the rule checks
+
+* `cyclomaticOwn`: decision points attributed to the node itself.
+* `cyclomaticTotal`: the node plus everything it contains.
+* `lines`, `fanIn` and `fanOut`: optional limits for size and coupling.
+
+Use `kinds` to scope the rule and `allow` for an id, label or repository-
+relative path glob such as `src/legacy/**`. Unknown metrics are skipped and
+reported in `graph.diagnostics`; they are never treated as zero.
+
+Start with a generous threshold and lower it when the codebase has a baseline.
+This rule is a maintainability signal, not a universal quality score: a
+threshold failure should lead to a focused refactor or an explicit exception.
+
+## See also
+
+* [Graph insights](/guide/testing/graph-insights)
+* [Architecture rules](/guide/testing/architecture)
+
+---
+
+---
+url: >-
   https://craft-ts.github.io/craft/guide/testing/architecture/server-state-loader.md
 ---
 # Queries and mutations must reach server state
@@ -24827,6 +26046,19 @@ renderers display the kind and label as a fallback; they do not discard the
 node. A backend-specific renderer or architecture rule can consume the typed
 details through declaration merging.
 
+The format stays `version: 1` and every addition is an optional field. Nodes
+carry `metrics` (`cyclomaticOwn`, `cyclomaticTotal`, `lines`, `fanIn`,
+`fanOut`), computed after every collector has run. A node without `endLine` has
+no complexity or line count: those fields are absent, not `0`. Fan-in and
+fan-out count the nodes of your collector too, so a typed relation shows up in
+the [hotspots](/guide/testing/graph-insights#hotspots). `graphHash` still reads
+only node ids and relations, so the metrics never move it.
+
+Nodes may also carry `doc` (`summary`, `tags`, `rationale`) read from their
+declaration. The opt-in Markdown collector adds `doc-page` nodes and `documents`
+relations; both are part of the built-in vocabulary, so a renderer or a rule can
+rely on them without augmenting the registries.
+
 When the vocabulary changes, regenerate the committed architecture catalog and
 run the architecture suite:
 
@@ -24842,6 +26074,203 @@ npx nx architecture shop
 
 See [Architecture rules](/guide/testing/architecture) for the application
 loader, catalog generation, and baseline rules.
+
+---
+
+---
+url: https://craft-ts.github.io/craft/guide/testing/graph-insights.md
+---
+# Graph insights
+
+The dependency graph behind the [architecture rules](/guide/testing/architecture)
+also measures what it models. Complexity, size and coupling are attached to the
+nodes a CraftTS developer reasons about — a route, a service, a primitive —
+rather than to files, and they feed a report, metric thresholds and the
+[graph MCP server](/guide/ai/mcp-tools#graph-mcp-craft-ts-graph-mcp).
+
+Everything is computed statically and deterministically from the TypeScript
+program. Nothing is sampled at runtime and nothing is guessed.
+
+## Metrics
+
+Each node carries a `metrics` field:
+
+| Metric            | Meaning                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------ |
+| `cyclomaticOwn`   | `1 +` the decision points of the node itself                                               |
+| `cyclomaticTotal` | `1 +` the decision points of the node and of everything it `contains`                      |
+| `lines`           | Lines of the declaration                                                                   |
+| `fanIn`           | Distinct nodes that depend on it (`loads`, `renders`, `depends-on`, `calls`, `reads`…)     |
+| `fanOut`          | Distinct nodes it depends on                                                               |
+
+Decision points are `if`, `?:`, `case`, `for`, `for…of`, `for…in`, `while`,
+`do`, `catch`, `&&`, `||` and `??`. Each one is credited to the **innermost**
+node whose source contains it. A `craftComputed` declared inside a component
+keeps its own branches; the component counts them only in its total. Nothing is
+counted twice.
+
+`contains` is structure, not coupling: a service owning a primitive does not
+raise its fan-out.
+
+### Unknown is not zero
+
+Some nodes have no source range of their own: an HTTP endpoint aggregates call
+sites, a synthesised route check shares its alias, an Effect layer comes from a
+separate collector. Those nodes have `fanIn` and `fanOut` but no complexity and
+no line count — the fields are absent. The graph adds one
+`CRAFT_GRAPH_METRICS_UNKNOWN` diagnostic per unmeasured kind, and every
+consumer below leaves unknown values out instead of treating them as simple.
+
+## God nodes and hotspots {#hotspots}
+
+**God nodes** are the nodes most depended upon: highest `fanIn` first.
+
+**Hotspots** combine complexity, centrality and change:
+
+```text
+score = cyclomaticTotal × (1 + fanIn) × (1 + churn)
+```
+
+`churn` is the number of commits touching the node's file since a date, read
+from git. Without it, the score ranks complex central code. Template elements
+are left out of the report rankings by default: an element's total includes
+every element nested in it, so a single component's markup would fill the list.
+
+```typescript
+import { godNodes, graphHotspots } from '@craft-ts/dev-tools/graph-metrics';
+
+graphHotspots(graph, { limit: 5, kinds: ['service', 'component'] });
+```
+
+## Report {#report}
+
+```shell
+npx craft graph \
+  --project apps/shop/tsconfig.graph.json \
+  --root . \
+  --out craft-dependency-graph \
+  --format report \
+  --feature-glob 'apps/shop/src/features/:feature/**' \
+  --churn-since '3 months ago'
+```
+
+`--format report` writes `craft-dependency-graph.report.md` and
+`craft-dependency-graph.report.json`; `--format all` writes them next to the JSON
+graph and the HTML explorer. The report contains:
+
+* a summary: nodes and relations per kind, diagnostics per code;
+* god nodes and hotspots;
+* dependency cycles and unused primitive methods;
+* relations between features, when `--feature-glob` names the feature with a
+  `:name` capture;
+* the violations of the rules `assertArchitecture` enforces, grouped by rule;
+* coverage per route, when a coverage report is applied with `--coverage`;
+* documentation per kind, when JSDoc or Markdown pages were collected.
+
+Every section is sorted and every id is relative to the root, so two reports of
+the same code are identical whatever the checkout path. Commit the Markdown file
+if you want architecture changes to show up in review.
+
+The same data is available in code:
+
+```typescript
+import { formatGraphReportMarkdown, graphReport } from '@craft-ts/dev-tools/graph-report';
+import { architectureViolations } from '@craft-ts/dev-tools/architecture-graph';
+
+const report = graphReport(graph, { featureGlob: 'src/features/:feature/**' });
+const violations = architectureViolations(graph); // [{ rule, messages }]
+```
+
+## Coverage per node and per route
+
+The graph reads test coverage; it does not produce it. Write an Istanbul report
+with Vitest, then hand it to the graph:
+
+```shell
+npx vitest run --coverage --coverage.reporter=json
+npx craft graph --project apps/shop/tsconfig.graph.json --root . \
+  --format all --coverage coverage/coverage-final.json
+```
+
+Each statement is credited to the innermost node whose lines contain it, and
+the node gets `metrics.coverage = { statements, covered }` for its own
+statements. A route's coverage sums the nodes of its code slice — everything
+that can change what it renders — without counting a statement twice.
+
+Coverage is never guessed:
+
+* a node without a line range, or in a file the report does not mention, has
+  no `coverage` field. `CRAFT_GRAPH_COVERAGE_UNKNOWN` diagnostics count them per
+  kind;
+* a route lists how many nodes of its slice are unknown next to its percentage,
+  which only describes the measured part.
+
+```typescript
+import { applyCoverage, routeCoverage } from '@craft-ts/dev-tools/graph-coverage';
+
+const covered = applyCoverage(graph, JSON.parse(readFileSync(reportPath, 'utf8')));
+routeCoverage(covered); // [{ label, statements, covered, unknownNodes, … }]
+```
+
+## Documentation
+
+Each node carries a `doc` field when its declaration has something to say:
+
+```typescript
+/**
+ * Loads and caches the signed-in user.
+ * @remarks Shared by every page.
+ */
+export const { injectUserService } = craftService(/* … */, function* () {
+  // WHY: the session expires silently, so reload on focus.
+  const user = yield* query(/* … */);
+});
+```
+
+* `summary` and `tags` come from the JSDoc of the declaration, or of the
+  statement around it (`export const x = craftQuery(…)`).
+* `rationale` collects the `// WHY:`, `// NOTE:` and `// HACK:` comments, each
+  credited to the innermost node that contains it: the comment above `user`
+  belongs to the query, not to the service.
+
+Markdown pages join the graph through an opt-in collector, from the CLI with
+`--docs 'docs/**/*.md'` (repeatable) or in code with
+`createMarkdownDocsCollector({ include })`. Each page becomes a `doc-page` node
+labelled by its first heading. A page `documents` a node when it cites the
+node's label in inline code — `` `UserService` `` — and that label names exactly
+one route, component, service or primitive. A label shared by several nodes
+produces a `markdown-docs/CRAFT_GRAPH_DOC_AMBIGUOUS` diagnostic and no relation.
+Fenced code blocks are ignored.
+
+See [Documentation rules](/guide/testing/architecture#documentation-rules) to
+require them.
+
+## Thresholds
+
+Metrics become rules with `assertMetricThresholds`, opt-in and scoped by kind.
+See [Metric thresholds](/guide/testing/architecture/metric-thresholds) for
+before-and-after examples.
+
+## Explorer
+
+`craft graph --format html` (or `all`) writes a self-contained explorer. On top
+of the route view it shows:
+
+* in the details panel, the node's metrics, coverage, JSDoc, justification
+  comments and the pages that document it — unknown values read "inconnu",
+  never `0`;
+* a heat map selector (complexity, fan-in, coverage) that colours the node
+  cards, with a striped pattern for unknown values;
+* "path from" and "path to" buttons that highlight the shortest chain of
+  relations between two nodes, following their direction;
+* the ten hotspots in the sidebar, and their count next to the uncovered nodes
+  in the header.
+
+## Agents
+
+`@craft-ts/graph-mcp` exposes the graph, the metrics, the report and the impact
+of a change to an AI agent working in your project. See
+[MCP tools](/guide/ai/mcp-tools#graph-mcp-craft-ts-graph-mcp).
 
 ---
 
@@ -30555,216 +31984,6 @@ You now have, on any unexpected error: a console error in dev, a full app snapsh
 ---
 
 ---
-url: https://craft-ts.github.io/craft/guide/ai/dev-page.md
----
-# Live page MCP
-
-The running development tab publishes its named controls. A coding agent fills,
-clicks, and inspects **that** page — no second browser, no DOM reverse-engineering.
-
-**Use it when** a Cursor agent must drive or inspect the `ng serve` tab you
-already have open.
-**Not when** you are writing Craft away from a running app — use
-[`@craft-ts/mcp`](/resources/ai-agents) for docs and skills. **Not when** you
-want to mutate a primitive without the UI — use the `registry.*` tools on the
-same local MCP.
-
-## Connect the local MCP
-
-The tool lives on `@craft-ts/function-registry-mcp`, not on the published
-`@craft-ts/mcp` docs server. From the craft-ts repo:
-
-```sh
-npm run registry:mcp
-```
-
-Point Cursor at that stdio server. It already listens on `ws://127.0.0.1:3333`
-for the demo tab. Each tab keeps a stable `clientId` in `sessionStorage`.
-
-## One ready tab
-
-Each tab has a `clientId` in `sessionStorage`. Duplicating a tab copies it; the
-broker assigns a new id (`hello/ok`) so the two tabs do not fight.
-
-Omit `clientId` when **exactly one tab is `ready`**. A ghost `reloading` card
-(HMR, F5) does not count. Two `ready` tabs → pass `clientId` from
-`registry.clients` (id, status, url). Never pick “latest”. The error is
-`Multiple ready page clients; clientId is required. Available clients: <id> ready <url>, <id> ready <url>`.
-Zero ready with several ghosts is
-`No ready page client. Reloading: <id> (last url <url>), <id> (last url <url>)`.
-Zero cards is `page client is not connected`.
-
-Closing the tab sends `page/goodbye`; the card is dropped. Opening a new tab is
-a new id. If `page client "<id>" is not connected`, call `registry.clients` and
-retry without id when a single ready remains.
-
-Closing without goodbye (crash) looks like reload for up to 20s.
-
-## One tool: `page`
-
-Omit `act` to read the current surface. The broker **always asks the live tab**
-— a Craft `value:` that changed without a DOM mutation is still current. Pass
-`act` to run a batch, then receive the **new** state in the same round-trip.
-
-Default `detail` is `"controls"`: the named interactive surface (id, role,
-accessible name, value, enabled, index, and `track` when the node is inside
-`forNode`). Pass `detail: "dom-styles"` only to debug layout or CSS — it is large
-and opt-in.
-
-`id` is the literal local name from the helper:
-
-```ts
-import { button, craftComponent } from '@craft-ts/component';
-
-const SaveToolbar = craftComponent(
-  'SaveToolbar',
-  {},
-  () => ({}),
-  () => button('save', { type: 'button' }, 'Save'),
-);
-```
-
-That name is unique in the app graph
-(`assertInteractiveElementNamed`). The renderer writes `data-craft-name="save"`.
-Do not prefix it with the component name. When `forNode` repeats the same id, pass
-`match.index` or `match.track`.
-
-## Fill, click, goto, ready
-
-`act: [{ "goto": "/login-form" }]` navigates in the tab (Craft router).
-The WebSocket stays up. Prefer `goto` over clicking `navLink` — every nav item
-shares that id. Paths like `/login-form` and full URLs both work.
-
-A `fill` sets the control and dispatches one `input` or `change` (then blur), so
-`CraftFieldDirective` validation and touched state run. A click is `act` with
-only `id`. The batch runs in order and stops on the first error.
-
-While `ng serve` rebuilds, the socket drops but the broker **keeps** the client
-card. `page` waits until the tab is `ready` again (up to `timeoutMs`, default
-20s). You do not poll.
-
-## See also
-
-* [Coding agents](/resources/ai-agents) — which MCP to use for docs vs the live tab
-* [Architecture rules](/guide/testing/architecture) — unique interactive names
-* [Observability](/guide/advanced/observability) — primitive traces, not DOM
-
----
-
----
-url: https://craft-ts.github.io/craft/guide/ai/send-context-webhook.md
----
-# Send context to an AI webhook
-
-`provideSendContextToAi` is copy-only by default. Configure an endpoint to make
-the default chat send its generated context directly from the browser:
-
-```ts
-export const aiContextProviders = provideSendContextToAi({
-  endpoint: 'https://agent.example.com/hooks/context',
-});
-```
-
-The primary action is then `Send`. The request is a JSON `POST` with this
-versioned shape:
-
-```json
-{
-  "version": 1,
-  "prompt": "# Instruction\nInvestigate this screen",
-  "instruction": "Investigate this screen",
-  "selectedElements": [],
-  "events": [],
-  "snapshot": [],
-  "captures": {},
-  "component": {
-    "hostName": "OrdersPage",
-    "tagList": ["component:OrdersPage#1"],
-    "coords": { "x": 120, "y": 80 },
-    "outerHTML": "<section>…</section>"
-  }
-}
-```
-
-`prompt` is the Markdown generated from the other fields and the selected
-options. `component` is omitted when the chat was opened from the launcher
-without a captured component. `captures.component` and `captures.page` are
-present only when their corresponding DOM/CSS options were selected. Timeline
-events generated by the webhook itself are excluded from later payloads.
-
-## Success and failure
-
-Any `2xx` response is successful, including `200`, `202`, and `204`. Network
-failures, timeouts, and non-`2xx` responses show an error in the chat. The
-failed request is never copied automatically. `Retry` sends the exact same
-payload again, while `Copy payload` copies that same JSON only after the user
-asks for it. `Copy JSON` remains the separate timeline export action.
-
-Without `endpoint`, the primary action remains `Copy prompt` and no webhook
-request is made.
-
-## Browser and security constraints
-
-The endpoint must allow the browser application's origin through CORS, and it
-must accept a JSON `POST`. The URL is application configuration shipped to the
-browser: it is not a secret. This first version has no configurable headers or
-secret storage, so use a protected intermediary when the receiving agent needs
-authentication.
-
-## Complete integration example
-
-The frontend can point at a same-origin proxy or an explicitly CORS-enabled
-agent gateway:
-
-```ts
-// app.config.ts
-import { provideSendContextToAi } from '@craft-ts/component';
-
-export const providers = [
-  provideSendContextToAi({
-    endpoint: 'https://agent.example.com/hooks/context',
-  }),
-];
-```
-
-The gateway validates the version, forwards the Markdown prompt and structured
-context to the agent, and acknowledges the webhook with any `2xx` status:
-
-```ts
-// agent-gateway.ts (illustrative Express endpoint)
-app.post('/hooks/context', express.json(), async (request, response) => {
-  const payload = request.body as {
-    version: number;
-    prompt: string;
-    instruction: string;
-    selectedElements: unknown[];
-    events: unknown[];
-    snapshot: unknown[];
-    captures: Record<string, unknown>;
-  };
-
-  if (payload.version !== 1 || typeof payload.prompt !== 'string') {
-    response.status(400).json({ error: 'Unsupported context payload' });
-    return;
-  }
-
-  await agent.run({
-    prompt: payload.prompt,
-    context: {
-      instruction: payload.instruction,
-      selectedElements: payload.selectedElements,
-      events: payload.events,
-      snapshot: payload.snapshot,
-      captures: payload.captures,
-    },
-  });
-  response.sendStatus(202);
-});
-```
-
----
-
----
 url: https://craft-ts.github.io/craft/guide/advanced/temporal-runtime.md
 ---
 # Temporal runtime
@@ -31217,7 +32436,7 @@ already receive those methods as arguments — see
 | `ComponentTemplateOf`, `ComponentLogicOutputOf`, `SetupTestComponentTemplate`                                                                                                                                                                                                                                                                                                                                                                                                                                   | Resolves component logic and validates a template at compile time | [Type-level tests](/guide/testing/type-level)           |
 | `TemplateHasElement`, `TemplateRendersNamedElementWhen`, `TemplateNamedElementRendersStateWhen`, `TemplateNamedElementDelegatesToContext`, `TemplateRenderAvailableActionWhen`                                                                                                                                                                                                                                                                                                                                  | Proves what a template renders and uses                           | [Type-level tests](/guide/testing/type-level)           |
 | `Expect`, `Equal`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Turns a type-level result into a compile-time assertion           | [Type-level tests](/guide/testing/type-level)           |
-| `createArchitectureGraph`, `noExclusiveLink`, `assertCraftUnique`, `assertHttpEndpointUnique`, `assertCraftComputedPure`, `assertNoDependencyCycles`, `assertDeclarativeArchitecture`, `assertRouteDiProofs`, `assertPathBoundaries`, `assertMutationHasReactOn`, `assertPrimitiveLoaderRequirements`, `assertQueryMutationHasServerState`, `assertResourceParamsPreferQueryParams`, `assertPersistedPrimitiveHasUnique`, `assertInsertSelectUnique`, `assertCraftEffectNoNetwork`, `assertCraftEffectNoImperativeSync`, `assertInteractiveElementNamed` | Typed lookups and declarative architecture helpers                | [Architecture rules](/guide/testing/architecture)       |
+| `createArchitectureGraph`, `noExclusiveLink`, `assertCraftUnique`, `assertHttpEndpointUnique`, `assertCraftComputedPure`, `assertNoDependencyCycles`, `assertDeclarativeArchitecture`, `assertInputActionForms`, `assertRouteDiProofs`, `assertPathBoundaries`, `assertMutationHasReactOn`, `assertPrimitiveLoaderRequirements`, `assertQueryMutationHasServerState`, `assertResourceParamsPreferQueryParams`, `assertPersistedPrimitiveHasUnique`, `assertInsertSelectUnique`, `assertCraftEffectNoNetwork`, `assertCraftEffectNoImperativeSync`, `assertInteractiveElementNamed`, `assertMetricThresholds` | Typed lookups and declarative architecture helpers                | [Architecture rules](/guide/testing/architecture)       |
 
 ## Effect integration
 
@@ -31467,145 +32686,6 @@ Source repository:
 
 Effect demo source repository:
 [craft-demo-effect](https://github.com/craft-ts/craft-demo-effect).
-
----
-
----
-url: https://craft-ts.github.io/craft/resources/ai-agents.md
-description: >-
-  Point Cursor, Claude, Copilot, and other coding agents at CraftTS docs, MCP
-  tools, and Agent Skills after you import @craft-ts/core.
----
-
-# Coding agents
-
-CraftTS has a deliberate vocabulary. After you import `@craft-ts/core`, give
-the agent three layered entry points — `llms.txt`, the MCP server, and Agent
-Skills — so it can use the documented primitives and conventions.
-
-| Layer | What it is | When the agent uses it |
-| --- | --- | --- |
-| **LLM files** | [`/llms.txt`](https://craft-ts.github.io/craft/llms.txt), [`/llms-full.txt`](https://craft-ts.github.io/craft/llms-full.txt), and a `.md` sibling for every docs page | Discovery on the internet, no install |
-| **MCP server** | [`@craft-ts/mcp`](https://www.npmjs.com/package/@craft-ts/mcp) — `get_best_practices`, `search_documentation`, `find_examples`, skills | Live lookup in Cursor, Claude Code, VS Code, Copilot |
-| **Agent Skills** | `skills/` inside `@craft-ts/mcp`, plus an [Agent Plugin](https://agent-plugins.org/) manifest | Multi-step workflows (architecture tests, routes, spec → primitives, migration) |
-| **Live page MCP** | Local `@craft-ts/function-registry-mcp` tool `page` — fill, click, and inspect the development tab already open | Dev only, on the running app. Not shipped in `@craft-ts/mcp`. See [Live page MCP](/guide/ai/dev-page) |
-
-Do not scrape the HTML docs. Start from `llms.txt` or the MCP tools.
-
-## 1. LLM files
-
-These follow the [llms.txt](https://llmstxt.org/) spec and are generated from
-this VitePress site at build time.
-
-* Index (curated links): https://craft-ts.github.io/craft/llms.txt
-* Concatenated docs: https://craft-ts.github.io/craft/llms-full.txt
-* One page, as markdown: append `.md` to any docs URL, for example
-  [local state](https://craft-ts.github.io/craft/guide/state/local-state.md)
-
-Paste this into an `AGENTS.md` (or `CLAUDE.md`) at the root of the app that
-imports Craft:
-
-```md
-# CraftTS
-
-This application uses `@craft-ts/core`.
-
-- Docs index: https://craft-ts.github.io/craft/llms.txt
-- MCP: `npx -y @craft-ts/mcp@beta` (`get_best_practices`, `search_documentation`)
-- Skills: `node_modules/@craft-ts/mcp/skills`
-
-yield* every Craft reader. Keep authored code within Craft's primitives and
-service model. craftRoutes files need componentDeps and
-a per-file DI check. The architecture/ suite is the graph contract: scaffold
-at bootstrap, run it during a feature. Do not add an architecture rule for
-the feature.
-```
-
-The same snippet is returned by the MCP tool `get_best_practices` (field
-`agentsMd`) and lives in the package as `content/agents.md`.
-
-## 2. MCP server
-
-```bash
-npm install -D @craft-ts/mcp@beta
-```
-
-Add a project `.mcp.json` (Cursor, Claude Code, and VS Code all understand it):
-
-```json
-{
-  "mcpServers": {
-    "craft-ts": {
-      "command": "npx",
-      "args": ["-y", "@craft-ts/mcp@beta"]
-    }
-  }
-}
-```
-
-Claude Code, from the app directory:
-
-```shell
-claude mcp add craft-ts -- npx -y @craft-ts/mcp@beta
-```
-
-### Tools
-
-| Tool | Use it to |
-| --- | --- |
-| `get_best_practices` | Load the coding-agent guide and the `AGENTS.md` snippet |
-| `search_documentation` | Find a Guide / Learn / Reference page by API or task |
-| `get_documentation_page` | Read one page as markdown (`/guide/state/local-state`) |
-| `find_examples` | Find Learn + demo examples |
-| `list_skills` / `get_skill` | Load a workflow skill and its `references/*.md` |
-| `get_llms_txt` | Get the public `llms.txt` URLs and the bundled path index |
-
-The server is **read-only**. It searches documentation bundled at publish time,
-so it works offline. It is not the runtime registry MCP used to mutate a live
-demo tab, and it does not expose the `page` tool. Driving the open development
-tab is [Live page MCP](/guide/ai/dev-page) (dev only, function-registry MCP).
-
-## 3. Agent Skills
-
-Skills follow the [Agent Skills](https://agentskills.io/specification) layout
-(`SKILL.md` + optional `references/`). The package is also an Agent Plugin
-(`plugin.json` + `mcp.json` + `skills/`).
-
-| Skill | Trigger |
-| --- | --- |
-| `craft-ts` | Any authored Craft code |
-| `craft-ts-architecture-tests` | Scaffold or run `architecture/`, or freeze a graph smell |
-| `translate-spec-to-craft-ts` | Spec / CRUD / filters / forms → primitives |
-| `craft-ts-routes` | `craftRoutes`, `componentDeps`, `TS2589` |
-| `craft-ts-service-migration` | legacy services → `craftService` |
-| `migrate-to-craft-ts` | `craft-migrate` then manual diagnostics |
-
-The [architecture suite](/guide/testing/architecture) is the app's graph
-contract (unique HTTP, unique identities, armed route DI proofs, folder
-lanes). Scaffold it at app start or at the end of `craft-migrate`. During a
-feature, run the suite that already exists. Do not add an architecture rule for the feature.
-Add a new `it()` only when a bad pattern is spotted, so it cannot recur. If
-`architecture/` is missing mid-feature, offer the scaffold; do not impose it.
-
-Point the agent at `node_modules/@craft-ts/mcp/skills`, or let it call
-`get_skill`. Cursor can also install a skill from that folder.
-
-## Verify the agent can see Craft
-
-Ask it to add a `state` counter, a paged `query`, or a `craftRoutes` file.
-It should `yield*` readers, compose insertions with `craftPipe`, and put a DI
-check in the routes file. If the app already has `architecture/`, it should
-run that suite rather than invent a new rule. If it emits legacy runtime APIs
-or a plain routes array, the MCP server or `AGENTS.md`
-snippet is not in context.
-
-## See also
-
-* [Which primitive should I use?](/guide/concepts/choose-primitive)
-* [The mental model](/guide/concepts/mental-model)
-* [Architecture rules](/guide/testing/architecture)
-* [CLI automation](/guide/routing/automation)
-* [Migration](/resources/migration)
 
 ---
 

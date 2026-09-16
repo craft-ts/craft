@@ -35,6 +35,14 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 - [8. Test the graph](https://craft-ts.github.io/craft/learn-effect/08-testing.md)
 - [9. Call server functions — proof of concept](https://craft-ts.github.io/craft/learn-effect/09-server-functions.md)
 
+### AI agents
+
+- [AI agents](https://craft-ts.github.io/craft/guide/ai.md)
+- [Coding agents](https://craft-ts.github.io/craft/resources/ai-agents.md): Point Cursor, Claude, Copilot, and other coding agents at CraftTS docs, MCP tools, and Agent Skills after you import @craft-ts/core.
+- [MCP tools](https://craft-ts.github.io/craft/guide/ai/mcp-tools.md)
+- [Live page MCP](https://craft-ts.github.io/craft/guide/ai/dev-page.md)
+- [Send application context to AI](https://craft-ts.github.io/craft/guide/ai/send-context-webhook.md)
+
 ### Core concepts
 
 - [The mental model](https://craft-ts.github.io/craft/guide/concepts/mental-model.md)
@@ -131,6 +139,7 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 - [Type-level tests](https://craft-ts.github.io/craft/guide/testing/type-level.md)
 - [Browser boundaries](https://craft-ts.github.io/craft/guide/testing/browser-boundaries.md)
 - [Extensible architecture graph](https://craft-ts.github.io/craft/guide/testing/extensible-architecture-graph.md)
+- [Graph insights](https://craft-ts.github.io/craft/guide/testing/graph-insights.md)
 - [Craft graph vs Nx](https://craft-ts.github.io/craft/guide/testing/craft-graph-vs-nx.md)
 
 #### Architecture rules
@@ -151,6 +160,7 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 - [Keep `craftEffect` off the network](https://craft-ts.github.io/guide/testing/architecture/craft-effect-network.md)
 - [Keep `craftEffect` out of imperative synchronisation](https://craft-ts.github.io/guide/testing/architecture/craft-effect-imperative-sync.md)
 - [Named interactive elements](https://craft-ts.github.io/guide/testing/architecture/interactive-element-names.md)
+- [Metric thresholds](https://craft-ts.github.io/guide/testing/architecture/metric-thresholds.md)
 - [Queries and mutations must reach server state](https://craft-ts.github.io/guide/testing/architecture/server-state-loader.md)
 - [Primitive loader requirements](https://craft-ts.github.io/guide/testing/architecture/primitive-loader-requirements.md)
 
@@ -188,8 +198,7 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 - [Program operators](https://craft-ts.github.io/craft/guide/advanced/program-operators.md)
 - [Pattern matching](https://craft-ts.github.io/craft/guide/advanced/pattern-matching.md)
 - [Observability](https://craft-ts.github.io/craft/guide/advanced/observability.md)
-- [Live page MCP](https://craft-ts.github.io/craft/guide/ai/dev-page.md)
-- [Send context to an AI webhook](https://craft-ts.github.io/craft/guide/ai/send-context-webhook.md)
+- [AI agents](https://craft-ts.github.io/craft/guide/ai.md)
 - [Temporal runtime](https://craft-ts.github.io/craft/guide/advanced/temporal-runtime.md)
 
 ### Reference

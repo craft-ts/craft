@@ -42,7 +42,6 @@ type CardInput = {
   readonly body: RequiredContent<{
     readonly selector: {
       readonly tag: 'div';
-      readonly class: 'card-body';
       readonly 'data-slot': 'body';
     };
   }>;
@@ -61,30 +60,32 @@ const Card = craftComponent(
 
 Card({
   header: content(() => div('Title supplied by the caller')),
-  body: content(() =>
-    div({ class: 'card-body', 'data-slot': 'body' }, 'Card content'),
-  ),
+  body: content(() => div({ 'data-slot': 'body' }, 'Card content')),
 });
 ```
 
 The selector is analysed **statically**. This is rejected, because it does not
-contain `div.card-body[data-slot="body"]`:
+contain `div[data-slot="body"]`:
 
 ```ts
 Card({
   // @ts-expect-error the content does not satisfy the slot's DOM contract.
-  body: content(() => div({ class: 'wrong-class' })),
+  body: content(() => div({ 'data-slot': 'footer' })),
 });
 ```
+
+The contract names an attribute, not a class. A class comes from a sheet and is
+a list of atoms — not a name a selector can require — while a `data-*`
+attribute is a stable, declared part of the markup.
 
 Content can be built from arrays, conditions, loops and templates — the analysis
 looks for the selector in every rendered branch:
 
 ```ts
 const body = content(() => [
-  showIntro() ? div({ class: 'card-body' }, 'Introduction') : undefined,
+  showIntro() ? div({ 'data-slot': 'body' }, 'Introduction') : undefined,
   forNode(rows(), { track: (row) => row.id }, (row) =>
-    div({ class: 'card-body' }, row.label),
+    div({ 'data-slot': 'body' }, row.label),
   ),
   renderTemplate(cardRowTemplate, { $implicit: selectedRow() }),
 ]);
@@ -229,58 +230,73 @@ const Page = craftComponent(
 
 ## Styling projected content
 
-`contentStyles` is indexed by the content slot names the component declares. An
-unknown slot name is a type error.
+The component styles **its own frame** around the slot; the content is styled
+by whoever writes it, with their own sheet. What the frame offers its content
+travels the way everything crosses a component boundary in `@craft-ts/style`:
+inherited properties — `color`, fonts — and variables declared with
+`{ inherits: true }` that the content's sheet chooses to read.
 
 ```ts
 import {
-  ContentSlot,
+  color,
+  craftStyles,
+  cssVars,
+  display,
+  kind,
+  p,
+  palette,
+  space,
+} from '@craft-ts/style';
+
+/** What the card offers its content: an inherited accent it may read. */
+export const styledCardVars = cssVars('styledCard', {
+  accent: kind.color(palette.accent.info, { inherits: true }),
+});
+
+export const styledCard = craftStyles('styledCard', {
+  // The frame around the slot. `color` inherits into the content.
+  body: [display.block, p(space(4)), color(palette.text.strong)],
+});
+
+/** The caller's own sheet, for the content it supplies. */
+export const noteSheet = craftStyles('styledCardNote', {
+  root: [color(styledCardVars.accent)],
+});
+```
+
+```ts
+import {
+  content,
   craftComponent,
-  input,
+  div,
+  p,
   renderContent,
+  type ContentSlot,
 } from '@craft-ts/component';
+import { noteSheet, styledCard } from './styledcard.style';
 
 const StyledCard = craftComponent(
   'StyledCard',
-  {
-    contentStyles: {
-      body: ':scope { display: block; color: #344054; }',
-    },
-  },
+  {},
   (input: { readonly body: ContentSlot }) => input,
-  ({ body }) => renderContent('body', body),
+  ({ body }) => div({ class: styledCard.body }, renderContent('body', body)),
+);
+
+const Page = craftComponent(
+  'Page',
+  {},
+  () => ({}),
+  () =>
+    StyledCard({
+      body: content(() => p({ class: noteSheet.root }, 'Styled by its caller')),
+    }),
 );
 ```
 
-The **caller** decides explicitly whether its content accepts those styles:
-
-```ts
-StyledCard({
-  body: content(() => div('Styled content'), {
-    allowContainerStyles: true,
-  }),
-});
-
-// without the flag, the content renders but stays isolated
-StyledCard({
-  body: content(() => div('Rendered without the container styles')),
-});
-```
-
-Exposed styles apply to ordinary DOM nodes in the fragment. They never cross the
-boundary of a nested Craft component:
-
-```ts
-StyledCard({
-  body: content(
-    () => [
-      div('This node can receive contentStyles.body'),
-      NestedCraftComponent({}), // independent style boundary
-    ],
-    { allowContainerStyles: true },
-  ),
-});
-```
+Nothing reaches into the content: a caller that does not read
+`styledCardVars.accent` is unaffected by it, and a nested Craft component keeps
+its own classes. The deprecated `contentStyles` meta — CSS strings pushed into a
+slot — is refused by `no-component-css`.
 
 ## Pitfalls
 
@@ -313,29 +329,6 @@ const invalidContract = {
   kind: 'toolbar-action',
   // @ts-expect-error trigger and disabled are required.
 } satisfies ToolbarActionContract;
-```
-
-**Styling a slot that isn't one.** `contentStyles` can only reference declared
-content slots:
-
-```ts
-import {
-  ContentSlot,
-  craftComponent,
-  footer,
-  input,
-  renderContent,
-} from '@craft-ts/component';
-
-craftComponent(
-  'InvalidStyles',
-  // @ts-expect-error "footer" is not a declared content slot.
-  {
-    contentStyles: { footer: ':scope { color: red; }' },
-  },
-  (input: { readonly body: ContentSlot }) => input,
-  ({ body }) => renderContent('body', body),
-);
 ```
 
 ::: details Combining optional content and contractual actions — a dialog
@@ -419,5 +412,5 @@ The older fragment and slot primitives are no longer part of the public API.
 ## See Also
 
 * [Customization](/guide/components/customization)
-* [Encapsulated styles](/guide/components/styles)
+* [Styling a component](/guide/components/styles)
 * [Directives and `.pipe(...)`](/guide/components/directives)

@@ -49,7 +49,7 @@ export default defineConfig({
 });
 ```
 
-`craftStyle` takes four options, all optional:
+`craftStyle` takes six options, all optional:
 
 | option     | default                                          | what it decides                                          |
 | ---------- | ------------------------------------------------ | -------------------------------------------------------- |
@@ -57,6 +57,8 @@ export default defineConfig({
 | `ignore`   | `['node_modules', 'dist', '.git', '.nx', 'tmp']` | directory names the walk never descends into             |
 | `dumpPath` | none — no dump is written                        | where to write the graph dump                            |
 | `alias`    | none                                             | module aliases for the **Node** evaluation of the sheets |
+| `reset`    | `true`                                           | ship the craft-ts reset — see [Global foundation](./foundation.md) |
+| `base`     | `true`                                           | ship colour scheme, focus ring, reduced motion, selection |
 
 `alias` exists because the sheets are evaluated by a real bundler in a separate
 pass, before your app's own resolution applies. In a published project, Node

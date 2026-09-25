@@ -139,7 +139,6 @@ const Counter = craftComponent(
   },
   ({ counter }) =>
     div(
-      { class: 'counter' },
       button('increment',
         {
           type: 'button',

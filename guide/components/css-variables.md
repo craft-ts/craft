@@ -1,138 +1,160 @@
 ---
 url: https://craft-ts.github.io/craft/guide/components/css-variables.md
 ---
-# Typed CSS variables and design tokens
+# Typed CSS variables
 
-::: warning Two things named `cssVars`
-This page is `meta.cssVars` on `craftComponent`: one component's **per-instance**
-styling API, applied as custom properties on that instance's root.
-
-`cssVars(prefix, specs)` from
-[`@craft-ts/style`](../style/define.md#the-theme) is a different mechanism under
-the same name: it declares **design-system-wide** custom properties, registered
-through `@property` and typed by kind, shared by every component that reads
-them.
-
-Nothing is being renamed — both are legitimate and the migration cost would be
-real. Use this one to let a caller restyle one instance; use the other one to
-declare a theme.
-:::
-
-CSS custom properties are the public styling API of a Craft component. Craft
-extracts a contract from inline `meta.styles`, propagates unsatisfied variables
-through component templates, and applies supplied values to the component root.
-The browser's native inheritance then carries them to descendants.
-
-## Required and optional variables
-
-An unguarded use is required. A declaration or inline fallback is optional:
+A component's styling API is a set of **typed custom properties** declared with
+[`cssVars`](../style/define.md#the-theme) in its sheet. Each one has a kind — a
+colour, a length, a percentage — and a typed initial value, registered with
+`@property`. None is "required": a variable nobody sets keeps its initial value,
+and one nobody reads is reported by the architecture rule `no-dangling-css-vars`.
 
 ```ts
-import { article, craftComponent } from '@craft-ts/component';
+import {
+  bg,
+  color,
+  craftStyles,
+  cssVars,
+  defineStateAxis,
+  inlineSize,
+  kind,
+  p,
+  palette,
+  radius,
+  set,
+  space,
+  unit,
+  when,
+} from '@craft-ts/style';
+
+const inherited = { inherits: true };
+
+/** The card's public variables. Each has a typed initial value. */
+export const cardVars = cssVars('tokenCard', {
+  ink: kind.color(palette.text.strong, inherited),
+  bg: kind.color(palette.surface.raised, inherited),
+  radius: kind.length(unit.px(16), inherited),
+});
+
+/** A caller picks a look; without one, every variable keeps its initial value. */
+export const cardLook = defineStateAxis('cardLook', ['alert']);
+
+export const card = craftStyles('tokenCard', {
+  root: [
+    p(space(4)),
+    color(cardVars.ink),
+    bg(cardVars.bg),
+    radius(cardVars.radius),
+    when(cardLook.alert, [
+      set(cardVars.ink, palette.accent.danger),
+      set(cardVars.bg, palette.surface.sunken),
+    ]),
+  ],
+});
+
+/** A panel exposes its own variable and forwards it to the card inside it. */
+export const panelVars = cssVars('cardPanel', {
+  ink: kind.color(palette.accent.info, inherited),
+});
+
+export const panel = craftStyles('cardPanel', {
+  root: [p(space(4)), set(cardVars.ink, panelVars.ink)],
+});
+
+/** A registered percentage, written at runtime and interpolable. */
+export const meterVars = cssVars('cardMeter', {
+  value: kind.percentage(unit.pct(0)),
+});
+
+export const meter = craftStyles('cardMeter', {
+  fill: [inlineSize(meterVars.value), bg(cardVars.ink)],
+});
+```
+
+```ts
+import { article, craftComponent, div, type Input } from '@craft-ts/component';
+import { state } from '@craft-ts/core';
+import { assign, unit } from '@craft-ts/style';
+import { card, meter, meterVars, panel } from './card.style';
 
 const Card = craftComponent(
   'Card',
-  {
-    styles: `
-      :scope { --card-radius: 1rem; }
-      .card {
-        color: var(--card-ink);
-        background: var(--card-bg, white);
-        border-radius: var(--card-radius);
-      }
-    `,
-  },
-  () => ({}),
-  () => article({ class: 'card' }, 'Card'),
+  {},
+  (progress: Input<number>) => ({ progress }),
+  ({ progress }) =>
+    article({ class: card.root }, [
+      'Card',
+      div({
+        class: meter.fill,
+        style: function* () {
+          return assign(meterVars.value, unit.pct(yield* progress()));
+        },
+      }),
+    ]),
 );
 
-Card({ cssVars: { '--card-ink': 'navy' } });
-```
-
-`--card-ink` is required, while `--card-bg` and `--card-radius` are optional.
-Styles supplied through `cssVars` are written as custom properties on the
-component root; different instances can therefore use different values while
-sharing one scoped stylesheet.
-
-## External stylesheets
-
-An imported stylesheet is typed as `string`, so TypeScript cannot inspect it.
-Declare its contract explicitly with `required()`:
-
-```typescript
-craftComponent(
-  'ExternalCard',
-  {
-    stylesUrl: styles,
-    cssVars: {
-      '--external-card-ink': required<string>(),
-      '--external-card-gap': '1rem',
-    },
+const Page = craftComponent(
+  'Page',
+  {},
+  function* () {
+    const alertProgress = yield* state('alertProgress', 20);
+    const panelProgress = yield* state('panelProgress', 80);
+    return { alertProgress, panelProgress };
   },
-  () => ({}),
-  template,
+  ({ alertProgress, panelProgress }) => [
+    // Per instance: a variant sets the variables it changes.
+    Card({ progress: alertProgress, 'data-cardLook': 'alert' }),
+    // Forwarded: the panel's variable becomes the card's ink.
+    div({ class: panel.root }, [Card({ progress: panelProgress })]),
+  ],
 );
 ```
 
-The `craft-css-vars-contract` lint rule resolves the CSS import and checks that
-the explicit contract and file remain synchronized.
+## Per instance: a variant sets what it changes
 
-## Child-variable dispositions
+A caller does not hand a component raw values. It picks a variant — here
+`data-cardLook` — and the sheet sets the variables that variant changes with
+`set(...)`. The others keep their initial value. The set of looks is therefore
+closed and enumerable, which is what lets the [visual matrix](/guide/style/variants)
+capture every one of them.
 
-At a child call site, every variable can be handled deliberately:
+## Inherited: a parent sets, descendants read
 
-```ts
-Badge({ cssVars: { '--badge-ink': 'navy' } });
-Badge({ cssVars: { '--badge-ink': inherit } });
-Badge({ cssVars: { '--badge-ink': omit } });
-Badge({ cssVars: { '--badge-ink': forward('navy') } });
-Badge({ cssVars: { '--badge-bg': forward() } });
-```
+`{ inherits: true }` is for a variable set once on a wrapper and read below it —
+a theme, or a card that tints whatever it contains. The default, `false`, is for
+a variable an element both sets and reads on itself.
 
-* A value supplies the child directly.
-* `inherit` uses a declaration in the current component's own styles and emits
-  no inline value.
-* `omit` intentionally stops propagation and emits nothing.
-* `forward(value)` gives the parent API a default that callers can override.
-* `forward()` re-exposes an optional value without adding a default.
+## Forwarded: a parent re-exposes a child's variable
 
-Use `assertCssVarsSatisfied(routes)` next to the other route proofs. It rejects
-a routed root when a required variable has propagated all the way to a mount
-that has no component call site.
+A parent that wants its own API writes `set(child, parent)`: the panel above
+declares `panelVars.ink` and forwards it to `cardVars.ink`. A caller overrides
+the panel's variable in its own sheet, and the card follows without the panel
+knowing how the card is built.
 
-## `@property`: validation versus requiredness
+## At runtime: `assign`
 
-Craft reads authored `@property` blocks; it does not generate them. A registered
-property with a non-wildcard syntax needs an `initial-value`, so it is optional
-by construction:
+A value known only at runtime — a progress, a position, a colour picked by the
+user — is written on the element with `assign(variable, value)`, the only thing
+`style:` accepts. The sheet reads it like any other variable. Because the
+variable is registered with its kind, the browser can interpolate it: a
+`transition` on `width` driven by a percentage variable animates.
 
-```css
-@property --meter-value {
-  syntax: '<number>';
-  inherits: true;
-  initial-value: 0;
-}
-```
+## `@property` is emitted, not written
 
-Registration provides browser validation, animation support, and an initial
-value. The tradeoff is that it gives up the compile-time “nobody supplied this”
-error. `inherits: false` cannot be used for a variable supplied or forwarded by
-a parent.
+Every variable declared with `cssVars` is emitted as an `@property` block by the
+build plugin, with its syntax, its `inherits` flag and its initial value. You
+never write one by hand. Two rules follow from the registration:
 
-`@property` is document-global even when its values cascade normally. A
-component may therefore register only variables in its own namespace
-(`Meter` → `--meter-*`). Register shared design tokens once in the application's
-global stylesheet, whose lifetime matches the document.
+* an initial value must be computationally independent — `unit.px(16)`, not
+  `unit.rem(1)` — or the browser drops the whole registration; the architecture
+  suite catches it;
+* a prefix belongs to one sheet: `cssVars` throws when two sheets declare the
+  same prefix.
 
-## Scope safety
+## `meta.cssVars`
 
-Craft rejects component CSS that can silently become global:
-
-* `@import`, `:root`, `html`, and `body`;
-* unprefixed `@keyframes`, `@counter-style`, font palettes, or font families;
-* `@property` registrations outside the component namespace;
-* `!important` in component styles.
-
-Private global names use the exact component scope, for example
-`@keyframes Spinner-spin`. Craft validates these names rather than rewriting
-CSS declaration values at runtime.
+The `cssVars` field of `craftComponent`'s meta — a contract extracted from a
+CSS string, with `required()`, `inherit`, `omit` and `forward()` at the call
+site — belongs to the component CSS that `no-component-css` refuses. It is
+`@deprecated`, kept only so that an [attested bypass](/guide/components/styles#the-one-real-exception)
+stays possible.

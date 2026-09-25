@@ -188,25 +188,33 @@ and component: a wrong input name or type is a plain TypeScript error.
 
 ## Styling the component
 
-Styles go in the meta, and `:scope` is the component's own root:
+Styles go in a sheet beside the component — `tasks.style.ts` — written with
+`@craft-ts/style`:
 
 ```typescript
-craftComponent(
-  'Tasks',
-  {
-    styles: `
-      :scope { display: grid; gap: .5rem }
-      .done { text-decoration: line-through }
-    `,
-  },
-  /* … */
-);
+import {
+  craftStyles,
+  defineStateAxis,
+  display,
+  gap,
+  space,
+  textDecorationLine,
+  when,
+} from '@craft-ts/style';
+
+export const taskState = defineStateAxis('task', ['done']);
+
+export const tasks = craftStyles('tasks', {
+  root: [display.grid, gap(space(2))],
+  item: [when(taskState.done, [textDecorationLine.lineThrough])],
+});
 ```
 
-`:scope` refers to **the root of this component**. Component styles are scoped
-with CSS `@scope`, so the rule cannot leak into unrelated components — and Craft
-adds no host element or wrapper around your markup to achieve it. See
-[Encapsulated styles](/guide/components/styles).
+The template binds one constant class per element and says which state it is
+in with an attribute — `li({ class: tasks.item, 'data-task': 'done' }, …)`.
+A class is never built at render time: that is how every visual state stays
+listed in the sheet. The build emits the CSS once; nothing is injected when the
+component mounts. See [Styling a component](/guide/components/styles).
 
 ## Mounting the root
 
@@ -510,7 +518,7 @@ The full pattern — writing a directive, what it can require from its host, and
 how styles compose — is on
 [Directives and `.pipe(...)`](/guide/components/directives). See also
 [Customization](/guide/components/customization) for the three layers of
-component customization, and [Encapsulated styles](/guide/components/styles).
+component customization, and [Styling a component](/guide/components/styles).
 
 ## Every exception a component picks up must be handled
 
@@ -4579,79 +4587,20 @@ secret. It must allow the application's origin through CORS and accept JSON
 `POST` requests. Put authentication and secret management in a protected
 same-origin proxy or agent gateway.
 
-## Customize the collected context with DI
+## Configure the webhook
 
-`provideSendContextToAi()` installs the default session, but the session reads
-its policy and extensions from injection tokens. These providers can be placed
-alongside it in `appConfig`:
+`provideSendContextToAi` currently accepts the browser-accessible `endpoint`.
+Omit it to keep the experience copy-only, or pass a URL to enable sending:
 
 ```ts
-export const customizedAiContextProviders = [
-  provideSendContextToAi(),
-  {
-    provide: SEND_CONTEXT_RETENTION_POLICY,
-    useValue: { maxEvents: 250, maxBytes: 1024 * 1024 },
-  },
-  {
-    provide: SEND_CONTEXT_REDACTOR,
-    useValue: (value: unknown) =>
-      typeof value === 'object' && value !== null
-        ? Object.fromEntries(
-            Object.entries(value).map(([key, entry]) =>
-              /tenantId|email/i.test(key) ? [key, '[REDACTED]'] : [key, entry],
-            ),
-          )
-        : value,
-  },
-  {
-    provide: SEND_CONTEXT_VALUE_SERIALIZER,
-    useValue: (value: unknown) =>
-      value instanceof Date ? value.toISOString() : value,
-  },
-  provideSendContextEventEnricher((event) => ({
-    ...event,
-    source: 'checkout',
-  })),
-  provideSendContextEventFilter(
-    (event) => event.name !== 'healthcheck' || event.kind !== 'custom',
-  ),
-  provideSendContextEventSource((session) => {
-    session.capture('custom', 'emitted', {
-      name: 'checkout.context-ready',
-    });
-    return () => undefined;
-  }),
-];
+export const customizedAiContextProviders = provideSendContextToAi({
+  endpoint: '/internal/ai/context',
+});
 ```
 
-### Retention, redaction, and serialization
-
-`SEND_CONTEXT_RETENTION_POLICY` limits the number and approximate size of
-events kept in memory. The default is 500 events and 2 MiB.
-
-`SEND_CONTEXT_REDACTOR` runs before values are serialized. Use it to remove
-application-specific secrets or personal data. The built-in redactor already
-redacts keys matching `password`, `secret`, `token`, `authorization`, and
-`cookie`; replacing it means taking responsibility for the complete policy.
-
-`SEND_CONTEXT_VALUE_SERIALIZER` converts values that are not naturally JSON
-friendly, such as `Date`, `Error`, `BigInt`, functions, or circular objects.
-Both hooks apply to event `payload`, `response`, and `state` values.
-
-### Add, enrich, or filter events
-
-Use the multi providers to extend the timeline without changing feature code:
-
-* `provideSendContextEventSource(...)` connects an application event bus to the
-  session. The source may return a cleanup function.
-* `provideSendContextEventEnricher(...)` adds common metadata such as a tenant,
-  release, route, or feature flag to every event.
-* `provideSendContextEventFilter(...)` drops noisy or sensitive events before
-  they enter the session.
-
-An event source emits through `session.capture(...)` or `session.emit(...)`.
-The `kind` can be one of the built-in kinds (`dom`, `http`, `navigation`,
-`primitive`, `snapshot`, `custom`) or an application-specific string.
+Treat that URL as public application configuration. Put authentication,
+redaction, and any tenant-specific policy in a protected same-origin proxy or
+agent gateway; never put credentials in the browser bundle.
 
 The session and its record controller are also injectable:
 
@@ -4867,7 +4816,7 @@ non-interactive starters, configuration options, and first checks
 [Directives and `.pipe(...)`](/guide/components/directives) ·
 [Customization](/guide/components/customization) ·
 [Content projection](/guide/components/content-projection) ·
-[Encapsulated styles](/guide/components/styles) ·
+[Styling a component](/guide/components/styles) ·
 [Accessibility](/guide/components/accessibility)
 
 ### Forms
@@ -5004,7 +4953,7 @@ pages:
 npx --yes --package @craft-ts/dev-tools@beta craft create my-app \
   --yes --no-demos --domain app \
   --frontend-runtime=plain --backend-runtime=effect \
-  --i18n=strict --design-system=basic --typed-css \
+  --i18n=strict --design-system=basic \
   --references=all --agents=codex
 ```
 
@@ -5063,7 +5012,7 @@ For a minimal plain starter:
 
 ```bash
 npx --yes --package @craft-ts/dev-tools@beta craft create my-app \
-  --yes --effect=none --i18n=none --design-system=none --no-typed-css \
+  --yes --effect=none --i18n=none --design-system=none \
   --agents=none
 ```
 
@@ -5086,13 +5035,18 @@ The main configuration options are:
 | `--agents`           | comma-separated names or `none`       | Add editor-specific agent integrations; `AGENTS.md` is always generated   |
 | `--i18n`             | `strict`, `loose`, `none`             | Configure type-safe i18n                                                  |
 | `--design-system`    | `basic`, `none`                       | Include the design-system starter                                         |
-| `--typed-css`        | flag / `--no-typed-css`               | Enable or disable typed CSS                                               |
 | `--workspace`        | `standalone`, `nx`                    | Choose the workspace layout                                               |
 | `--references`       | `none`, `craft-ts`, `all`             | Include source references (default: CraftTS, plus EffectTS when selected) |
 | `--no-demos`         | flag                                  | Generate a domain feature without explanatory demo pages                  |
 | `--domain`           | slug                                  | Name the first domain feature when using `--no-demos`                     |
 | `--force`            | flag                                  | Allow an existing non-empty destination                                   |
 | `--json`             | flag                                  | Print the effective configuration as JSON                                 |
+
+Every project styles through `@craft-ts/style`, whatever the options: there is
+no plain-CSS starter and no `src/styles.css`. The element defaults and the app
+shell live in `src/app/app.style.ts`; `--design-system=basic` adds the starter
+design system in `src/app/ui/ui.style.ts`. `--no-typed-css` is no longer
+accepted.
 
 Use `craft create --help` to see the complete list:
 
@@ -6801,6 +6755,42 @@ yield* counter.isOdd(); // true
 Each function receives the same context and contributes its own slice. See
 [Insertions](/guide/concepts/insertions).
 
+## Keep transitions with their state
+
+Pass an intent to the state that owns a value. Do not read the value in a
+caller, calculate a replacement there, and pass the replacement back through
+a generic method such as `replace` or `update`.
+
+```typescript
+const todos = yield* state('todos', initialTodos, ({ update }) => ({
+  move: (todoId: string, direction: 'up' | 'down') => update((current) => {
+    const from = current.findIndex((todo) => todo.id === todoId);
+    const to = from + (direction === 'up' ? -1 : 1);
+    if (from < 0 || to < 0 || to >= current.length) return current;
+    const next = [...current];
+    const [todo] = next.splice(from, 1);
+    if (!todo) return current;
+    next.splice(to, 0, todo);
+    return next;
+  }),
+}));
+
+// The caller supplies only the intent.
+yield* todos.move(todoId, 'up');
+```
+
+The recommended and Effect ESLint presets enable
+`craft-ts/no-external-state-transition`. It flags calls such as
+`todos.replace(nextTodos)` or `todos.update(transition)` outside the state
+insertion. Named state commands remain available to callers; simple values
+such as an input's `setValue(value)` are allowed. Prefer not to expose generic
+whole-state mutators from domain states.
+
+The rule checks generic mutator method names on values created by Craft's
+`state(...)` primitive. It does not infer whether an arbitrarily named method
+such as `replaceTodos(nextTodos)` is a generic replacement; the state interface
+should make its command semantics clear.
+
 ## Driving it from events
 
 Bind a method to a [`source$`](/guide/reactivity/source) with
@@ -7860,27 +7850,6 @@ const { saveUser } =
       return yield* UserApiService.save(params);
     },
   });
-```
-
-Inside `craftMutations(...)`, `providers` stays on each `mutation(name, ...)`
-config, not on the wrapper:
-
-```typescript
-const userFeature = craft(
-  { name: 'userFeature', providedIn: 'root' },
-  craftMutations(() => ({
-    saveUser: mutation('saveUser', {
-      providers: [provideMutationLogger(), provideUserApiService()],
-      method: function* (user: { id: string; name: string }) {
-        yield* MutationLogger.log(`mutate:${user.id}`);
-        return user;
-      },
-      loader: function* ({ params }) {
-        return yield* UserApiService.save(params);
-      },
-    }).saveUser,
-  })),
-);
 ```
 
 :::
@@ -10429,14 +10398,15 @@ export const UsersList = craftComponent(
       ),
     ),
 
-    div({ class: 'pagination' }, [
+    // `pagerSheet` is the page's sheet, from users-page.style.ts.
+    div({ class: pagerSheet.bar }, [
       button({ click: page.previous, disabled: page.isFirst }, 'Previous'),
       span(page.label),
       button({ click: page.next }, 'Next'),
     ]),
 
     ifNode(userQuery.isPlaceHolderData, () =>
-      div({ class: 'loading-indicator' }, 'Loading new page…'),
+      div({ class: pagerSheet.loading }, 'Loading new page…'),
     ),
   ],
 );
@@ -11176,7 +11146,7 @@ same instance. Use `global` only for genuinely app-wide state.
 ### `manuallyProvidedAtRoot`
 
 * explicit provider helper, but designed to be mounted at root
-* also exposes `XToProvide` for public provider composition
+* exposes the generated `provideX()` helper for explicit root composition
 * allows this scope to be yielded by global services, which is not possible with `toProvide` (it still requires explicit setup when testing with `setupCraftServiceTestingByRegister`).
 
 ### `function`
@@ -13282,6 +13252,7 @@ export default [
       'craft-ts/require-form-for-input-action': 'error',
       'craft-ts/template-element-name-unique': 'error',
       'craft-ts/no-craft-computed-side-effects': 'error',
+      'craft-ts/no-external-state-transition': 'error',
       'craft-ts/require-craft-method-for-yieldable-callback': 'error',
       'craft-ts/prefer-direct-yieldable-callback': 'error',
       'craft-ts/prefer-deep-yieldable-for-item': 'warn',
@@ -13327,6 +13298,7 @@ What each rule does:
 * `craft-ts/prefer-craft-template-blocks`: keeps `craftComponent(...)` templates declarative by rejecting ternaries, logical expressions, negations, and imperative control flow; use `ifNode(...)`, `matchNode.exhaustive(...)`, `forNode(...)`, or `deferNode(...)`
 * `craft-ts/require-craft-computed-for-dynamic-template-lookup`: rejects dynamic object or array lookups in a Craft template when the lookup key comes from a template parameter; move the lookup to a named `craftComputed()` in the component logic factory and bind that value directly
 * `craft-ts/no-render-writes`: rejects detectable `set()`, `update()`, and `mutate()` calls in component templates and render bindings while allowing DOM event and `onXxx` output callbacks
+* `craft-ts/no-external-state-transition`: rejects generic `replace`, `set`, `update`, or `patch` calls on a value returned by Craft `state(...)` outside its state insertion. Put the transition behind a named state method that accepts intent and computes the next value internally.
 * `craft-ts/require-reactive-template-bindings`: requires signals, named Craft values, and component inputs to be read inside granular binding callbacks instead of during VNode construction; static values remain valid
 * `craft-ts/no-craft-use`: forbids the synchronous `craftUse(...)` escape hatch in Craft TypeScript files; use a generator and delegate the reader with `yield*` instead
 * `craft-ts/require-craft-component-for-exported-node-factory`: requires an exported function that directly returns a Craft node, such as `button(...)`, to be declared with `craftComponent(...)` so Craft directives and composition remain available
@@ -13541,6 +13513,8 @@ checks exported arrow functions.
 
 * `craft-ts/no-imperative-craft-method-actions`: forbids composing multiple imperative actions in a `craftMethod`; emit a `source$` event and let the affected query react with `insertReactOnMutation(...)` instead. A handler such as `event.preventDefault()` followed by one `mutation.mutate(...)` remains valid.
 
+* `craft-ts/no-event-only-craft-method`: errors by default when a `craftMethod` only calls `preventDefault()`, `stopPropagation()`, or `stopImmediatePropagation()` and then delegates to one action. Bind the action with [`eventAction(...)`](/guide/components/directives#event-actions-and-dom-modifiers) on the element. The default architecture check enforces the same rule across files.
+
 * `craft-ts/no-remote-work-in-craft-method`: forbids `CraftHttpClient.*(...)` inside `craftMethod` because that action boundary does not own request loading, cancellation, exceptions, or graph dependencies; define the request directly in the `query` or `mutation` loader.
 
 * `craft-ts/no-type-assertions-in-resource-loader`: forbids `as ...` and angle-bracket assertions inside `query`, `mutation`, and `asyncProcess` loaders because assertions only silence TypeScript and can hide Promise, response, or transport mismatches; repair the request or adapter typing instead.
@@ -13585,7 +13559,13 @@ checks exported arrow functions.
 
 * `craft-ts/require-pending-component-di-check`: generates the independent `RouteCheckedDI` check for each `pendingComponent`
 
-* `craft-ts/no-raw-class`: forbids a `class:` binding that is a string, a template literal or a function, in any file that imports `@craft-ts/style`. A class assembled at render time is a visual state nothing recorded, so the [visual matrix](/guide/style/testing) would enumerate what the sheets declare while the DOM shows something else. Move the rule into the sheet and bind the class it returns; make the variation an axis and set a `data-*` attribute
+* `craft-ts/no-raw-class`: requires every `class:` binding — on an element, in `attrs`, on a component `host` — to trace back to a sheet imported from a `*.style` module: `sheet.key`, a `const` bound to one, an array of them, a typed input (a parameter or a member of one), or a function that only returns one. A string, a template literal, a conditional or an object of booleans is refused. A class assembled at render time is a visual state nothing recorded, so the [visual matrix](/guide/style/testing) would enumerate what the sheets declare while the DOM shows something else; and a sheet declared outside a `*.style.ts` is never evaluated by the build, so its class has no CSS. Make the variation an axis and set a `data-*` attribute
+
+* `craft-ts/no-inline-style`: restricts `style:` to `assign(...)` from `@craft-ts/style` — or an array of them, an object spreading only them, a conditional whose branches are all of them, or a function that only returns them. What varies at runtime is a typed variable (`cssVars` + `assign`), read by a sheet; `attrs.style` is always refused
+
+* `craft-ts/no-component-css`: forbids `meta.styles`, `meta.stylesUrl` and `meta.contentStyles` on `craftComponent` / `craftDirective`, and every `.css` import except `virtual:craft-style.css`. Global rules go in [`craftGlobalStyles`](/guide/style/foundation), fonts in `defineFont`
+
+* `craft-ts/no-forbidden-eslint-disable`: requires a reason on every directive that disables a design-system rule — `// eslint-disable-next-line craft-ts/no-raw-class -- markdown output carries its own classes`. The reason is what the reviewer decides on in Review Attest. It also forbids disabling the rules listed in `.craft/eslint-disable-policy.json`. A blanket `eslint-disable` silences this rule too, so it cannot be reported here; Review Attest lists it
 
 * `craft-ts/no-raw-css-value`: forbids a string or number literal as an argument to a `@craft-ts/style` helper — `p('12px')`, `bg('red')`. If the scale is missing the step, add it to the scale; if the value genuinely cannot be proven, `unsafeLength('13px', reason)` compiles and makes the debt countable in the [graph](/guide/style/testing#what-the-graph-adds)
 
@@ -13593,7 +13573,7 @@ checks exported arrow functions.
 
 * `craft-ts/style-file-boundary`: restricts a `*.style.ts` to style-vocabulary imports. The [build plugin](/guide/style/setup) imports the file in Node to read what it registered, so an application import would run application code at build time
 
-* `craft-ts/craft-css-token-registry`: reports a custom property registered with `@property` by two different components. A custom property may have only one owner; two silently fight over its syntax and initial value
+* `craft-ts/craft-css-token-registry`: reports a custom property registered with `@property` by two different components. A custom property may have only one owner; two silently fight over its syntax and initial value. Part of the `legacyComponentCss` preset (see below)
 
 * `craft-ts/require-effect-adapters`: requires the Effect-aware adapters — `queryEffect`, `mutationEffect`, `asyncProcessEffect`, and `transitionGuardEffect` — instead of the plain primitives and `transitionGuard` in an Effect application. See [Choose the right adapter](/guide/advanced/effect#choose-the-right-adapter)
 
@@ -13751,7 +13731,9 @@ extracted factories, `h('tag')`), not only `craftComponent` argument 3.
 * `valid-aria`, `role-has-required-aria`, `target-blank-noopener`
 * `prefer-relative-heading`, `require-route-heading-outline`,
   `require-outlet-heading-section`, `no-heading-level-skip`
-* `require-focus-visible`, `require-reduced-motion` (CSS of `craftComponent`)
+* `require-focus-visible`, `require-reduced-motion` (CSS of `craftComponent`) —
+  superseded by the `craft.base` layer of [`@craft-ts/style`](/guide/style/foundation),
+  which lays both once for the document; they are no longer in `recommended`
 
 See [Accessibility](/guide/components/accessibility).
 
@@ -14008,13 +13990,39 @@ On an existing codebase, enable them in waves rather than all at once:
    `require-yieldable-template-method`, `require-yieldable-insertion-write`.
    These ask for real refactors.
 
-The four style rules — `no-raw-class`, `no-raw-css-value`, `no-free-has`,
-`style-file-boundary` — are in `craftRules.configs.recommended` at `'error'`,
-and they are **gated on the import**: they fire only in files that import
-`@craft-ts/style`. A component you have not migrated is not claiming the
-guarantee, so nothing reports it. The day a file starts using the design system
-is the day it starts being held to it — which is why enabling them on an
-unmigrated codebase costs nothing.
+The design system is the only way to style a component. The style rules —
+`no-raw-class`, `no-inline-style`, `no-component-css`, `no-raw-css-value`,
+`no-free-has`, `style-file-boundary` — are in `craftRules.configs.recommended`
+at `'error'`, in **every** file: none of them waits for a file to import
+`@craft-ts/style`.
+
+To migrate a project in steps, turn the three binding rules off in **its own**
+ESLint config, with a `TODO` comment the migration removes, and keep
+the rules that read the legacy component CSS on in the meantime:
+
+```js
+{
+  // TODO: remove once this project is migrated to @craft-ts/style.
+  files: ['**/src/**/*.ts'],
+  rules: {
+    ...craftRules.configs.legacyComponentCss.rules,
+    'craft-ts/no-raw-class': 'off',
+    'craft-ts/no-inline-style': 'off',
+    'craft-ts/no-component-css': 'off',
+  },
+},
+```
+
+`legacyComponentCss` groups the rules that read a component's CSS text —
+`craft-css-vars-contract`, `craft-styles-scope-safe`, `craft-css-var-naming`,
+`craft-css-token-registry`, `no-hardcoded-design-values`,
+`no-important-in-component-styles`, `require-focus-visible`,
+`require-reduced-motion`. They left `recommended` because `no-component-css`
+leaves them nothing to read.
+
+A genuine bypass — a third-party widget that ships its own CSS, HTML rendered
+from markdown — stays possible, one line at a time, with a reason:
+`// eslint-disable-next-line craft-ts/no-component-css -- vendor date picker ships its stylesheet`.
 
 The two migration rules also expose a VS Code quick fix that inserts a temporary
 local disable comment with the intended migration note, so you can unblock a
@@ -15005,7 +15013,7 @@ export const App = craftComponent(
   'App',
   {},
   () => ({}),
-  () => main({ class: 'content' }, CraftRouterOutlet()),
+  () => main(CraftRouterOutlet()),
 );
 ```
 
@@ -15088,17 +15096,17 @@ provideCraftLoading(
 ),
 ```
 
-| Feature                    | Token                                                                 | Default                           |
+| Feature                    | Service helper(s)                                                     | Default                           |
 | -------------------------- | --------------------------------------------------------------------- | --------------------------------- |
-| `withPendingComponent`     | `CRAFT_PENDING_COMPONENT`                                             | `DefaultCraftPendingComponent`    |
-| `withLoadingText`          | `CRAFT_LOADING_TEXT`                                                  | locale-aware (en/fr, fallback en) |
-| `withTransitionTimings`    | `CRAFT_STAY_MS` / `CRAFT_BLANK_MS` / `CRAFT_PENDING_MIN_MS`           | `300` / `300` / `0`               |
-| `withErrorComponent`       | `CRAFT_ERROR_COMPONENT`                                               | `null`                            |
-| `withRouteLoadError`       | `CRAFT_ROUTE_LOAD_ERROR_COMPONENT` / `CRAFT_ROUTE_LOAD_RETRY`         | `null` / one retry after 250 ms   |
-| `withCraftViewTransitions` | `CRAFT_VIEW_TRANSITIONS_ENABLED` / `CRAFT_VIEW_TRANSITION_SKIP_BLANK` | `false` / `false`                 |
-| `withA11yNavigationFocus`  | `CRAFT_A11Y_NAVIGATION_FOCUS`                                         | `false`                           |
+| `withPendingComponent`     | `CraftPendingComponent`                                               | `DefaultCraftPendingComponent`    |
+| `withLoadingText`          | `CraftLoadingText`                                                     | locale-aware (en/fr, fallback en) |
+| `withTransitionTimings`    | `CraftStayMs` / `CraftBlankMs` / `CraftPendingMinMs`                  | `300` / `300` / `0`               |
+| `withErrorComponent`       | `CraftErrorComponent`                                                 | `null`                            |
+| `withRouteLoadError`       | `CraftRouteLoadErrorConfig` / `CraftRouteLoadRetry`                   | `null` / one retry after 250 ms   |
+| `withCraftViewTransitions` | `CraftViewTransitionsEnabled` / `CraftViewTransitionSkipBlank`       | `false` / `false`                 |
+| `withA11yNavigationFocus`  | `CraftA11yNavigationFocus`                                            | `false`                           |
 
-The default pending component renders `CRAFT_LOADING_TEXT`, which reads `LOCALE_ID` and picks a
+The default pending component renders `CraftLoadingText`, which reads `LOCALE_ID` and picks a
 built-in translation (`Loading…` / `Chargement…`).
 
 ## Per-route overrides
@@ -15498,15 +15506,13 @@ import {
   CraftRouteLoadRecovery,
   provideHostName,
 } from '@craft-ts/core';
+// A sheet beside the screen: its frame, and the row of actions.
+import { loadError } from './route-load-error.style';
 
 export const MyRouteLoadErrorScreen = craftComponent(
   'MyRouteLoadErrorScreen',
   {
     providers: [provideHostName('component:MyRouteLoadErrorScreen')],
-    styles: `
-      :scope { padding: 2rem; border: 1px solid #f97316; border-radius: 8px }
-      .actions { display: flex; gap: .75rem; margin-top: 1rem }
-    `,
   },
   function* () {
     return {
@@ -15517,14 +15523,14 @@ export const MyRouteLoadErrorScreen = craftComponent(
   ({ error, recovery }) => {
     const current = error();
 
-    return div([
+    return div({ class: loadError.root }, [
       h2('Route could not be loaded'),
       p(
         current
           ? `Failed to load ${current.payload.phase} for route "${current.payload.routePath}" after ${current.payload.attempt} attempts.`
           : 'The requested route chunk could not be loaded.',
       ),
-      div({ class: 'actions' }, [
+      div({ class: loadError.actions }, [
         button({ click: () => void recovery.retry() }, 'Retry route load'),
         button({ click: () => recovery.reload() }, 'Reload app'),
       ]),
@@ -15841,7 +15847,7 @@ craftComponent(name, meta, factory, template);
 | Argument   | What it is                                                        |
 | ---------- | ----------------------------------------------------------------- |
 | `name`     | the component's name — used for host tags, snapshots, diagnostics |
-| `meta`     | `providers`, `styles`, `host`, `contentStyles`                    |
+| `meta`     | `providers`, `host`                                               |
 | `factory`  | the **logic**: builds and returns the context                     |
 | `template` | receives that context, returns nodes                              |
 
@@ -15994,23 +16000,26 @@ ternary is the wrong tool for **structure**, is in
 ## The meta
 
 ```typescript
+import { card } from './card.style';
+
 craftComponent(
   'Card',
   {
     providers: [provideCardStore()],
-    styles: ':scope { padding: 1rem } .title { font-weight: 700 }',
-    host: { class: 'card-host' },
+    host: { class: card.root },
   },
   /* … */
 );
 ```
 
 * **`providers`** — the component's own DI scope, evaluated before the template.
-* **`styles`** — scoped with CSS `@scope`; `:scope` is this component's root. See
-  [Encapsulated styles](/guide/components/styles).
-* **`host`** — default properties for the root element.
-* **`contentStyles`** — styles offered to projected content, per slot. See
-  [Content projection](/guide/components/content-projection).
+* **`host`** — default properties for the root element. Its `class` comes from
+  a sheet, like every class.
+
+The meta carries no CSS. A component's look lives in a `*.style.ts` sheet beside
+it — see [Styling a component: the only way](/guide/components/styles).
+`styles`, `stylesUrl` and `contentStyles` still exist on the type, deprecated,
+and `craft-ts/no-component-css` refuses them.
 
 ## Composing behaviour
 
@@ -16124,7 +16133,7 @@ export default defineConfig({
 });
 ```
 
-`craftStyle` takes four options, all optional:
+`craftStyle` takes six options, all optional:
 
 | option     | default                                          | what it decides                                          |
 | ---------- | ------------------------------------------------ | -------------------------------------------------------- |
@@ -16132,6 +16141,8 @@ export default defineConfig({
 | `ignore`   | `['node_modules', 'dist', '.git', '.nx', 'tmp']` | directory names the walk never descends into             |
 | `dumpPath` | none — no dump is written                        | where to write the graph dump                            |
 | `alias`    | none                                             | module aliases for the **Node** evaluation of the sheets |
+| `reset`    | `true`                                           | ship the craft-ts reset — see [Global foundation](./foundation.md) |
+| `base`     | `true`                                           | ship colour scheme, focus ring, reduced motion, selection |
 
 `alias` exists because the sheets are evaluated by a real bundler in a separate
 pass, before your app's own resolution applies. In a published project, Node
@@ -16449,6 +16460,20 @@ ship with `@craft-ts/style` and need no declaration — they are driven by the
 user agent or by the element's own state, not by an attribute you own. `scheme`
 is the one the theme below uses.
 
+`interaction` (`hover`, `focus`, `active`, `disabled`) reads the element's own
+pseudo-classes. Three more read an ARIA attribute instead of a `data-*` one, so
+the look and what assistive technology announces cannot disagree:
+
+| Axis                  | Opens on                  | Typical element               |
+| --------------------- | ------------------------- | ----------------------------- |
+| `ariaCurrent.page`    | `[aria-current='page']`   | the router's active link      |
+| `ariaCurrent.true`    | `[aria-current='true']`   | the current item of a list    |
+| `ariaPressed.pressed` | `[aria-pressed='true']`   | a toggle button that is on    |
+| `ariaInvalid.true`    | `[aria-invalid='true']`   | a field whose value was refused |
+
+Set the attribute for accessibility; the sheet follows it. A second `data-*`
+attribute for the same state would be one more thing to keep in sync.
+
 ### `axisPoint` — the escape hatch
 
 `axisPoint(axis, point, open, driver, extra)` builds a point by hand, for a
@@ -16507,11 +16532,11 @@ computationally independent initial value; a relative one makes the browser drop
 the registration entirely, and silently. The theme writes the `rem` value in the
 rule below.
 
-::: tip `cssVars` here is not `meta.cssVars`
-`cssVars(prefix, specs)` from `@craft-ts/style` declares registered custom
-properties for a design system. `meta.cssVars` on `craftComponent` declares one
-component's per-instance styling API. Same word, two mechanisms — see
-[Typed CSS variables](../components/css-variables.md) for the other one.
+::: tip One `cssVars` for the theme and for a component
+The same `cssVars` declares a design system's theme and a single component's
+styling API — per-instance variants, inheritance, forwarding, runtime values.
+See [Typed CSS variables](../components/css-variables.md). The deprecated
+`meta.cssVars` on `craftComponent` is a different, CSS-string mechanism.
 :::
 
 ## `seal` — closing a tree
@@ -16600,6 +16625,17 @@ Two consequences worth knowing:
   form CSS would accept. It can never produce CSS a browser rejects. The list is
   exported as `NARROWED_PROPERTIES`.
 
+A few values the table cannot type on its own have constructors:
+
+* `gradient.linear`, `.radial`, `.repeatingLinear`, `.repeatingConic`, written
+  with `bgImage(...)` — several images make several layers, and `bgSize` /
+  `bgPosition` take one inline and one block value;
+* `uaScheme.light` / `.dark` for `color-scheme`, so native controls follow the
+  theme;
+* `spanAllColumns` for `grid-column: 1 / -1`;
+* `pseudo.content.attr(ident('data-x'))` for a `::before` / `::after` whose text
+  is an attribute the template writes.
+
 ## Typed custom properties
 
 ```ts
@@ -16629,6 +16665,332 @@ theme variable is the opposite — set once on a wrapper, read by everything
 below — so pass `{ inherits: true }`. A non-inheriting theme hands every
 descendant the initial value, which looks exactly like dark mode not working,
 with no error anywhere.
+
+---
+
+---
+url: https://craft-ts.github.io/craft/guide/style/foundation.md
+---
+# Global foundation and fonts
+
+An app built on `@craft-ts/style` has no `styles.css`. What used to go there
+falls into three layers, and craft-ts writes the first two for you:
+
+| layer          | written by                   | what it holds                                                            |
+| -------------- | ---------------------------- | ------------------------------------------------------------------------ |
+| `craft.reset`  | craft-ts, on by default      | a modern reset                                                           |
+| `craft.base`   | craft-ts, on by default      | colour scheme, focus ring, reduced motion, selection, form accent        |
+| `craft.global` | your app, `craftGlobalStyles` | your theme variables on `:root`, element defaults (`body`, `a`, …)       |
+
+They come before the component layers. The full order is fixed by the emitter,
+whatever order your modules are imported in:
+
+```css
+@layer craft.reset, craft.base, craft.tokens, craft.global,
+       craft.components, craft.variants, craft.overrides;
+```
+
+Every layer is named `craft.*`. A third-party stylesheet that arrives unlayered
+wins over all of them — that is how CSS treats unlayered styles — which is
+exactly why one should be rare, deliberate and attested.
+
+## The reset
+
+On by default. It sets `box-sizing: border-box` everywhere, removes default
+margins, makes media blocks that never overflow (`max-inline-size: 100%`), lets
+form controls inherit the document font, balances headings and avoids orphans
+in paragraphs (`text-wrap`), wraps long words (`overflow-wrap: anywhere`) and
+stops mobile browsers from inflating text.
+
+It is written with the typed vocabulary, like any sheet
+([`libs/style/src/lib/global/reset.ts`](https://github.com/craft-ts/craft-ts/blob/main/libs/style/src/lib/global/reset.ts)).
+Turning it off is a deliberate choice:
+
+```ts
+craftStyle({ reset: false });
+```
+
+## The base
+
+Also on by default (`base: false` to opt out). It states once, for the whole
+document, what components used to have to remember one by one:
+
+* `color-scheme` follows the `scheme` axis, so scrollbars and form controls
+  turn dark with the page;
+* every `:focus-visible` gets a visible ring;
+* scrolling is smooth only for users who did not ask for less motion, and
+  under `prefers-reduced-motion` **every** animation and transition collapses
+  to an instant. The guard is `!important` in the earliest layer, the one
+  place that beats every later layer, so no component can forget it;
+* `accent-color` and `::selection` come from the theme.
+
+The colours and sizes are typed theme variables, exported as `craftBase`:
+`accent`, `focusRing`, `focusWidth`, `focusOffset`, `selectionBg`,
+`selectionInk`. Re-theme them from your own global styles (below).
+
+## Your app's globals
+
+```ts
+import {
+  color,
+  craftBase,
+  craftGlobalStyles,
+  darkOf,
+  definePalette,
+  fontFamily,
+  scheme,
+  set,
+  when,
+} from '@craft-ts/style';
+
+export const brand = definePalette('brand', {
+  accent: { primary: { light: '#1b5fa1', dark: '#6fb2f0' } },
+  text: { strong: { light: '#111318', dark: '#f2f4f8' } },
+});
+
+craftGlobalStyles('app', {
+  // The foundation's focus ring and form accent, in the app's colours.
+  root: [
+    set(craftBase.focusRing, brand.accent.primary),
+    set(craftBase.accent, brand.accent.primary),
+    when(scheme.dark, [
+      set(craftBase.focusRing, darkOf(brand.accent.primary)),
+      set(craftBase.accent, darkOf(brand.accent.primary)),
+    ]),
+  ],
+  elements: {
+    body: [fontFamily(bodyFont), color(brand.text.strong)],
+  },
+});
+```
+
+`root` goes on `:root`, `elements` on tag names — the only selectors accepted.
+Anything narrower than an element belongs to a component sheet. The items are
+the same as in a sheet: generated properties, `set(...)`, `when(...)`, and
+`pseudo.*`. `when` on a state axis becomes an attribute on `:root`, which is
+how a theme toggle is written (`when(theme.dark, [...])` →
+`:root[data-theme='dark']`).
+
+`no-raw-css-value` applies here as everywhere else: no literal reaches a
+helper.
+
+## Fonts
+
+```ts
+import { defineFont, googleFont } from '@craft-ts/style';
+
+export const bodyFont = defineFont('body', {
+  family: 'Chivo',
+  source: googleFont({ weights: [400, 600, 700] }),
+  display: 'swap',
+  fallback: 'system-ui',
+});
+```
+
+`defineFont` replaces the three things a `styles.css` used to carry:
+
+* **the `@import url(fonts.googleapis…)`** — the plugin injects a `preconnect`
+  to both Google origins, then the stylesheet preloaded and applied, into
+  `<head>` of `index.html`. An `@import` inside the CSS could only be
+  discovered once the CSS itself had downloaded;
+* **the `@font-face` blocks** — `localFont({ files: [...] })` emits them, and
+  preloads the `.woff2` files;
+* **the `* { font-family: … !important }`** — the returned token is a family
+  stack, used once with `fontFamily(bodyFont)` on `body` and inherited from
+  there. Form controls inherit it through the reset.
+
+A server renderer that writes `<head>` itself reads the same tags as HTML:
+
+```ts
+import head from 'virtual:craft-style-head';
+```
+
+### Fallback without layout shift
+
+While the web font loads, the fallback font is shown, and the text jumps when
+the real one arrives. `adjustFallback` builds a `"<family> Fallback"` face from
+a local font, resized so both occupy the same space:
+
+```ts
+defineFont('body', {
+  family: 'Chivo',
+  source: googleFont({ weights: [400, 700] }),
+  fallback: 'system-ui',
+  adjustFallback: {
+    // The web font's metrics, in font units. Capsize publishes them for every
+    // Google font (@capsizecss/metrics).
+    metrics: {
+      unitsPerEm: 1000,
+      ascent: 954,
+      descent: -250,
+      lineGap: 0,
+      xWidthAvg: 505,
+    },
+    // Optional, Arial by default: `face: { local: 'Helvetica', metrics }`.
+  },
+});
+```
+
+`size-adjust` matches the average glyph width, so lines break at the same
+place; `ascent-override`, `descent-override` and `line-gap-override` keep the
+line height.
+
+## What this replaces in the ESLint rules
+
+`require-focus-visible` and `require-reduced-motion` used to read each
+component's CSS text to check that a focus ring and a reduced-motion branch
+were there. The base layer guarantees both for the whole document, so a
+component no longer has anything to prove.
+
+---
+
+---
+url: https://craft-ts.github.io/craft/guide/style/pseudo-elements.md
+---
+# Pseudo-elements and animations
+
+A component sheet can style what used to need a hand-written selector —
+`::before`, `::placeholder`, `@keyframes`, `transition` — with the same typed
+vocabulary as the rest of the sheet.
+
+## Pseudo-elements
+
+```ts
+import {
+  bg,
+  blockSize,
+  craftStyles,
+  cssString,
+  defineStateAxis,
+  display,
+  inlineSize,
+  palette,
+  pseudo,
+  radii,
+  radius,
+  unit,
+  when,
+} from '@craft-ts/style';
+
+export const status = defineStateAxis('status', ['failed']);
+
+export const indicator = craftStyles('indicator', {
+  root: [
+    display.inlineFlex,
+    pseudo.before([
+      // Without `content`, ::before is never generated — a type error here.
+      pseudo.content.empty,
+      display.block,
+      inlineSize(unit.rem(0.5)),
+      blockSize(unit.rem(0.5)),
+      radius(radii.full),
+      bg(palette.accent.info),
+      when(status.failed, [
+        pseudo.content.text(cssString('⚠')),
+        bg(palette.accent.danger),
+      ]),
+    ]),
+  ],
+});
+```
+
+`pseudo.before([...])` is an item of a class, and nests like `when(...)`. The
+emitter always puts the pseudo-element **last** in the selector, where CSS
+requires it, whatever the nesting order: `when(status.failed, [pseudo.before(...)])`
+and `pseudo.before([when(status.failed, ...)])` both give
+`.x[data-status='failed']::before`.
+
+Available: `pseudo.before`, `pseudo.after`, `pseudo.placeholder`,
+`pseudo.marker`, `pseudo.selection`, `pseudo.backdrop`.
+
+### `content` is required, and typed
+
+`::before` and `::after` are not generated without a `content`, and nothing
+they declare applies. Rather than a decoration that silently disappears, it is
+a type error:
+
+```ts
+pseudo.before([display.block]);
+// ~~~~~~~~~ ERROR_a_generated_pseudo_element_needs_content
+```
+
+The content itself comes from `pseudo.content`:
+
+| helper                                   | CSS                    |
+| ---------------------------------------- | ---------------------- |
+| `pseudo.content.empty`                   | `content: ""`          |
+| `pseudo.content.none`                    | `content: none`        |
+| `pseudo.content.text(cssString('→'))`    | `content: "→"`         |
+| `pseudo.content.counter(ident('step'))`  | `content: counter(step)` |
+
+The check reads the top level of the block: a `content` placed only under a
+`when(...)` leaves the base scenario without one, which is the same bug.
+
+### Pseudo-classes are axes
+
+There is no `pseudo.hover`. `:hover`, `:focus-visible` or `:disabled` are
+**states**, and a state is an axis (`interaction.hover`, `defineStateAxis`).
+That is what puts it in the variant contract, the visual matrix and the
+contrast proof — a hand-written `:hover` would be invisible to all three.
+
+## Keyframes and animations
+
+```ts
+import { animate, easing, keyframes, rotate } from '@craft-ts/style';
+
+export const spin = keyframes('spin', {
+  from: [rotate(unit.deg(0))],
+  to: [rotate(unit.deg(360))],
+});
+
+export const spinner = craftStyles('spinner', {
+  root: [
+    ...animate(spin, {
+      duration: unit.ms(800),
+      easing: easing.linear,
+      iterations: 'infinite',
+    }),
+  ],
+});
+```
+
+`keyframes(name, steps)` returns a **token**; `animate(token, options)` plays
+it. An animation cannot point at keyframes that do not exist. The steps are
+`from`, `to` or percentages, and each step holds declarations from the
+generated table.
+
+`animate` writes longhands (`animation-name`, `animation-duration`, …), so a
+variant can change the duration alone. It is not called `animation` because
+that name is the generated shorthand helper.
+
+## Transitions
+
+```ts
+import { prop, transitions } from '@craft-ts/style';
+
+export const button = craftStyles('button', {
+  root: [
+    ...transitions([prop.backgroundColor, prop.color], {
+      duration: unit.ms(150),
+      easing: easing.easeOut,
+    }),
+  ],
+});
+```
+
+The properties are named from the table (`prop.backgroundColor`). There is no
+`all`: `transition: all` animates whatever a later variant happens to change,
+layout included, and nobody decided that.
+
+`easing` holds the keywords (`linear`, `ease`, `easeIn`, `easeOut`,
+`easeInOut`, `stepStart`, `stepEnd`) and two constructors,
+`easing.cubicBezier(x1, y1, x2, y2)` and `easing.steps(count, position)`.
+
+## Reduced motion
+
+You write none of it. Under `prefers-reduced-motion: reduce`, the
+[global foundation](./foundation.md) collapses every animation and transition
+of the document to an instant.
 
 ---
 
@@ -16664,7 +17026,7 @@ export const badge = craftStyles('badge', {
 
 The template sets **one static class** and a `data-tone` attribute. Nothing
 concatenates a class at render time, which is what makes the set of states
-enumerable. The `no-raw-class` rule enforces it in files that use the package.
+enumerable. The `no-raw-class` rule enforces it in every file.
 
 Conjunction is nesting, and only nesting:
 
@@ -17938,6 +18300,16 @@ This template promises that the named button invokes `users.remove`. The
 element tag and its literal name are part of the promise, so moving the action
 to a different control asks for a new judgement.
 
+For a command that resolves to a `craftMethod`, the obligation also records
+the method's top-level call statements in source order. Calls inside a branch or a
+nested callback are omitted because they are not guaranteed on every click.
+The ordered calls are part of the readable evidence, so changing them asks for
+a new judgement. The review card shows this sequence below the promise.
+
+The review queue contains the promise and its short effect list, but no source
+code. When a template review card opens, the review app requests its button
+and method snippets from `/api/template-detail` and shows both by default.
+
 Computed or dynamic accesses that cannot be addressed are printed as
 `template-obligation-unresolved` diagnostics. They are known extraction gaps;
 they are never silently treated as if the template made no promise.
@@ -17953,15 +18325,16 @@ decision.
 
 Every obligation has two independent keys:
 
-| key              | meaning                                                                               |
-| ---------------- | ------------------------------------------------------------------------------------- |
-| code fingerprint | the transitive code slice behind the bound or invoked target                          |
-| evidence         | the canonical shape of the promise: direction, element, name, target, and target kind |
+| key              | meaning                                                                                                       |
+| ---------------- | ------------------------------------------------------------------------------------------------------------- |
+| code fingerprint | the transitive code slice behind the bound or invoked target                                                  |
+| evidence         | the canonical shape of the promise: direction, element, name, target, target kind, and direct command effects |
 
 When implementation code changes but the template still promises the same
 thing, the state is `renewed`. The previous judgement carries forward without
 asking a person to review it again. When the template binds or invokes a
-different target, the evidence changes and the state is `review`.
+different target, or a command's direct effects change, the evidence changes
+and the state is `review`.
 
 An attested obligation is **not a passing test**. It says that a person confirmed
 the promise was intentional. It does not prove that the implementation fulfils
@@ -18008,141 +18381,163 @@ evidence.
 ---
 url: https://craft-ts.github.io/craft/guide/components/css-variables.md
 ---
-# Typed CSS variables and design tokens
+# Typed CSS variables
 
-::: warning Two things named `cssVars`
-This page is `meta.cssVars` on `craftComponent`: one component's **per-instance**
-styling API, applied as custom properties on that instance's root.
-
-`cssVars(prefix, specs)` from
-[`@craft-ts/style`](../style/define.md#the-theme) is a different mechanism under
-the same name: it declares **design-system-wide** custom properties, registered
-through `@property` and typed by kind, shared by every component that reads
-them.
-
-Nothing is being renamed — both are legitimate and the migration cost would be
-real. Use this one to let a caller restyle one instance; use the other one to
-declare a theme.
-:::
-
-CSS custom properties are the public styling API of a Craft component. Craft
-extracts a contract from inline `meta.styles`, propagates unsatisfied variables
-through component templates, and applies supplied values to the component root.
-The browser's native inheritance then carries them to descendants.
-
-## Required and optional variables
-
-An unguarded use is required. A declaration or inline fallback is optional:
+A component's styling API is a set of **typed custom properties** declared with
+[`cssVars`](../style/define.md#the-theme) in its sheet. Each one has a kind — a
+colour, a length, a percentage — and a typed initial value, registered with
+`@property`. None is "required": a variable nobody sets keeps its initial value,
+and one nobody reads is reported by the architecture rule `no-dangling-css-vars`.
 
 ```ts
-import { article, craftComponent } from '@craft-ts/component';
+import {
+  bg,
+  color,
+  craftStyles,
+  cssVars,
+  defineStateAxis,
+  inlineSize,
+  kind,
+  p,
+  palette,
+  radius,
+  set,
+  space,
+  unit,
+  when,
+} from '@craft-ts/style';
+
+const inherited = { inherits: true };
+
+/** The card's public variables. Each has a typed initial value. */
+export const cardVars = cssVars('tokenCard', {
+  ink: kind.color(palette.text.strong, inherited),
+  bg: kind.color(palette.surface.raised, inherited),
+  radius: kind.length(unit.px(16), inherited),
+});
+
+/** A caller picks a look; without one, every variable keeps its initial value. */
+export const cardLook = defineStateAxis('cardLook', ['alert']);
+
+export const card = craftStyles('tokenCard', {
+  root: [
+    p(space(4)),
+    color(cardVars.ink),
+    bg(cardVars.bg),
+    radius(cardVars.radius),
+    when(cardLook.alert, [
+      set(cardVars.ink, palette.accent.danger),
+      set(cardVars.bg, palette.surface.sunken),
+    ]),
+  ],
+});
+
+/** A panel exposes its own variable and forwards it to the card inside it. */
+export const panelVars = cssVars('cardPanel', {
+  ink: kind.color(palette.accent.info, inherited),
+});
+
+export const panel = craftStyles('cardPanel', {
+  root: [p(space(4)), set(cardVars.ink, panelVars.ink)],
+});
+
+/** A registered percentage, written at runtime and interpolable. */
+export const meterVars = cssVars('cardMeter', {
+  value: kind.percentage(unit.pct(0)),
+});
+
+export const meter = craftStyles('cardMeter', {
+  fill: [inlineSize(meterVars.value), bg(cardVars.ink)],
+});
+```
+
+```ts
+import { article, craftComponent, div, type Input } from '@craft-ts/component';
+import { state } from '@craft-ts/core';
+import { assign, unit } from '@craft-ts/style';
+import { card, meter, meterVars, panel } from './card.style';
 
 const Card = craftComponent(
   'Card',
-  {
-    styles: `
-      :scope { --card-radius: 1rem; }
-      .card {
-        color: var(--card-ink);
-        background: var(--card-bg, white);
-        border-radius: var(--card-radius);
-      }
-    `,
-  },
-  () => ({}),
-  () => article({ class: 'card' }, 'Card'),
+  {},
+  (progress: Input<number>) => ({ progress }),
+  ({ progress }) =>
+    article({ class: card.root }, [
+      'Card',
+      div({
+        class: meter.fill,
+        style: function* () {
+          return assign(meterVars.value, unit.pct(yield* progress()));
+        },
+      }),
+    ]),
 );
 
-Card({ cssVars: { '--card-ink': 'navy' } });
-```
-
-`--card-ink` is required, while `--card-bg` and `--card-radius` are optional.
-Styles supplied through `cssVars` are written as custom properties on the
-component root; different instances can therefore use different values while
-sharing one scoped stylesheet.
-
-## External stylesheets
-
-An imported stylesheet is typed as `string`, so TypeScript cannot inspect it.
-Declare its contract explicitly with `required()`:
-
-```typescript
-craftComponent(
-  'ExternalCard',
-  {
-    stylesUrl: styles,
-    cssVars: {
-      '--external-card-ink': required<string>(),
-      '--external-card-gap': '1rem',
-    },
+const Page = craftComponent(
+  'Page',
+  {},
+  function* () {
+    const alertProgress = yield* state('alertProgress', 20);
+    const panelProgress = yield* state('panelProgress', 80);
+    return { alertProgress, panelProgress };
   },
-  () => ({}),
-  template,
+  ({ alertProgress, panelProgress }) => [
+    // Per instance: a variant sets the variables it changes.
+    Card({ progress: alertProgress, 'data-cardLook': 'alert' }),
+    // Forwarded: the panel's variable becomes the card's ink.
+    div({ class: panel.root }, [Card({ progress: panelProgress })]),
+  ],
 );
 ```
 
-The `craft-css-vars-contract` lint rule resolves the CSS import and checks that
-the explicit contract and file remain synchronized.
+## Per instance: a variant sets what it changes
 
-## Child-variable dispositions
+A caller does not hand a component raw values. It picks a variant — here
+`data-cardLook` — and the sheet sets the variables that variant changes with
+`set(...)`. The others keep their initial value. The set of looks is therefore
+closed and enumerable, which is what lets the [visual matrix](/guide/style/variants)
+capture every one of them.
 
-At a child call site, every variable can be handled deliberately:
+## Inherited: a parent sets, descendants read
 
-```ts
-Badge({ cssVars: { '--badge-ink': 'navy' } });
-Badge({ cssVars: { '--badge-ink': inherit } });
-Badge({ cssVars: { '--badge-ink': omit } });
-Badge({ cssVars: { '--badge-ink': forward('navy') } });
-Badge({ cssVars: { '--badge-bg': forward() } });
-```
+`{ inherits: true }` is for a variable set once on a wrapper and read below it —
+a theme, or a card that tints whatever it contains. The default, `false`, is for
+a variable an element both sets and reads on itself.
 
-* A value supplies the child directly.
-* `inherit` uses a declaration in the current component's own styles and emits
-  no inline value.
-* `omit` intentionally stops propagation and emits nothing.
-* `forward(value)` gives the parent API a default that callers can override.
-* `forward()` re-exposes an optional value without adding a default.
+## Forwarded: a parent re-exposes a child's variable
 
-Use `assertCssVarsSatisfied(routes)` next to the other route proofs. It rejects
-a routed root when a required variable has propagated all the way to a mount
-that has no component call site.
+A parent that wants its own API writes `set(child, parent)`: the panel above
+declares `panelVars.ink` and forwards it to `cardVars.ink`. A caller overrides
+the panel's variable in its own sheet, and the card follows without the panel
+knowing how the card is built.
 
-## `@property`: validation versus requiredness
+## At runtime: `assign`
 
-Craft reads authored `@property` blocks; it does not generate them. A registered
-property with a non-wildcard syntax needs an `initial-value`, so it is optional
-by construction:
+A value known only at runtime — a progress, a position, a colour picked by the
+user — is written on the element with `assign(variable, value)`, the only thing
+`style:` accepts. The sheet reads it like any other variable. Because the
+variable is registered with its kind, the browser can interpolate it: a
+`transition` on `width` driven by a percentage variable animates.
 
-```css
-@property --meter-value {
-  syntax: '<number>';
-  inherits: true;
-  initial-value: 0;
-}
-```
+## `@property` is emitted, not written
 
-Registration provides browser validation, animation support, and an initial
-value. The tradeoff is that it gives up the compile-time “nobody supplied this”
-error. `inherits: false` cannot be used for a variable supplied or forwarded by
-a parent.
+Every variable declared with `cssVars` is emitted as an `@property` block by the
+build plugin, with its syntax, its `inherits` flag and its initial value. You
+never write one by hand. Two rules follow from the registration:
 
-`@property` is document-global even when its values cascade normally. A
-component may therefore register only variables in its own namespace
-(`Meter` → `--meter-*`). Register shared design tokens once in the application's
-global stylesheet, whose lifetime matches the document.
+* an initial value must be computationally independent — `unit.px(16)`, not
+  `unit.rem(1)` — or the browser drops the whole registration; the architecture
+  suite catches it;
+* a prefix belongs to one sheet: `cssVars` throws when two sheets declare the
+  same prefix.
 
-## Scope safety
+## `meta.cssVars`
 
-Craft rejects component CSS that can silently become global:
-
-* `@import`, `:root`, `html`, and `body`;
-* unprefixed `@keyframes`, `@counter-style`, font palettes, or font families;
-* `@property` registrations outside the component namespace;
-* `!important` in component styles.
-
-Private global names use the exact component scope, for example
-`@keyframes Spinner-spin`. Craft validates these names rather than rewriting
-CSS declaration values at runtime.
+The `cssVars` field of `craftComponent`'s meta — a contract extracted from a
+CSS string, with `required()`, `inherit`, `omit` and `forward()` at the call
+site — belongs to the component CSS that `no-component-css` refuses. It is
+`@deprecated`, kept only so that an [attested bypass](/guide/components/styles#the-one-real-exception)
+stays possible.
 
 ---
 
@@ -18156,10 +18551,11 @@ Craft updates the text node, DOM property, class, style, or host binding that
 read it. It does not need to execute the surrounding component template again.
 
 ```ts
+// `counterSheet` is the component's sheet, from counter.style.ts.
 ({ counter }) =>
   div([
     h2('Counter'),
-    p({ class: 'value' }, counter),
+    p({ class: counterSheet.value }, counter),
     button({ click: counter.increment }, '+'),
   ]);
 ```
@@ -18481,6 +18877,41 @@ factory.
 
 Directives are applied from left to right.
 
+## Event actions and DOM modifiers
+
+`eventAction(...)` is an element directive. Use it when an element must adjust
+a DOM event before invoking one action. The action stays on the element; no
+`craftMethod` wrapper is needed:
+
+```ts
+import { button, eventAction } from '@craft-ts/component';
+
+button(
+  'navToggle',
+  {
+    type: 'button',
+    'aria-expanded': navOpen,
+  },
+  navOpen.navToggleLabel,
+).pipe(
+  eventAction({
+    click: { action: navOpen.toggle, stopPropagation: true },
+  }),
+);
+```
+
+Each event entry requires `action` and can set `preventDefault`,
+`stopPropagation`, or `stopImmediatePropagation` to `true`. The modifiers run
+before the action in the same DOM listener. The action remains in Craft's normal
+event pipeline, including event hooks and generator callbacks. Use the event
+name as the key, such as `click`, `submit`, or `keydown`. Do not also put that
+event in the element's props; `eventAction` rejects duplicate handlers.
+
+The recommended ESLint rule `craft-ts/no-event-only-craft-method` and the
+default architecture rule `no-event-only-craft-method` report a `craftMethod`
+that only modifies an event and delegates to one action, even when that method
+is declared in a different file from the element.
+
 ```ts
 import {
   button,
@@ -18790,7 +19221,7 @@ input({ type: 'email' }).pipe(
 ## See Also
 
 * [Customization](/guide/components/customization)
-* [Encapsulated styles](/guide/components/styles)
+* [Styling a component](/guide/components/styles)
 * [Testing components](/guide/testing/components)
 
 ---
@@ -19256,7 +19687,7 @@ depends on how far the change should travel:
 | Layer                 | Changes                               |
 | --------------------- | ------------------------------------- |
 | Root-element `host`   | The component's own root defaults     |
-| Encapsulated `styles` | Its internal appearance               |
+| A `*.style.ts` sheet  | Its appearance                        |
 | Composable directives | Behaviour, reusable across components |
 
 **Start with `host`** for one component's defaults, and move to a directive only
@@ -19268,13 +19699,57 @@ The component meta `host` properties define defaults for the component’s root
 element. The caller can extend or override them:
 
 ```ts
+import {
+  bg,
+  borderColor,
+  borderStyle,
+  borderWidth,
+  craftStyles,
+  cssVars,
+  defineStateAxis,
+  kind,
+  lineWidth,
+  p,
+  palette,
+  radii,
+  radius,
+  set,
+  space,
+  when,
+} from '@craft-ts/style';
+
+/** A title's ink, set by the card and inherited by whatever sits inside. */
+export const cardVars = cssVars('customCard', {
+  ink: kind.color(palette.text.strong, { inherits: true }),
+});
+
+export const cardActive = defineStateAxis('cardActive', ['true']);
+
+export const cardSheet = craftStyles('docsCustomCard', {
+  root: [
+    p(space(4)),
+    radius(radii.md),
+    bg(palette.surface.raised),
+    when(cardActive.true, [set(cardVars.ink, palette.accent.info)]),
+  ],
+  /** Added by a caller: it writes the border, which `root` leaves alone. */
+  featured: [
+    borderWidth(lineWidth.thick),
+    borderStyle.solid,
+    borderColor(palette.accent.info),
+  ],
+});
+```
+
+```ts
 import { craftComponent, div, h2 } from '@craft-ts/component';
+import { cardSheet } from './card.style';
 
 const Card = craftComponent(
   'Card',
   {
     host: {
-      class: 'card card--default',
+      class: cardSheet.root,
       attrs: { role: 'article' },
     },
   },
@@ -19282,52 +19757,58 @@ const Card = craftComponent(
   () => div([h2('A card')]),
 );
 
-Card({
-  class: 'card--featured',
-  attrs: { 'data-testid': 'featured-card' },
-});
-```
-
-Classes, attributes, styles, and events recognized as host properties are
-applied to the component root. Other properties remain factory props.
-
-Values can be reactive:
-
-```ts
-const { active } = state('active', false, ({ set }) => ({ set }));
-
-Card({
-  class: () => (active() ? 'is-active' : 'is-idle'),
-  style: () => ({ opacity: active() ? 1 : 0.6 }),
-});
-```
-
-## Customizing with styles
-
-Styles declared in `meta.styles` are shared across instances and encapsulated
-with `@scope`. The template root is written as `:scope`:
-
-```typescript
-const Panel = craftComponent(
-  'Panel',
-  {
-    styles: `
-      :scope { padding: 1rem; border: 1px solid #ddd; }
-      .title { font-weight: 700; }
-      button { cursor: pointer; }
-    `,
-  },
+const FeaturedCard = craftComponent(
+  'FeaturedCard',
+  {},
   () => ({}),
-  () => div([h2({ class: 'title' }, 'Panel'), button('Save')]),
+  () =>
+    // `class` merges with the host's; `attrs` would replace the host's
+    // `attrs` as a whole, so a single attribute is passed as a property.
+    Card({ class: cardSheet.featured, 'data-testid': 'featured-card' }),
 );
 ```
 
-Styles do not leak into descendant components. Global rules such as
-`@keyframes` and `@font-face` cannot be nested in `@scope`, so their private
-names must start with the component scope. `@import` and document-root selectors
-are rejected. `@media`, `@supports`, and `@container` remain composable inside
-the scope. For the typed styling API, see
-[Typed CSS variables and design tokens](/guide/components/css-variables).
+Classes, attributes, styles, and events recognized as host properties are
+applied to the component root. Other properties remain factory props. A caller's
+`class` is **added** to the host's, so the two classes must not write the same
+property — `featured` writes the border, which `root` leaves alone. Everything
+else, `attrs` included, replaces the host's value.
+
+Values can be reactive. The class stays constant; what moves is an attribute the
+sheet reads as an axis:
+
+```ts
+Card({
+  class: cardSheet.featured,
+  'data-cardActive': function* () {
+    return String(yield* active());
+  },
+});
+```
+
+## Customizing the appearance
+
+A component's look lives in a sheet beside it and nowhere else — see
+[Styling a component: the only way](/guide/components/styles). The template
+binds the sheet's classes:
+
+```typescript
+import { panel } from './panel.style';
+
+const Panel = craftComponent(
+  'Panel',
+  {},
+  () => ({}),
+  () =>
+    div({ class: panel.root }, [
+      h2({ class: panel.title }, 'Panel'),
+      button('save', { class: panel.action, type: 'button' }, 'Save'),
+    ]),
+);
+```
+
+A sheet's classes are atomic: they apply where they are bound and nowhere else,
+so there is no scope to manage and nothing leaks into a child component.
 
 ## Adding reusable customization with a directive
 
@@ -19335,13 +19816,14 @@ A directive transforms a component’s factory and template. It is applied from
 left to right with `.pipe(...)`:
 
 ```ts
+import { highlight } from './highlight.style';
+
 const Highlight = craftDirective(
   'Highlight',
-  {
-    styles: '.highlight { background: #fff3bf; }',
-  },
+  {},
   (baseLogic) => baseLogic,
-  (baseTemplate) => (context) => baseTemplate(context, { class: 'highlight' }),
+  (baseTemplate) => (context) =>
+    baseTemplate(context, { class: highlight.root }),
 );
 
 const HighlightedPanel = Panel.pipe(Highlight);
@@ -19364,9 +19846,9 @@ const WithPermission = craftDirective(
 const EditablePanel = Panel.pipe(WithPermission);
 ```
 
-Directive styles are registered in the scope of the component that owns them.
-The same directive can therefore be reused by several components without
-introducing an HTML wrapper.
+A directive brings its own sheet and adds its class to the host's, so the same
+directive can be reused by several components without introducing an HTML
+wrapper.
 
 ## Composing providers and exception handlers
 
@@ -19524,85 +20006,69 @@ matchNode.exhaustive(() => userQuery.exceptions().loader, '_tag', {
 Craft supports compositions that are not native properties of a standard
 the host component or directive:
 
-* a Craft directive can declare `meta.styles` and contribute to the stylesheet
-  of the component using it; Craft keeps the association with the component;
-* directive styles remain encapsulated with `@scope`, without rewriting
-  selectors or adding a wrapper;
-* multiple directives can compose their logic, template, host classes, and
-  styles through `.pipe(...)`;
-* styles are deduplicated and reference-counted across instances, then removed
-  when the last instance is destroyed.
-
-The directive runtime owns stylesheet injection, scoping, and cleanup, so those
-responsibilities do not leak into application code.
+* a Craft directive can add its own classes to the root of the component using
+  it, without a wrapper;
+* multiple directives can compose their logic, template and host classes
+  through `.pipe(...)`;
+* the CSS itself is emitted once, at build time, by the `@craft-ts/style`
+  plugin: nothing is injected or reference-counted at runtime.
 
 ## Choosing the right level
 
 * `host`: identity, attributes, classes, or behavior of the root element;
-* `styles`: local, reusable component appearance; the stylesheet is shared
-  across instances, while its rules remain limited to the component roots;
+* a `*.style.ts` sheet: the component's appearance, its variants as axes, its
+  runtime values as typed variables;
 * `craftDirective`: behavior or customization reusable across components;
 * the factory: component-specific state and dependencies.
 
-### Understanding style scope
+### How a parent reaches a child
 
-Inside `meta.styles`, `:scope` targets every root produced by the template:
+A parent never styles a child's internals. It has two doors, both visible in
+the child's contract: a class it passes to the child's host, and a variable
+declared with `{ inherits: true }` that the child's sheet reads.
 
 ```ts
-import {
-  craftComponent,
-  div,
-  h2,
-  strong,
-} from '@craft-ts/component';
+import { color, craftStyles, fontWeight } from '@craft-ts/style';
+import { cardVars } from './card.style';
+
+/** The title reads the card's variable; it never looks at the card itself. */
+export const titleSheet = craftStyles('docsCardTitle', {
+  root: [color(cardVars.ink), fontWeight.bold],
+});
+```
+
+```ts
+import { craftComponent, div, h2, type Input } from '@craft-ts/component';
+import { state } from '@craft-ts/core';
+import { cardSheet } from './card.style';
+import { titleSheet } from './card-2.style';
+
+const CardTitle = craftComponent(
+  'CardTitle',
+  {},
+  (text: Input<string>) => ({ text }),
+  ({ text }) => h2({ class: titleSheet.root }, text),
+);
 
 const Card = craftComponent(
   'Card',
-  {
-    styles: `
-      :scope { padding: 1rem; }
-      .title { color: navy; }
-      .title strong { font-weight: 700; }
-    `,
+  {},
+  function* () {
+    const title = yield* state('title', 'Card');
+    return { title };
   },
-  () => ({}),
-  () => div([h2({ class: 'title' }, [strong('Card')])]),
+  ({ title }) =>
+    // The card sets `data-cardActive`; its sheet writes the inherited
+    // variable; the title, a separate component, reads it.
+    div({ class: cardSheet.root, 'data-cardActive': 'true' }, [
+      CardTitle({ text: title }),
+    ]),
 );
 ```
 
-Craft puts an internal token on the roots and generates a scope equivalent to:
-
-```css
-@scope ([data-craft-root~="Card"]) to ([data-craft-root] *) {
-  /* Card rules */
-}
-```
-
-In practice:
-
-* `:scope` targets the root itself;
-* `.title` targets `Card` descendants;
-* when a child Craft component is encountered, its root becomes a boundary:
-  parent rules can reach the root, but not its internal
-  DOM;
-* ordinary elements do not become boundaries and do not receive an additional
-  token;
-* a template returning multiple roots scopes each root, but cannot express a
-  relationship between sibling roots such as `header + main`;
-* a root that is directly another Craft component can carry multiple tokens.
-  The containing component can then reach into the child component: this is a
-  known limitation of the current model.
-
-Scoping is structural, not based on selector rewriting: modern selectors such
-as `:is()`, `:where()`, `&`, and nested rules are not transformed by Craft.
-`@media`, `@supports`, and `@container` remain inside the scope; rules that
-cannot be nested there, such as `@keyframes`, `@font-face`, `@import`, and
-`@namespace`, are hoisted outside the `@scope` block.
-
-Directive styles use the scope of their owning component because a directive
-does not introduce a separate root node. A directive can add `.highlight` or
-modify `:scope`, but `:scope` then refers to the host component’s roots, not to
-a directive wrapper.
+The card sets `data-cardActive`, its sheet writes `cardVars.ink`, and the title,
+a separate component, reads it. Nothing in the card knows how the title is
+built.
 
 Names passed to `craftComponent` and `craftDirective` must be unique and match
 their declaration names. The dedicated ESLint rules detect missing or
@@ -19610,7 +20076,7 @@ inconsistent names.
 
 ## See Also
 
-* [Encapsulated styles](/guide/components/styles)
+* [Styling a component](/guide/components/styles)
 * [Directives and `.pipe(...)`](/guide/components/directives)
 * [Content projection](/guide/components/content-projection)
 
@@ -19660,7 +20126,6 @@ type CardInput = {
   readonly body: RequiredContent<{
     readonly selector: {
       readonly tag: 'div';
-      readonly class: 'card-body';
       readonly 'data-slot': 'body';
     };
   }>;
@@ -19679,30 +20144,32 @@ const Card = craftComponent(
 
 Card({
   header: content(() => div('Title supplied by the caller')),
-  body: content(() =>
-    div({ class: 'card-body', 'data-slot': 'body' }, 'Card content'),
-  ),
+  body: content(() => div({ 'data-slot': 'body' }, 'Card content')),
 });
 ```
 
 The selector is analysed **statically**. This is rejected, because it does not
-contain `div.card-body[data-slot="body"]`:
+contain `div[data-slot="body"]`:
 
 ```ts
 Card({
   // @ts-expect-error the content does not satisfy the slot's DOM contract.
-  body: content(() => div({ class: 'wrong-class' })),
+  body: content(() => div({ 'data-slot': 'footer' })),
 });
 ```
+
+The contract names an attribute, not a class. A class comes from a sheet and is
+a list of atoms — not a name a selector can require — while a `data-*`
+attribute is a stable, declared part of the markup.
 
 Content can be built from arrays, conditions, loops and templates — the analysis
 looks for the selector in every rendered branch:
 
 ```ts
 const body = content(() => [
-  showIntro() ? div({ class: 'card-body' }, 'Introduction') : undefined,
+  showIntro() ? div({ 'data-slot': 'body' }, 'Introduction') : undefined,
   forNode(rows(), { track: (row) => row.id }, (row) =>
-    div({ class: 'card-body' }, row.label),
+    div({ 'data-slot': 'body' }, row.label),
   ),
   renderTemplate(cardRowTemplate, { $implicit: selectedRow() }),
 ]);
@@ -19847,58 +20314,73 @@ const Page = craftComponent(
 
 ## Styling projected content
 
-`contentStyles` is indexed by the content slot names the component declares. An
-unknown slot name is a type error.
+The component styles **its own frame** around the slot; the content is styled
+by whoever writes it, with their own sheet. What the frame offers its content
+travels the way everything crosses a component boundary in `@craft-ts/style`:
+inherited properties — `color`, fonts — and variables declared with
+`{ inherits: true }` that the content's sheet chooses to read.
 
 ```ts
 import {
-  ContentSlot,
+  color,
+  craftStyles,
+  cssVars,
+  display,
+  kind,
+  p,
+  palette,
+  space,
+} from '@craft-ts/style';
+
+/** What the card offers its content: an inherited accent it may read. */
+export const styledCardVars = cssVars('styledCard', {
+  accent: kind.color(palette.accent.info, { inherits: true }),
+});
+
+export const styledCard = craftStyles('styledCard', {
+  // The frame around the slot. `color` inherits into the content.
+  body: [display.block, p(space(4)), color(palette.text.strong)],
+});
+
+/** The caller's own sheet, for the content it supplies. */
+export const noteSheet = craftStyles('styledCardNote', {
+  root: [color(styledCardVars.accent)],
+});
+```
+
+```ts
+import {
+  content,
   craftComponent,
-  input,
+  div,
+  p,
   renderContent,
+  type ContentSlot,
 } from '@craft-ts/component';
+import { noteSheet, styledCard } from './styledcard.style';
 
 const StyledCard = craftComponent(
   'StyledCard',
-  {
-    contentStyles: {
-      body: ':scope { display: block; color: #344054; }',
-    },
-  },
+  {},
   (input: { readonly body: ContentSlot }) => input,
-  ({ body }) => renderContent('body', body),
+  ({ body }) => div({ class: styledCard.body }, renderContent('body', body)),
+);
+
+const Page = craftComponent(
+  'Page',
+  {},
+  () => ({}),
+  () =>
+    StyledCard({
+      body: content(() => p({ class: noteSheet.root }, 'Styled by its caller')),
+    }),
 );
 ```
 
-The **caller** decides explicitly whether its content accepts those styles:
-
-```ts
-StyledCard({
-  body: content(() => div('Styled content'), {
-    allowContainerStyles: true,
-  }),
-});
-
-// without the flag, the content renders but stays isolated
-StyledCard({
-  body: content(() => div('Rendered without the container styles')),
-});
-```
-
-Exposed styles apply to ordinary DOM nodes in the fragment. They never cross the
-boundary of a nested Craft component:
-
-```ts
-StyledCard({
-  body: content(
-    () => [
-      div('This node can receive contentStyles.body'),
-      NestedCraftComponent({}), // independent style boundary
-    ],
-    { allowContainerStyles: true },
-  ),
-});
-```
+Nothing reaches into the content: a caller that does not read
+`styledCardVars.accent` is unaffected by it, and a nested Craft component keeps
+its own classes. The deprecated `contentStyles` meta — CSS strings pushed into a
+slot — is refused by `no-component-css`.
 
 ## Pitfalls
 
@@ -19931,29 +20413,6 @@ const invalidContract = {
   kind: 'toolbar-action',
   // @ts-expect-error trigger and disabled are required.
 } satisfies ToolbarActionContract;
-```
-
-**Styling a slot that isn't one.** `contentStyles` can only reference declared
-content slots:
-
-```ts
-import {
-  ContentSlot,
-  craftComponent,
-  footer,
-  input,
-  renderContent,
-} from '@craft-ts/component';
-
-craftComponent(
-  'InvalidStyles',
-  // @ts-expect-error "footer" is not a declared content slot.
-  {
-    contentStyles: { footer: ':scope { color: red; }' },
-  },
-  (input: { readonly body: ContentSlot }) => input,
-  ({ body }) => renderContent('body', body),
-);
 ```
 
 ::: details Combining optional content and contractual actions — a dialog
@@ -20037,7 +20496,7 @@ The older fragment and slot primitives are no longer part of the public API.
 ## See Also
 
 * [Customization](/guide/components/customization)
-* [Encapsulated styles](/guide/components/styles)
+* [Styling a component](/guide/components/styles)
 * [Directives and `.pipe(...)`](/guide/components/directives)
 
 ---
@@ -20045,90 +20504,189 @@ The older fragment and slot primitives are no longer part of the public API.
 ---
 url: https://craft-ts.github.io/craft/guide/components/styles.md
 ---
-# Encapsulated styles
+# Styling a component: the only way
 
-::: tip Two style systems, and which to pick
-This page is `meta.styles`: a **string** of CSS shipped with the component and
-scoped with `@scope`. It is the shortest path to a component's own appearance,
-and it needs no build step.
+A component is styled through [`@craft-ts/style`](../style/), and through
+nothing else. Its visual rules live in a `*.style.ts` sheet beside it; the
+template binds the sheet's classes, sets `data-*` attributes for its variants,
+and writes typed variables for what changes at runtime. There is no CSS string
+on the meta, no `.css` import, no class assembled at render time and no raw
+`style`.
 
-[`@craft-ts/style`](../style/) is the other one: values are typed objects, the
-CSS is emitted at build time, and the exhaustive set of a component's visual
-states becomes something you can enumerate and test. It costs a Vite plugin and
-a design system to declare.
+That is not a preference. A class built in the browser, or a rule shipped as a
+string, is a visual state nothing recorded: the [visual matrix](/guide/style/testing)
+enumerates what the sheets declare, the [static contrast check](/guide/style/contrast)
+measures what the sheets write, and anything outside them is invisible to both.
+ESLint and the architecture suite therefore refuse every other route, and the
+one real exception is written down, with its reason, for someone to decide on.
 
-Pick this page for a component whose look is settled and local. Pick
-`@craft-ts/style` when the variants are a matrix you need to prove you covered.
-They coexist: a component can carry `meta.styles` and bind a sheet class.
-:::
+## The shape
 
-Styles declared in `craftComponent(name, meta, factory, template)` are shared by
-every instance of the component and encapsulated with CSS `@scope`. The registry
-keeps a single sheet per component and removes it when the last instance is
-destroyed.
-
-**Use it for** a component's own appearance.
-**Not for** application-wide styles — those belong in your global stylesheet;
-scoping them here just makes them harder to find.
-
-## The common case
+The sheet declares the classes, the axis a variant moves along, and the
+variables a template may write:
 
 ```ts
-const Card = craftComponent(
-  'Card',
-  { styles: ':scope { padding: 1rem } .title { font-weight: 700 }' },
-  () => ({}),
-  () => div([h2({ class: 'title' }, 'Title')]),
+import {
+  bg,
+  blockSize,
+  color,
+  craftStyles,
+  cssVars,
+  defineStateAxis,
+  fontWeight,
+  inlineSize,
+  kind,
+  p,
+  palette,
+  radii,
+  radius,
+  set,
+  space,
+  unit,
+  when,
+} from '@craft-ts/style';
+
+/** A variant is an axis: the template sets `data-cardTone`. */
+export const cardTone = defineStateAxis('cardTone', ['danger']);
+
+/** A value that changes at runtime is a typed variable, set with `assign`. */
+export const cardVars = cssVars('card', {
+  progress: kind.lengthPercentage(unit.pct(0)),
+  accent: kind.color(palette.accent.info),
+});
+
+export const card = craftStyles('docsCard', {
+  root: [
+    p(space(4)),
+    radius(radii.md),
+    bg(palette.surface.raised),
+    color(palette.text.strong),
+    when(cardTone.danger, [set(cardVars.accent, palette.accent.danger)]),
+  ],
+  title: [fontWeight.bold],
+  bar: [
+    inlineSize(cardVars.progress),
+    blockSize(space(1)),
+    bg(cardVars.accent),
+  ],
+});
+```
+
+The component imports it and binds **one constant class per element**:
+
+```ts
+import { craftComponent, div, h2 } from '@craft-ts/component';
+import { state } from '@craft-ts/core';
+import { assign, unit } from '@craft-ts/style';
+import { card, cardVars } from './card.style';
+
+const UploadCard = craftComponent(
+  'UploadCard',
+  {},
+  function* () {
+    const progress = yield* state('progress', 40);
+    // The variant's point, or null for none: the attribute is then removed.
+    const tone = yield* state('tone', 'danger' as 'danger' | null);
+    return { progress, tone };
+  },
+  ({ progress, tone }) =>
+    // One constant class per element; the variant is an attribute.
+    div({ class: card.root, 'data-cardTone': tone }, [
+      h2({ class: card.title }, 'Upload'),
+      div({
+        class: card.bar,
+        // The only thing `style:` accepts: a typed variable, written by assign.
+        style: function* () {
+          return assign(cardVars.progress, unit.pct(yield* progress()));
+        },
+      }),
+    ]),
 );
 ```
 
-The template root is written `:scope`. Craft adds **no host element and no
-wrapper** — roots carry an internal `data-craft-root` attribute, which you must
-never set yourself.
+* `class` is always a sheet key (`card.root`), an array of them, or a typed
+  input carrying one. Never a string, a template literal or a conditional.
+* The variant is an **attribute**. `data-cardTone` is on the element, the sheet
+  reads it through `when(cardTone.danger, …)`, and a `null` removes it.
+* `style` accepts `assign(variable, value)` and nothing else — one call, several
+  spread into an object, or a function returning them.
 
-## Composing styles from a directive
+## Where each thing goes
 
-A directive's styles compose with the component's:
+| You want                                   | Write                                                                                   |
+| ------------------------------------------ | --------------------------------------------------------------------------------------- |
+| the component's own look                   | `craftStyles('name', { root: [...] })` in `name.style.ts`                               |
+| a variant (tone, size, selected)           | `defineStateAxis(...)`, then `when(axis.point, [...])`; the template sets `data-*`      |
+| a state the platform already announces     | `ariaCurrent`, `ariaPressed`, `ariaInvalid`, `interaction.hover` / `.focus` / `.disabled` |
+| a value known only at runtime              | `cssVars(...)` in the sheet, `assign(...)` in the template                             |
+| a child that follows its parent's state    | a variable declared with `{ inherits: true }`, set by the parent, read by the child     |
+| page defaults (`body`, links, the theme)   | [`craftGlobalStyles`](/guide/style/foundation)                                          |
+| a web font                                 | [`defineFont`](/guide/style/foundation)                                                  |
+| `::before`, `@keyframes`, transitions      | [`pseudo.*`, `keyframes`, `animate`](/guide/style/pseudo-elements)                      |
+
+The reset and the good defaults — focus ring, reduced motion, colour scheme —
+come from `@craft-ts/style` itself. An app has no `styles.css` to write.
+
+## What refuses the other routes
+
+Per file, in `craftRules.configs.recommended`
+([details](/guide/routing/eslint-rules)):
+
+* `no-raw-class` — a `class` that does not trace back to a sheet imported from a
+  `*.style` module;
+* `no-inline-style` — a `style` that is not `assign(...)`;
+* `no-component-css` — `meta.styles`, `meta.stylesUrl`, `meta.contentStyles`, and
+  any `.css` import other than `virtual:craft-style.css`;
+* `style-file-boundary` — a sheet importing anything but style vocabulary;
+* `no-raw-css-value`, `no-free-has` — a raw value or a hand-written `:has()`
+  inside a sheet.
+
+Across the application, in the base architecture rules
+([details](/guide/testing/architecture)):
+
+* `style-only-design-system` — an element whose class reaches no sheet the build
+  emits;
+* `no-global-stylesheet` — an entry file importing a `.css`, or `index.html`
+  linking a stylesheet;
+* `style-obligations-discharged`, `no-dangling-css-vars` — a `requires` nobody
+  provides, a variable read and never declared.
+
+`styles`, `stylesUrl`, `contentStyles` and `cssVars` still exist on the meta's
+type, marked `@deprecated`. They are kept so that the exception below stays
+possible, not as an alternative.
+
+## The one real exception
+
+Content you do not author — HTML rendered from markdown, a third-party widget
+that ships its own stylesheet — cannot be styled through a sheet. It is the only
+case, and it takes an explicit, reasoned bypass:
 
 ```ts
-const Highlight = craftDirective(
-  'Highlight',
-  { styles: '.highlight { background: yellow }' },
-  (baseLogic) => baseLogic,
-  (baseTemplate) => (context) => baseTemplate(context, { class: 'highlight' }),
-);
+// eslint-disable-next-line craft-ts/no-component-css -- vendor date picker ships its stylesheet
+import 'vendor-date-picker/dist/picker.css';
 ```
 
-## Pitfalls
+`no-forbidden-eslint-disable` refuses the directive without its reason. On the
+architecture side, the bypass is a waiver in `architecture/waivers.ts`:
 
-**`@scope` adds no specificity.** Adopted sheets are ordered after the document's
-sheets, and the `<style>` fallback is inserted in the `head`. Nested-scope
-proximity can therefore change the cascade compared with a global stylesheet —
-if a rule stops winning after you scope it, this is why.
+```ts
+{
+  rule: 'no-global-stylesheet',
+  target: 'file:src/main.ts',
+  reason: 'The vendor date picker ships its stylesheet.',
+}
+```
 
-**Sibling roots can't see each other.** Multi-root templates are allowed, but
-relationships between sibling roots (`header + main`, say) are not expressible
-through this encapsulation.
-
-**A root that is itself a Craft component carries several tokens**, so the
-enclosing component can reach inside it. This is a known limit of the current
-implementation.
-
-**Names must be unique.** The `craft-component-name-match` and
-`craft-directive-name-match` rules also check that the name matches the
-declaration.
-
-**Hoisted rules are still global.** Craft rejects `@import`, document-root
-selectors, and private at-rules whose names are not prefixed by the component
-scope. A `Spinner` animation is named `@keyframes Spinner-spin`. Component
-`@property` registrations keep their public custom-property name, but that name
-must belong to the component namespace.
+A waiver names one target, not a rule wholesale, and one that no longer waives
+anything fails the check. Both kinds of bypass appear in the **Bypasses** view of
+[Review Attest](/guide/style/attestation), one subject per directive or waiver,
+to be accepted or rejected like any other evidence.
 
 ## See Also
 
-* [Customization](/guide/components/customization) — the three layers
-* [Typed CSS variables and design tokens](/guide/components/css-variables)
-* [Directives and `.pipe(...)`](/guide/components/directives)
+* [`@craft-ts/style`](/guide/style/) — the design system, from tokens to the matrix
+* [Axes and the visual matrix](/guide/style/variants)
+* [Customization](/guide/components/customization) — host properties and caller overrides
 
 ---
 
@@ -21884,7 +22442,8 @@ directives, and reactivity are rendered by the normal renderer.
 
 Template tests also expose `locator(tag, criteria)`. The tag determines the
 DOM element type, while `class`, `data-*`, and `aria-*` criteria are matched
-against the rendered element:
+against the rendered element. Prefer `data-*` and `aria-*`: a class comes from a
+sheet and is a list of atoms, not a name a test should depend on.
 
 ```ts
 import { button, craftComponent, div } from '@craft-ts/component';
@@ -21898,10 +22457,7 @@ const Editor = craftComponent(
     div([
       button(
         'save',
-        { type: 'button',
-          class: 'save',
-          'data-testid': 'save',
-        },
+        { type: 'button', 'data-testid': 'save' },
         'Save',
       ),
     ]),
@@ -21913,10 +22469,7 @@ it('finds the save button', async () => {
     register: {},
   });
 
-  const saveButton = test.locator('button', {
-    class: 'save',
-    'data-testid': 'save',
-  });
+  const saveButton = test.locator('button', { 'data-testid': 'save' });
 
   expect(saveButton?.textContent).toBe('Save');
   saveButton?.click();
@@ -21931,7 +22484,7 @@ button, write the three arguments explicitly:
 ```ts
 const saveButton = button(
   'save', // name: stable local name
-  { class: 'save' }, // props: DOM properties and attributes
+  { type: 'button' }, // props: DOM properties and attributes
   'Save', // children: rendered content
 );
 ```
@@ -22326,7 +22879,6 @@ const Counter = craftComponent(
   },
   ({ counter }) =>
     div(
-      { class: 'counter' },
       button('increment',
         {
           type: 'button',
@@ -23332,6 +23884,12 @@ additional boundary, such as route DI, folder ownership or URL-backed resource
 params.
 :::
 
+The default baseline also rejects event-only `craftMethod` wrappers through
+`assertNoEventOnlyCraftMethods`. It scans every TypeScript source file in the
+application's graph project, so moving the wrapper to another file does not
+avoid the rule. Use [`eventAction(...)`](/guide/components/directives#event-actions-and-dom-modifiers)
+on the element to apply DOM event modifiers and invoke the action directly.
+
 ## What a rule looks like
 
 A rule is an ordinary Vitest assertion. Look up a node, inspect its graph
@@ -23362,6 +23920,7 @@ import {
   assertInteractiveElementNamed,
   assertMutationHasReactOn,
   assertNoDependencyCycles,
+  assertNoEventOnlyCraftMethods,
   assertPathBoundaries,
   assertPrimitiveLoaderRequirements,
   assertQueryMutationHasServerState,
@@ -23592,13 +24151,15 @@ import {
   architectureCatalogToTypeScript,
   buildArchitectureCatalog,
   createArchitectureGraph,
+  mergeStyleDump,
 } from '@craft-ts/dev-tools';
+import { loadStyleDump } from '@craft-ts/style/vite';
 import { architectureCatalog } from './catalog';
 
 const workspaceRoot = resolve(import.meta.dirname, '../../..');
 const catalogPath = join(import.meta.dirname, 'catalog.ts');
 
-export function loadArchitectureGraph() {
+export async function loadArchitectureGraph() {
   const graph = analyzeDependencyGraph({
     rootDir: workspaceRoot,
     tsConfigFilePath: 'apps/your-app/tsconfig.graph.json',
@@ -23607,9 +24168,17 @@ export function loadArchitectureGraph() {
     catalogPath,
     `// Generated. Do not edit.\n${architectureCatalogToTypeScript(buildArchitectureCatalog(graph))}`,
   );
-  return createArchitectureGraph(graph, architectureCatalog);
+  // The style half: every *.style.ts, evaluated by the same code the build
+  // runs. The catalog stays built from the code graph alone.
+  const styleDump = await loadStyleDump(join(workspaceRoot, 'apps/your-app/src'));
+  return createArchitectureGraph(
+    mergeStyleDump(graph, styleDump),
+    architectureCatalog,
+  );
 }
 ```
+
+Load it once in a `beforeAll(async () => { graph = await loadArchitectureGraph(); })`.
 
 The imported catalog is what TypeScript autocompletes against. The rewrite
 keeps it in sync with the sources: after a rename, the next typecheck of the
@@ -23690,6 +24259,8 @@ string.
 
 For adding a TypeScript backend with its own typed nodes and relations, see
 [Extensible architecture graph](/guide/testing/extensible-architecture-graph).
+To propose project-specific source folders, see the
+[folder layout organizer guide](/guide/testing/folder-layout).
 
 ## Built-in helpers
 
@@ -23881,10 +24452,62 @@ Runs the aggregate checks above and joins their messages. Pass `{ allow }`
 through to `assertMutationHasReactOn` for fire-and-forget mutations.
 
 ```typescript
+import { architectureWaiverList } from './waivers';
+
 it('keeps the app declarative', () => {
-  assertDeclarativeArchitecture(graph.graph, { allow: ['logout'] });
+  assertDeclarativeArchitecture(graph.graph, {
+    allow: ['logout'],
+    waivers: architectureWaiverList,
+  });
 });
 ```
+
+The aggregate includes four **style rules**. They make `@craft-ts/style` the
+only way to style a component, and they need the style dump merged into the
+graph (step 4):
+
+| rule                           | fails when                                                                                                                                                                     |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `style-only-design-system`     | an element's class does not reach a sheet of a `*.style.ts` (a string, a computed class, a sheet declared elsewhere), or a component carries `meta.styles` or imports a `.css` |
+| `style-obligations-discharged` | a sheet `requires(...)` an obligation nothing `provides(...)`                                                                                                                   |
+| `no-dangling-css-vars`         | a variable is read and never declared, or declared and never read (a read from `craftGlobalStyles` counts)                                                                     |
+| `no-global-stylesheet`         | an entry file imports a `.css`, or `index.html` links a stylesheet — the only one is `virtual:craft-style.css`                                                                |
+
+A component of pure composition, with no class at all, is not at fault. A class
+passed through an input typed `CraftClass` is accepted.
+
+### Waivers
+
+A deliberate bypass — a third-party widget, HTML rendered from markdown — is a
+**waiver**: a rule, a target, and the reason. Declare them in
+`architecture/waivers.ts`, typed against the catalog, so a target that does not
+exist does not compile:
+
+```typescript
+import { defineArchitectureWaivers } from '@craft-ts/dev-tools';
+import { architectureCatalog } from './catalog';
+
+export const architectureWaiverList = defineArchitectureWaivers(
+  architectureCatalog,
+  [
+    {
+      rule: 'style-only-design-system',
+      target: 'MarkdownArticle',
+      reason: 'The HTML rendered from markdown carries its own classes.',
+    },
+  ],
+);
+```
+
+The target is a component name, `file:<path>`, `obligation:<id>`,
+`css-var:<name>`, or `'*'` for the whole rule — the only form a rule that
+checks the whole graph (`no-dependency-cycles`, …) accepts, and the one a
+project uses while it migrates. Two things keep the list honest: an **empty
+reason** is refused, and a waiver that no longer waives anything is **stale**
+and fails the check. Review Attest lists every waiver for a decision.
+
+`craft-architecture-check` reads the same file (statically, without running the
+app) and takes the dump the build wrote with `--style-dump <path>`.
 
 ### `assertRouteDiProofs`
 
@@ -26228,7 +26851,7 @@ export const { injectUserService } = craftService(/* … */, function* () {
 ```
 
 * `summary` and `tags` come from the JSDoc of the declaration, or of the
-  statement around it (`export const x = craftQuery(…)`).
+  statement around it (`export const x = query(…)`).
 * `rationale` collects the `// WHY:`, `// NOTE:` and `// HACK:` comments, each
   credited to the innermost node that contains it: the comment above `user`
   belongs to the query, not to the service.
@@ -32391,7 +33014,7 @@ already receive those methods as arguments — see
 | `startCraft`                                               | Hydrates an SSR host or mounts a fresh client application automatically | [SSR and hydration](/guide/advanced/ssr-hydration) |
 | `hydrateCraft`                                             | Restores transferred state and claims the existing browser DOM          | [SSR and hydration](/guide/advanced/ssr-hydration) |
 | `pendingNode({ ssr })`                                     | Declares `block`, `fallback`, or `client` behavior for suspended data   | [SSR and hydration](/guide/advanced/ssr-hydration) |
-| `CRAFT_SSR_POLICY`                                         | Route-level default SSR policy                                          | [SSR and hydration](/guide/advanced/ssr-hydration) |
+| `CraftSsrPolicy`, `provideCraftSsrPolicy`                  | Route-level default SSR policy                                          | [SSR and hydration](/guide/advanced/ssr-hydration) |
 | `CraftUnhandledSsrResolutionError`, `CraftSsrTimeoutError` | Reports missing policies and timed-out blocking sources                 | [SSR and hydration](/guide/advanced/ssr-hydration) |
 
 ## Exceptions
@@ -33342,6 +33965,123 @@ url: https://craft-ts.github.io/craft/resources/backlog.md
   * login form example, explain how to trigger an exception on submit and debounce errors
   * show an error if the form submit mutation doesn't have the same payload as the form value
   * formRoot can't be used for submission, create an alternative directive?
+
+---
+
+---
+url: https://craft-ts.github.io/craft/guide/testing/folder-layout.md
+---
+# Folder layout organizer
+
+`craft organize` analyzes a fresh Craft dependency graph and proposes a folder
+layout. It does not move files. The default placement follows route ownership
+and application-shell reachability; project-specific rules can add known
+architectural constraints without changing those defaults for other projects.
+
+## Tune an organizer run
+
+The programmatic entry point is `organizeProject`, exported by
+`@craft-ts/dev-tools` and `@craft-ts/dev-tools/folder-layout`:
+
+```ts
+import { organizeProject } from '@craft-ts/dev-tools/folder-layout';
+
+organizeProject({
+  project: 'apps/shop/tsconfig.graph.json',
+  graph: 'craft-dependency-graph.json',
+  out: 'apps/shop/folder-layout',
+  weights: { calls: 4 },
+  thresholds: { maxDepth: 2 },
+  placementRules: [
+    {
+      id: 'app-start-services',
+      when: {
+        nodeKind: 'service',
+        nodeDetails: { appStart: true },
+      },
+      scope: 'core',
+      folder: 'core/app-start',
+      reason: 'Runs during application bootstrap.',
+    },
+  ],
+});
+```
+
+`weights` adjusts the relative influence of graph relations. `thresholds`
+controls the maximum proposed feature depth and the fan-in/fan-out values that
+mark hubs. Omitted values keep their defaults.
+
+## Keep project rules in JSON
+
+The CLI accepts the same `weights`, `thresholds`, and `placementRules` in a
+JSON file passed with `--config`:
+
+```json
+{
+  "placementRules": [
+    {
+      "id": "app-start-services",
+      "when": {
+        "nodeKind": "service",
+        "nodeDetails": { "appStart": true }
+      },
+      "scope": "core",
+      "folder": "core/app-start",
+      "reason": "Runs during application bootstrap."
+    }
+  ]
+}
+```
+
+```bash
+craft organize \
+  --project apps/shop/tsconfig.graph.json \
+  --graph craft-dependency-graph.json \
+  --config apps/shop/organizer.config.json \
+  --out apps/shop/folder-layout
+```
+
+The organizer evaluates rules in array order, before its default ownership
+classification. A rule matches a file when at least one Craft graph node in
+that file has the selected `nodeKind` and all selected `nodeDetails` values.
+The first matching rule sets the file's scope and destination. `folder` is
+relative to the organizer's target root, which defaults to the app's `src/`
+folder when present.
+
+Rules need a unique `id`, a `nodeKind`, optional `nodeDetails`, a scope
+(`feature-local`, `parent-shared`, `global-shared`, `core`, or `unresolved`), a
+safe relative `folder`, and a human-readable `reason`. In TypeScript,
+`nodeKind` narrows `nodeDetails`; for `service`, keys and values are checked
+against the service metadata (`appStart` and `browserBoundary` are booleans).
+The JSON CLI validates known service detail keys and value types at runtime.
+The reason appears with the file's proposal. Resolved rules are written to
+`folder-layout-analysis.json` and contribute to the proposal's `configHash`, so
+changing policy produces a distinct review artifact. A matching explicit rule
+has confidence `1`; destination collisions still require review.
+
+### File-level behavior
+
+The organizer proposes moves for whole files. If one service in a file matches
+a rule, the entire file receives that placement. Keep declarations with
+different folder policies in separate files. If several rules match a file,
+the first rule wins; put narrower matchers first.
+
+## Demo policy: app-start services
+
+The dependency graph records `appStart: true` on Craft service nodes. The demo
+uses that fact in `apps/demo/organizer.config.json` to place matching source
+files under `src/core/app-start/`. This policy is passed only by the demo's
+`attest:demo:folder-layout` command, so it does not change the organizer's
+defaults for other applications.
+
+To regenerate the proposal:
+
+```bash
+npm run attest:demo:folder-layout
+```
+
+The command refreshes the read-only analysis and proposal artifacts. Apply a
+proposal separately with `craft organize apply` after reviewing it.
 
 ---
 

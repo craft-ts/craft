@@ -66,7 +66,6 @@ import { CraftRouterLink } from '@craft-ts/core';
 export const TasksLink = craftComponent(
   'TasksLink',
   {},
-  () => ({}),
   () => a('tasks', {}, 'Tasks').pipe(CraftRouterLink({ to: 'tasks' })),
 );
 ```
@@ -74,23 +73,18 @@ export const TasksLink = craftComponent(
 **Imperatively**, by yielding the router:
 
 ```ts
-import { craftComponent } from '@craft-ts/component';
+import { button, craftComponent } from '@craft-ts/component';
 import { CraftRouter, craftMethod } from '@craft-ts/core';
 
-export const TaskOpener = craftComponent(
-  'TaskOpener',
-  {},
-  function* () {
-    const router = yield* CraftRouter(undefined, ({ navigate }) => ({ navigate }));
+export const TaskOpener = craftComponent('TaskOpener', {}, function* () {
+  const router = yield* CraftRouter(undefined, ({ navigate }) => ({ navigate }));
 
-    const goToTask = craftMethod('goToTask', function* (taskId: string) {
-      void router.navigate({ to: 'tasks/:taskId', params: { taskId } });
-    });
+  const goToTask = yield* craftMethod('goToTask', function* (taskId: string) {
+    void router.navigate({ to: 'tasks/:taskId', params: { taskId } });
+  });
 
-    return { goToTask };
-  },
-  () => [],
-);
+  return button('openTask', { type: 'button', click: () => goToTask('1') }, 'Open task 1');
+});
 ```
 
 The target is `{ to, params?, queryParams? }`, and all of it is checked:

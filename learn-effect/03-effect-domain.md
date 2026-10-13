@@ -112,7 +112,7 @@ the boundary and wants the graph to record only the members it uses.
 query resource:
 
 ```typescript
-import { craftComputed } from '@craft-ts/core';
+import { craftComputed, craftUse } from '@craft-ts/core';
 import { queryEffect } from '@craft-ts/effect';
 
 const accessQuery =
@@ -122,9 +122,9 @@ const accessQuery =
     loader: ({ params }) => checkUserAccess(params),
   });
 
-const accessLabel = craftComputed('accessLabel', function* () {
+const accessLabel = craftUse(craftComputed('accessLabel', function* () {
   return (yield* accessQuery.value())?.label ?? 'Loading…';
-});
+}));
 ```
 
 The chain is: `queryEffect` runs `checkUserAccess`, the active `Layer` provides
@@ -233,24 +233,19 @@ import { craftComponent, p } from '@craft-ts/component';
 import { state } from '@craft-ts/core';
 import { computedEffect } from '@craft-ts/effect';
 
-export const CartTotal = craftComponent(
-  'LearnEffectCartTotal',
-  {},
-  function* () {
-    const lines = yield* state('lines', [
-      { sku: 'sku-1', qty: 2, unitCents: 1_000 },
-      { sku: 'sku-2', qty: 1, unitCents: 1_000 },
-    ] as CartLine[]);
+export const CartTotal = craftComponent('LearnEffectCartTotal', {}, function* () {
+  const lines = yield* state('lines', [
+    { sku: 'sku-1', qty: 2, unitCents: 1_000 },
+    { sku: 'sku-2', qty: 1, unitCents: 1_000 },
+  ] as CartLine[]);
 
-    // The factory RETURNS the Effect; `computedEffect` runs it in place.
-    const totalLabel = computedEffect('totalLabel', function* () {
-      return cartTotalLabel(yield* lines());
-    });
+  // The factory RETURNS the Effect; `computedEffect` runs it in place.
+  const totalLabel = computedEffect('totalLabel', function* () {
+    return cartTotalLabel(yield* lines());
+  });
 
-    return { totalLabel };
-  },
-  ({ totalLabel }) => [p(totalLabel)],
-);
+  return [p(totalLabel)];
+});
 ```
 
 Anything nobody declared synchronous is refused at the call, before anything

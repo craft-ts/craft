@@ -19,19 +19,17 @@ object, or `'notReached'`.
 
 Here is the service under test — the one from [step 4](/learn/04-compose), with
 its scope changed to `toProvide` so it has a `provideTaskStats()` to mount in
-the test:
+the test. The component-owned `TaskList` also uses `toProvide`, so each
+component instance and template test can resolve their own configured provider:
 
 ```ts
 export const { TaskStats, provideTaskStats } = craftService(
   { name: 'TaskStats', providedIn: 'toProvide' },
   function* () {
-    const tasks = yield* TaskList();
-
-    return {
-      done: craftComputed('done', function* () {
-        return (yield* tasks()).filter((task) => task.done).length;
-      }),
-    };
+    const { tasks } = yield* TaskList(undefined, ({ tasks }) => ({ tasks }));
+    yield* craftComputed('done', function* () {
+      return (yield* tasks()).filter((task) => task.done).length;
+    });
   },
 );
 ```
@@ -46,12 +44,14 @@ const { sut, mocks } = await setupCraftServiceTestingByRegister(TaskStats, {
 
   // its only dependency, replaced by a mock
   TaskList: {
-    $self: vi.fn(function* () {
-      return [
+    // a reactive member is mocked by a reactive value, like the real one
+    tasks: createYieldableReactiveValue(
+      craftSignal<Task[]>([
         { id: '1', title: 'a', done: true },
         { id: '2', title: 'b', done: false },
-      ];
-    }),
+      ]),
+      'tasks',
+    ),
   },
 });
 
@@ -60,7 +60,7 @@ expect(mocks.TaskList).toBeDefined();
 ```
 
 `sut` is the service under test; `mocks` gives you back the mocks you supplied,
-already typed, so `mocks.TaskList.$self` is assertable.
+already typed, so `mocks.TaskList.tasks` is assertable.
 
 ::: tip Which register entry to use
 `provideX()` for a `toProvide` or `manuallyProvidedAtRoot` service, `'real'` for
@@ -80,76 +80,65 @@ asks for that. Had it yielded the whole `TaskApi`, the register would demand
 
 ## Testing a component
 
-Here is the component under test, from steps 2 and 3 — a factory that yields
-`TaskList`, and a template that renders it:
+Here is the component under test, from steps 2 and 3 — it provides its own
+`TaskList` instance, yields the service, and returns the nodes:
 
 ```ts
 import { craftComponent, forNode, h1, li, ul } from '@craft-ts/component';
 
 export const Tasks = craftComponent(
   'Tasks',
-  {},
+  { providers: [provideTaskList()] },
   function* () {
-    const tasks = yield* TaskList();
-    return { tasks };
-  },
-  ({ tasks }) => [
-    h1(function* () {
-      return `Tasks — ${yield* tasks.remaining()} left`;
-    }),
-    ul(
-      forNode(tasks, { track: (task) => task.id }, (task) =>
-        li(function* () {
-          return (yield* task()).title;
-        }),
+    const { tasks } = yield* TaskList();
+
+    return [
+      h1(function* () {
+        return `Tasks — ${yield* tasks.remaining()} left`;
+      }),
+      ul(
+        forNode(tasks, { track: (task) => task.id }, (task) =>
+          li(function* () {
+            return (yield* task()).title;
+          }),
+        ),
       ),
-    ),
-  ],
+    ];
+  },
 );
 ```
 
-Those two halves are tested **independently**: the factory produces a context
-without touching the DOM, and the template renders a context without running the
-factory.
-
-The logic test runs the factory only — no DOM:
+The seam is the **service**. Behaviour is tested there, with plain values and no
+DOM:
 
 ```ts
-const { context, mocks, destroy } =
-  await setupCraftComponentLogicTest.byRegister(Tasks, {
-    register: {
-      TaskList: {
-        $self: () => [{ id: '1', title: 'a', done: false }],
-        remaining: () => 1,
-      },
-    },
-  });
+const { sut } = await setupCraftServiceTestingByRegister(TaskList, {
+  TaskList: provideTaskList(),
+});
 
-expect(context.tasks.remaining()).toBe(1);
-destroy();
+expect(craftUse(sut.tasks.remaining())).toBe(0);
 ```
 
-The template test does the opposite — it renders with a context you hand it, and
-never runs the factory:
+The template test does the opposite — it renders the component with that service
+mocked through the register:
 
 ```ts
 const test = await setupCraftComponentTemplateTest.byRegister(Tasks, {
-  context: {
-    tasks: Object.assign(
-      function* () {
-        return [{ id: '1', title: 'Write tests', done: false }];
-      },
-      {
-        remaining: function* () {
-          return 1;
+  inputs: {},
+  register: {
+    TaskList: {
+      // The exposed `tasks` state: its call shape and the members read.
+      // A state method hands back an invocation, so the fake does too.
+      tasks: Object.assign(
+        () => [{ id: '1', title: 'Write tests', done: false }],
+        {
+          remaining: function* () {
+            return 1;
+          },
         },
-        add: () => undefined,
-        toggle: () => undefined,
-        remove: () => undefined,
-      },
-    ),
+      ),
+    },
   },
-  register: {},
 });
 
 expect(test.nativeElement.textContent).toContain('Tasks — 1 left');
@@ -172,7 +161,7 @@ removeButton?.click();
 
 Some of what craft guarantees isn't observable at runtime at all — it's in the
 types. Those get their own kind of test, resolved by the compiler with no
-`TestBed`, no DOM and no factory:
+`TestBed` and no DOM:
 
 ```typescript
 type TasksTemplateTest = SetupTestComponentTemplate<typeof Tasks, [typeof TaskRow]>;

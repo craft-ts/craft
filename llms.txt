@@ -175,6 +175,7 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 - [on$](https://craft-ts.github.io/craft/guide/reactivity/on.md)
 - [fromEventToSource$](https://craft-ts.github.io/craft/guide/reactivity/from-event-to-source.md)
 - [sourceFromEvent](https://craft-ts.github.io/craft/guide/reactivity/source-from-event.md)
+- [Typed streams](https://craft-ts.github.io/craft/guide/reactivity/streams.md)
 - [afterRecomputation](https://craft-ts.github.io/craft/guide/reactivity/after-recomputation.md)
 
 ### Internationalisation
@@ -222,6 +223,7 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 ### Other
 
 - [Create a CraftTS project](https://craft-ts.github.io/craft/guide/create-project.md)
+- [Fixed URL routing with hashes](https://craft-ts.github.io/craft/guide/routing/hash-location.md)
 - [Folder layout organizer](https://craft-ts.github.io/craft/guide/testing/folder-layout.md)
 - [Guide](https://craft-ts.github.io/craft/guide.md)
 - [Primitive method usage](https://craft-ts.github.io/craft/guide/testing/architecture/primitive-method-usage.md)

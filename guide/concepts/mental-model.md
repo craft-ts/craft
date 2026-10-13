@@ -49,9 +49,9 @@ dependency is invisible on the computed, even if the surrounding factory
 already yielded it:
 
 ```typescript
-const doneCount = craftComputed('doneCount', function* () {
+const doneCount = craftUse(craftComputed('doneCount', function* () {
   return (yield* tasks()).filter((task) => task.done).length;
-});
+}));
 ```
 
 `tasks` does not belong to `doneCount`. Closing over `tasks()` would read the
@@ -173,7 +173,7 @@ const { UserProfile } = craftService(
       },
     });
 
-    const user = yield* query(
+    yield* query(
       'user',
       {
         params: userId,
@@ -187,14 +187,17 @@ const { UserProfile } = craftService(
       }),
     );
 
-    return { userId, user, updateEmail };
   },
 );
 ```
 
 ### Signals, not RxJS
 
-100% signal-based. RxJS is optional and only appears where you ask for it.
+100% signal-based. craft-ts has no RxJS dependency: anything subscribable — an
+RxJS `Observable` included — works structurally, and when you do want streams
+(operators, multicast, typed exceptions), `@craft-ts/stream` provides them with
+the same typed dependencies and exceptions as the rest of craft-ts. See
+[Typed streams](/guide/reactivity/streams).
 
 ### Declarative code is legible code
 

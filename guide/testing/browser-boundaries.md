@@ -78,7 +78,7 @@ There are two valid ways to use a browser boundary.
 Use the DSL when the browser interaction belongs to the generator itself.
 
 ```ts
-import { Console, craftService } from '@craft-ts/core';
+import { Console, craftService, craftExpose } from '@craft-ts/core';
 
 const { BootLogger } = craftService(
   { name: 'BootLogger', providedIn: 'global' },
@@ -86,9 +86,7 @@ const { BootLogger } = craftService(
     yield* Console.log('boot');
     yield* Console.info('config loaded');
 
-    return {
-      ready: true,
-    };
+    yield* craftExpose('ready', true);
   },
 );
 ```
@@ -98,7 +96,7 @@ const { BootLogger } = craftService(
 Use `XService(...)` when the browser method needs to stay callable later from a returned method.
 
 ```ts
-import { ConsoleService, craftService } from '@craft-ts/core';
+import { ConsoleService, craftService, craftExpose } from '@craft-ts/core';
 
 const { AuditTrail } = craftService(
   { name: 'AuditTrail', providedIn: 'global' },
@@ -111,12 +109,10 @@ const { AuditTrail } = craftService(
       }),
     );
 
-    return {
-      trackUserAction: (action: string) =>
-        consoleService.log('user action', action),
-      trackFailure: (error: unknown) =>
-        consoleService.error('unexpected failure', error),
-    };
+    yield* craftExpose('trackUserAction', (action: string) =>
+      consoleService.log('user action', action));
+    yield* craftExpose('trackFailure', (error: unknown) =>
+      consoleService.error('unexpected failure', error));
   },
 );
 ```

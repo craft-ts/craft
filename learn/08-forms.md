@@ -25,7 +25,7 @@ import {
 export const { TaskForm } = craftService(
   { name: 'TaskForm', providedIn: 'function' },
   function* () {
-    const taskForm = yield* state(
+    yield* state(
       'taskForm',
       { title: '', notes: '' },
       insertForm(
@@ -44,7 +44,6 @@ export const { TaskForm } = craftService(
       ),
     );
 
-    return taskForm;
   },
 );
 ```*the form is this shape, and here is what each field requires.* The

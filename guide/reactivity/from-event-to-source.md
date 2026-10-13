@@ -115,18 +115,18 @@ on the event handle:
 const { Click } = craftService(
   { name: 'Click', providedIn: 'global' },
   function* () {
-    const click = yield* fromEventToSource$(button, 'click');
-    return click;
+    yield* fromEventToSource$(button, 'click');
   },
 );
 
 const counter = yield* state('counter', 0, ({ set }) => ({
-  click: on$(Click, () => set(1)),
+  click: on$(Click.click, () => set(1)),
 }));
 ```
 
-`on$(Click, ...)` tracks `Click`. Calling `dispose()` only removes the DOM
-listener and does not alter dependency metadata.
+The service exposes the event source as `Click.click`. `on$(Click.click, ...)`
+tracks that source. Calling `dispose()` only removes the DOM listener and does
+not alter dependency metadata.
 
 ### Automatic Cleanup
 
@@ -136,17 +136,12 @@ Event listeners are automatically removed when the injection context is destroye
 import { craftComponent, p } from '@craft-ts/component';
 import { fromEventToSource$ } from '@craft-ts/core';
 
-export const Demo = craftComponent(
-  'Demo',
-  {},
-  function* () {
-    const keydown$ = fromEventToSource$<KeyboardEvent>(document, 'keydown');
+export const Demo = craftComponent('Demo', {}, function* () {
+  const _keydown$ = fromEventToSource$<KeyboardEvent>(document, 'keydown');
 
-    // the listener is removed automatically when the component is destroyed
-    return { keydown$ };
-  },
-  () => p('Press any key'),
-);
+  // the listener is removed automatically when the component is destroyed
+  return p('Press any key');
+});
 ```
 
 ### Signal Integration
@@ -159,9 +154,9 @@ const input$ = fromEventToSource$(inputElement, 'input', {
 });
 
 // Use in template or computed
-const trimmedValue = craftComputed('trimmedValue', function* () {
+const trimmedValue = craftUse(craftComputed('trimmedValue', function* () {
   return (yield* input$.value())?.trim() ?? '';
-});
+}));
 ```
 
 ### Event Transformation
@@ -202,47 +197,38 @@ const { counter } = state('counter', 0, ({ update }) => ({
 import { craftComponent, p } from '@craft-ts/component';
 import { fromEventToSource$, on$, state } from '@craft-ts/core';
 
-export const Clicker = craftComponent(
-  'Clicker',
-  {},
-  function* () {
-    const click$ = fromEventToSource$<MouseEvent>(document, 'click');
+export const Clicker = craftComponent('Clicker', {}, function* () {
+  const click$ = fromEventToSource$<MouseEvent>(document, 'click');
 
-    const clicks = yield* state('clicks', 0, ({ update }) => ({
-      // bound to the source, so NOT exposed on the ref
-      increment: on$(click$, () => update((count) => count + 1)),
-    }));
+  const clicks = yield* state('clicks', 0, ({ update }) => ({
+    // bound to the source, so NOT exposed on the ref
+    increment: on$(click$, () => update((count) => count + 1)),
+  }));
 
-    return { clicks };
-  },
-  ({ clicks }) =>
-    p(function* () {
-      return `Clicks: ${yield* clicks()}`;
-    }),
-);
+  return p(function* () {
+    return `Clicks: ${yield* clicks()}`;
+  });
+});
 ```
 
 ### Input Value Tracking
 
 ```typescript
-export const Search = craftComponent(
-  'Search',
-  {},
-  function* () {
-    const input$ = fromEventToSource$(document, 'input', {
-      computedValue: (event: Event) => (event.target as HTMLInputElement).value,
-    });
+export const Search = craftComponent('Search', {}, function* () {
+  const input$ = fromEventToSource$(document, 'input', {
+    computedValue: (event: Event) => (event.target as HTMLInputElement).value,
+  });
 
-    // reactive access to the current input value
-    return { searchTerm: input$.value };
-  },
-  ({ searchTerm }) => [
+  // reactive access to the current input value
+  const searchTerm = input$.value;
+
+  return [
     input({ type: 'text', placeholder: 'Search…' }),
     p(function* () {
       return `You typed: ${(yield* searchTerm()) || 'nothing yet'}`;
     }),
-  ],
-);
+  ];
+});
 ```
 
 ### Window Scroll Tracking
@@ -270,49 +256,41 @@ export const InfiniteScroll = craftComponent(
       }
     });
 
-    return { scrollPosition: scroll$.value };
-  },
-  ({ scrollPosition }) =>
-    div(
+    return div(
       p(function* () {
         return `Scroll position: ${(yield* scrollPosition())?.scrollY}`;
       }),
-    ),
+    );
+  },
 );
 ```
 
 ### Window Resize Handling
 
 ```typescript
-export const Responsive = craftComponent(
-  'Responsive',
-  {},
-  function* () {
-    const resize$ = fromEventToSource$(window, 'resize', {
-      computedValue: () => ({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      }),
-    });
+export const Responsive = craftComponent('Responsive', {}, function* () {
+  const resize$ = fromEventToSource$(window, 'resize', {
+    computedValue: () => ({
+      width: window.innerWidth,
+      height: window.innerHeight,
+    }),
+  });
 
-    const dimensions = resize$.value;
+  const dimensions = resize$.value;
 
-    return {
-      dimensions,
-      isMobile: craftComputed('isMobile', function* () {
-        const dims = yield* dimensions();
-        return dims ? dims.width < 768 : false;
-      }),
-    };
-  },
-  ({ dimensions }) =>
-    div(
-      p(function* () {
-        const dims = yield* dimensions();
-        return `Viewport: ${dims?.width} x ${dims?.height}`;
-      }),
-    ),
-);
+  const isMobile = yield* craftComputed('isMobile', function* () {
+    const dims = yield* dimensions();
+    return dims ? dims.width < 768 : false;
+  });
+
+  return div(
+    { 'data-mobile': isMobile },
+    p(function* () {
+      const dims = yield* dimensions();
+      return `Viewport: ${dims?.width} x ${dims?.height}`;
+    }),
+  );
+});
 ```
 
 ### Keyboard Shortcuts
@@ -328,31 +306,26 @@ interface ShortcutEvent {
   altKey: boolean;
 }
 
-export const Shortcuts = craftComponent(
-  'Shortcuts',
-  {},
-  function* () {
-    const save = () => console.log('Save triggered');
-    const undo = () => console.log('Undo triggered');
+export const Shortcuts = craftComponent('Shortcuts', {}, function* () {
+  const save = () => console.log('Save triggered');
+  const undo = () => console.log('Undo triggered');
 
-    const keydown$ = fromEventToSource$(document, 'keydown', {
-      computedValue: (event: KeyboardEvent) => ({
-        key: event.key,
-        ctrlKey: event.ctrlKey,
-        shiftKey: event.shiftKey,
-        altKey: event.altKey,
-      }),
-    });
+  const keydown$ = fromEventToSource$(document, 'keydown', {
+    computedValue: (event: KeyboardEvent) => ({
+      key: event.key,
+      ctrlKey: event.ctrlKey,
+      shiftKey: event.shiftKey,
+      altKey: event.altKey,
+    }),
+  });
 
-    keydown$.subscribe((shortcut) => {
-      if (shortcut.ctrlKey && shortcut.key === 's') save();
-      else if (shortcut.ctrlKey && shortcut.key === 'z') undo();
-    });
+  keydown$.subscribe((shortcut) => {
+    if (shortcut.ctrlKey && shortcut.key === 's') save();
+    else if (shortcut.ctrlKey && shortcut.key === 'z') undo();
+  });
 
-    return {};
-  },
-  () => p('Try Ctrl+S or Ctrl+Z'),
-);
+  return p('Try Ctrl+S or Ctrl+Z');
+});
 ```
 
 ### Dynamic Element Listening
@@ -374,10 +347,7 @@ export const Dynamic = craftComponent(
       });
     };
 
-    return { items, attachListener };
-  },
-  ({ items, attachListener }) =>
-    forNode(
+    return forNode(
       () => items(),
       { track: (item) => item.id },
       (item) =>
@@ -387,7 +357,8 @@ export const Dynamic = craftComponent(
             'Attach listener',
           ),
         ),
-    ),
+    );
+  },
 );
 ```
 
@@ -399,69 +370,57 @@ interface Position {
   y: number;
 }
 
-export const CursorTracker = craftComponent(
-  'CursorTracker',
-  {},
-  function* () {
-    const mouseMove$ = fromEventToSource$(document, 'mousemove', {
-      computedValue: (event: MouseEvent) => ({
-        x: event.clientX,
-        y: event.clientY,
-      }),
-      event: { passive: true },
-    });
+export const CursorTracker = craftComponent('CursorTracker', {}, function* () {
+  const mouseMove$ = fromEventToSource$(document, 'mousemove', {
+    computedValue: (event: MouseEvent) => ({
+      x: event.clientX,
+      y: event.clientY,
+    }),
+    event: { passive: true },
+  });
 
-    return { position: mouseMove$.value };
-  },
-  ({ position }) =>
-    div(
-      p(function* () {
-        const pos = yield* position();
-        return `Mouse position: ${pos?.x}, ${pos?.y}`;
-      }),
-    ),
-);
+  return div(
+    p(function* () {
+      const pos = yield* position();
+      return `Mouse position: ${pos?.x}, ${pos?.y}`;
+    }),
+  );
+});
 ```
 
 ### Form Submission
 
 ```ts
 import { button, craftComponent, form, input, p } from '@craft-ts/component';
-import { craftComputed, fromEventToSource$, on$, state } from '@craft-ts/core';
+import { craftComputed, fromEventToSource$, on$, state, craftUse } from '@craft-ts/core';
 
-export const SubmitDemo = craftComponent(
-  'SubmitDemo',
-  {},
-  function* () {
-    const submit$ = fromEventToSource$(document, 'submit', {
-      computedValue: (event: Event) => {
-        event.preventDefault();
-        const formData = new FormData(event.target as HTMLFormElement);
-        return Object.fromEntries(formData);
-      },
-    });
+export const SubmitDemo = craftComponent('SubmitDemo', {}, function* () {
+  const submit$ = fromEventToSource$(document, 'submit', {
+    computedValue: (event: Event) => {
+      event.preventDefault();
+      const submitted = new FormData(event.target as HTMLFormElement);
+      return Object.fromEntries(submitted);
+    },
+  });
 
-    const formData = yield* state(
-      'formData',
-      null as Record<string, unknown> | null,
-      ({ state, set }) => ({
-        // bound to the source, so NOT exposed on the ref
-        handleSubmit: on$(submit$, (data) => set(data)),
-        formDataJson: craftComputed('formDataJson', function* () {
-          return JSON.stringify(yield* state());
-        }),
-      }),
-    );
+  const formData = yield* state(
+    'formData',
+    null as Record<string, unknown> | null,
+    ({ state, set }) => ({
+      // bound to the source, so NOT exposed on the ref
+      handleSubmit: on$(submit$, (data) => set(data)),
+      formDataJson: craftUse(craftComputed('formDataJson', function* () {
+        return JSON.stringify(yield* state());
+      })),
+    }),
+  );
 
-    return { formData };
-  },
-  ({ formData }) =>
-    form([
-      input('username', { type: 'text', name: 'username' }),
-      button('submit', { type: 'submit' }, 'Submit'),
-      p(formData.formDataJson),
-    ]),
-);
+  return form([
+    input('username', { type: 'text', name: 'username' }),
+    button('submit', { type: 'submit' }, 'Submit'),
+    p(formData.formDataJson),
+  ]);
+});
 ```
 
 ## Comparison with sourceFromEvent
@@ -541,6 +500,9 @@ const { searchResults } = state('searchResults', [], ({ set }) => ({
 ## Common Patterns
 
 ### Debounced Input
+
+craft-ts does not depend on RxJS; this example uses it as *your own* optional
+dependency, through the structural `Subscribable` contract.
 
 ```typescript
 import { debounceTime } from 'rxjs/operators';

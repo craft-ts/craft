@@ -40,16 +40,14 @@ complete cleanup of all data cached by `@craft-ts`, including:
 ## The common case — clearing on logout
 
 ```ts
-import { craftService, GlobalPersisterHandlerService } from '@craft-ts/core';
+import { craftService, GlobalPersisterHandlerService, craftExpose } from '@craft-ts/core';
 
 const { LogoutHandler } = craftService(
   { name: 'LogoutHandler', providedIn: 'toProvide' },
   function* () {
     const persister = yield* GlobalPersisterHandlerService();
 
-    return {
-      logout: () => persister.clearAllCache(),
-    };
+    yield* craftExpose('logout', () => persister.clearAllCache());
   },
 );
 ```
@@ -61,7 +59,7 @@ const { CacheActions } = craftService(
   { name: 'CacheActions', providedIn: 'toProvide' },
   function* () {
     const persister = yield* GlobalPersisterHandlerService();
-    return { clearCache: () => persister.clearAllCache() };
+    yield* craftExpose('clearCache', () => persister.clearAllCache());
   },
 );
 ```
@@ -69,19 +67,17 @@ const { CacheActions } = craftService(
 ## Clear cache when switching accounts
 
 ```ts
-import { GlobalPersisterHandlerService, craftService } from '@craft-ts/core';
+import { GlobalPersisterHandlerService, craftService, craftExpose } from '@craft-ts/core';
 
 const { AccountSwitcher } = craftService(
   { name: 'AccountSwitcher', providedIn: 'toProvide' },
   function* () {
     const persister = yield* GlobalPersisterHandlerService();
-    return {
-      switchAccount: (accountId: string) => {
-        persister.clearAllCache();
-        // Load the selected account...
-        return accountId;
-      },
-    };
+    yield* craftExpose('switchAccount', (accountId: string) => {
+      persister.clearAllCache();
+      // Load the selected account...
+      return accountId;
+    });
   },
 );
 ```

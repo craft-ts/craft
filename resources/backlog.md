@@ -9,7 +9,9 @@ url: https://craft-ts.github.io/craft/resources/backlog.md
 
 * \[x] Explore to make Source similar to Subject/ReplaySubject
 
-* \[ ] Add support for RxJs source without having an explicit dependency on RxJs and accepts Observable as params for mutation/query/asyncProcess
+* \[x] Accept any RxJS-shaped source (`Subscribable`) without an explicit dependency on RxJs — core ships a structural contract and `@craft-ts/stream` interops both ways
+
+* \[ ] Accept an Observable/`Subscribable` as params for mutation/query/asyncProcess
 
 * \[ ] Clean internal code
 

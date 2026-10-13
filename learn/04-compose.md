@@ -7,6 +7,10 @@ url: https://craft-ts.github.io/craft/learn/04-compose.md
 
 This is the step that makes everything else obvious. Take your time here.
 
+This example gives `TaskList` a fresh context inside each `TaskStats` call. For
+state owned by a component or route, use `toProvide` as in [step 3](/learn/03-service)
+so repeated reads resolve the same configured instance.
+
 ## The problem `yield*` solves
 
 Dependencies are easy to hide when a service reaches into a runtime container.
@@ -18,8 +22,8 @@ export const { TaskList } = craftService(
   function* () {
     const api = yield* TaskApi(); // ← tracked
 
-    const tasks = yield* state('tasks', [] as Task[], /* … */);
-    return tasks;
+    // Exposed as `tasks`: a service's API is what it yields.
+    yield* state('tasks', [] as Task[], /* … */);
   },
 );
 ```
@@ -55,42 +59,42 @@ once. Don't store one and `yield*` it twice.
 ```typescript
 const { TaskApi } = craftService(
   { name: 'TaskApi', providedIn: 'global' },
-  () => ({
+  function* () {
     // raw fetch, only to keep this example about composition —
     // see the note below
-    fetchAll: () => fetch('/api/tasks').then((r) => r.json()),
-  }),
+    yield* craftExpose('fetchAll', () =>
+      fetch('/api/tasks').then((r) => r.json()),
+    );
+  },
 );
 
 const { TaskList } = craftService(
   { name: 'TaskList', providedIn: 'function' },
   function* () {
     const api = yield* TaskApi();
-    const tasks = yield* state('tasks', [] as Task[], ({ set }) => ({
+    yield* state('tasks', [] as Task[], ({ set }) => ({
       // For this demo only; we'll later see why this belongs in a mutation instead.
       load: function* () {
         return yield* set(yield* api.fetchAll());
       },
     }));
-    return tasks;
   },
 );
 
 const { TaskStats } = craftService(
   { name: 'TaskStats', providedIn: 'function' },
   function* () {
-    const tasks = yield* TaskList();
-    return {
-      done: craftComputed('done', function* () {
-        return (yield* tasks()).filter((t) => t.done).length;
-      }),
-    };
+    const { tasks } = yield* TaskList();
+    yield* craftComputed('done', function* () {
+      return (yield* tasks()).filter((t) => t.done).length;
+    });
   },
 );
 ```
 
-Note the factory of `TaskApi` is a plain arrow — a service with no dependencies
-doesn't need to be a generator.
+A service's factory is always a generator: its API is what it yields. A named
+primitive is exposed under its name; anything else — like `fetchAll` — is
+exposed with `craftExpose(name, value)`.
 
 `TaskStats` does not own `TaskList`. The computed yields `tasks` so **that**
 read is recorded on `done`, not silently closed over from the factory.

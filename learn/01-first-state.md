@@ -15,12 +15,12 @@ npm i -D @craft-ts/dev-tools@beta
 
 The packages are currently published on the `beta` channel. The component
 package contains the functional renderer, while `core` contains the reactive
-primitives used by the component factory.
+primitives a component declares.
 
 ## A component with state
 
-A Craft component is a **function**, not a class. It takes a name, meta, a logic
-factory, and a template:
+A Craft component is a **function**, not a class. It takes a name, meta, and
+the function that declares what it owns and returns what it renders:
 
 ```ts
 import { craftComponent, forNode, h1, li, ul } from '@craft-ts/component';
@@ -32,47 +32,45 @@ export const Tasks = craftComponent(
   'Tasks', // name: stable component name used by tooling and host tags
   {}, // meta: providers, styles and host configuration
   function* () {
-    // logic factory: creates the component context
+    // one function: it declares what the component owns, then returns nodes
     const tasks = yield* state('tasks', [
       // name: state identifier
       { id: '1', title: 'Read step 1', done: false },
     ] as Task[]); // initial value: the seeded task list
 
-    return { tasks };
-  },
-  ({ tasks }) => [
-    // template: turns the context into rendered nodes
-    h1('Tasks'),
-    ul(
-      forNode(
-        tasks, // source: the reactive collection to render
-        { track: (task) => task.id }, // options: stable identity for each item
-        // render: creates one node per task
-        (task) =>
-          li(function* () {
-            return (yield* task()).title;
-          }),
+    return [
+      h1('Tasks'),
+      ul(
+        forNode(
+          tasks, // source: the reactive collection to render
+          { track: (task) => task.id }, // options: stable identity for each item
+          // render: creates one node per task
+          (task) =>
+            li(function* () {
+              return (yield* task()).title;
+            }),
+        ),
       ),
-    ),
-  ],
+    ];
+  },
 );
 ```
 
-Four arguments, and each has one job:
+Three arguments, and each has one job:
 
-| Argument     | What it is                                                  |
-| ------------ | ----------------------------------------------------------- |
-| `'Tasks'`    | the component's name — used by the tooling and by host tags |
-| `{}`         | meta: providers, styles, host properties (empty for now)    |
-| `function*`  | the **logic factory** — builds and returns the context      |
-| `({ … }) =>` | the **template** — receives that context, returns nodes     |
+| Argument    | What it is                                                  |
+| ----------- | ----------------------------------------------------------- |
+| `'Tasks'`   | the component's name — used by the tooling and by host tags |
+| `{}`        | meta: providers, styles, host properties (empty for now)    |
+| `function*` | the component itself — it declares, then returns nodes      |
 
-There is no class, no decorator, no separate HTML file, and no host element
-wrapped around your markup.
+One function, read top to bottom: what the component takes (`yield*`), then
+what it renders (`return`). There is no class, no decorator, no separate HTML
+file, and no host element wrapped around your markup.
 
 ## Inputs and outputs
 
-A component's inputs and outputs are just **parameters of the logic factory**,
+A component's inputs and outputs are the **members of its single parameter**,
 typed with `Input<T>` and `Output<Handler>`:
 
 ```ts
@@ -91,30 +89,33 @@ type User = { name: string };
 const UserCard = craftComponent(
   'UserCard',
   {},
-  (user: Input<User>, onRemove: Output<(user: User) => void>) => ({
-    user: deepYieldable(user),
-    onRemove,
-  }),
-  ({ user, onRemove }) =>
-    div([
+  function* (inputs: {
+    readonly user: Input<User>;
+    readonly onRemove: Output<(user: User) => void>;
+  }) {
+    const user = deepYieldable(inputs.user);
+    const { onRemove } = inputs;
+
+    return div([
       span(user.name),
       button(
         'remove',
         {
           type: 'button',
           *click() {
-            yield* onRemove(yield* user());
+            onRemove(yield* user());
           },
         },
         'Remove',
       ),
-    ]),
+    ]);
+  },
 );
 ```
 
 An `Input<T>` **is a yieldable reader** — `yield* user()` reads the current
 value. Project nested fields with `deepYieldable` so `user.name` stays a
-reader. An `Output<H>` is a yieldable callback; delegate to it with `yield*`.
+reader. An `Output<H>` is a plain callback: call it.
 
 At the call site you pass the reader itself, not a getter:
 
@@ -127,8 +128,8 @@ UserCard({
 
 | Contract | Craft |
 | --- | --- |
-| Input | an `Input<T>` factory parameter |
-| Output | an `Output<H>` parameter, called directly |
+| Input | an `Input<T>` member of the inputs object |
+| Output | an `Output<H>` member, called directly |
 | Component call | `UserCard({ user: u, onRemove: fn })` |
 | Missing required input | **compile error** |
 
@@ -205,26 +206,23 @@ at a synchronous boundary, or pass `tasks` directly to a template binding.
 
 ## What is `yield*` doing there?
 
-The factory is a generator, and `yield*` is how **this** factory drives
-everything it does not own — primitives and services alike. The same rule
-applies later to every computed and method: each entity yields its own
-dependencies so they show up on **its** graph.
+The component is a generator, and `yield*` is how it drives everything it does
+not own — primitives and services alike. The same rule applies later to every
+computed and method: each entity yields its own dependencies so they show up on
+**its** graph.
 
-For now, treat it as "the way to use a primitive inside a factory".
+For now, treat it as "the way to use a primitive inside a component".
 [Step 4](/learn/04-compose) explains what it buys you.
 
-## The template
+## What it returns
 
-The template is a plain function returning nodes built with hyperscript helpers
-— `div`, `ul`, `li`, `button`, and one `h(tag, …)` escape hatch for anything
-without a helper:
+The component returns nodes built with hyperscript helpers — `div`, `ul`, `li`,
+`button`, and one `h(tag, …)` escape hatch for anything without a helper:
 
 ```typescript
-({ tasks }) => [
+return [
   h1('Tasks'),
-  ul(
-    forNode(tasks, { track: (task) => task.id }, (task) => li(task.title)),
-  ),
+  ul(forNode(tasks, { track: (task) => task.id }, (task) => li(task.title))),
 ];
 ```
 

@@ -18,9 +18,9 @@ export function keepNetworkWorkInResources(graph: ArchitectureGraph) {
 This is a query disguised as an effect:
 
 ```typescript
-craftEffect('poll', function* () {
+craftUse(craftEffect('poll', function* () {
   yield* CraftHttpClient.get(loadUsers);
-});
+}));
 ```
 
 It has no standard query loading state, cache identity, cancellation contract or
@@ -30,9 +30,9 @@ dependency changes.
 This is a mutation disguised as an effect:
 
 ```typescript
-craftEffect('save', function* () {
+craftUse(craftEffect('save', function* () {
   yield* saveMutation.mutate(payload);
-});
+}));
 ```
 
 The write has no explicit user action or mutation relationship in its declaration.

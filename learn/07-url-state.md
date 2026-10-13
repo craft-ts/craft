@@ -23,7 +23,7 @@ export const { TaskFilters } = craftService(
       encode: (value: boolean) => String(value),
     };
 
-    const filters = yield* queryParams(
+    yield* queryParams(
       'filters',
       {
         state: {
@@ -34,7 +34,6 @@ export const { TaskFilters } = craftService(
       ({ set, patch, reset }) => ({ set, patch, reset }),
     );
 
-    return filters;
   },
 );
 ```

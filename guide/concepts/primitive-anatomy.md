@@ -28,7 +28,7 @@ one label, and the tooling cannot tell them apart.
 ## Driving it with `yield*`
 
 A primitive does not run itself. Inside any generator host — a `craftComponent`
-logic factory, a `craftService` factory, a `craftComputed`, a `craftMethod`,
+function, a `craftService` factory, a `craftComputed`, a `craftMethod`,
 `craftGen`, a route helper — `yield*` is the driver. The entity that yields
 records the dependency on **its** graph:
 
@@ -47,50 +47,28 @@ Every named primitive returns its reference directly:
 const tasks = yield* state('tasks', []);
 ```
 
-A factory arrow can return a single primitive directly. `craftService` drives it
-and exposes the primitive reference itself:
+Inside a `craftService`, the name is also the key the primitive is exposed
+under: the service's API is every named primitive its factory yields.
 
 ```typescript
-const { MyService } = craftService(
-  { name: 'MyService', providedIn: 'global' },
-  () => state('counter', 0),
-);
-```
-
-When a factory exposes several primitives, wrap the record with
-`craftYieldRecord`. It yields each primitive generator and keeps the record
-keys in the returned value:
-
-```typescript
-import {
-  craftComputed,
-  craftService,
-  craftYieldRecord,
-  query,
-  state,
-  type CraftServiceInput,
-} from '@craft-ts/core';
-
 const { UserQuery } = craftService(
-  { name: 'UserQueryWithState', providedIn: 'global' },
-  (inputs: { userId: CraftServiceInput<string | undefined> }) =>
-    craftYieldRecord({
-      userQuery: query('userQuery', {
-        params: function* () {
-          return yield* inputs.userId();
-        },
-        loader: ({ params }) => ApiService.getItemById(params),
-      }),
-      refresh: state('refresh', 0, ({ update }) => ({
-        increment: () => update((value) => value + 1),
-      })),
-    }),
+  { name: 'UserQueryWithState', providedIn: 'function' },
+  function* (inputs: { userId: CraftServiceInput<string | undefined> }) {
+    yield* query('userQuery', {
+      params: function* () {
+        return yield* inputs.userId();
+      },
+      loader: ({ params }) => ApiService.getItemById(params),
+    });
+    // Created and tracked, but not exposed.
+    yield* craftPrivate(state('refresh', 0));
+  },
 );
+
+// const { userQuery } = yield* UserQuery({ userId });
 ```
 
-Use the direct return for one primitive and `craftYieldRecord` for a record of
-primitives. Inside a generator factory, the equivalent explicit form remains
-available: `const userQuery = yield* query(...)`.
+See [craftService](/guide/app/craft-service#what-a-service-exposes).
 
 ## Insertions add to the result
 
@@ -99,9 +77,9 @@ The last argument receives the primitive's internals and returns what to expose:
 ```typescript
 state('counter', 0, ({ state, update }) => ({
   increment: () => update((value) => value + 1),
-  isEven: craftComputed(function* () {
+  isEven: craftUse(craftComputed('isEven', function* () {
     return (yield* state()) % 2 === 0;
-  }),
+  })),
 }));
 ```
 

@@ -145,10 +145,9 @@ type UnitSystem = 'metric' | 'imperial';
 const { Units } = craftService(
   { name: 'Units', providedIn: 'global' },
   function* () {
-    const system = yield* state('system', 'metric' as UnitSystem, ({ set }) => ({
+    yield* state('system', 'metric' as UnitSystem, ({ set }) => ({
       useImperial: () => set('imperial'),
     }));
-    return { system };
   },
 );
 
@@ -173,29 +172,25 @@ const en = defineLocale(
 );
 const runtime = createI18nRuntime({ locales: [en] });
 
-const ShippingLine = craftComponent(
-  'ShippingLine',
-  {},
-  function* () {
-    const units = yield* Units();
-    // The translator re-reads whenever the unit system does.
-    return { translate: runtime.bind(units.system), units };
-  },
-  ({ translate, units }) =>
-    div([
-      p(translate('order.line', { weight: 12 })),
-      button(
-        'imperial',
-        { type: 'button', click: units.system.useImperial },
-        'Imperial',
-      ),
-    ]),
-);
+const ShippingLine = craftComponent('ShippingLine', {}, function* () {
+  const units = yield* Units();
+  // The translator re-reads whenever the unit system does.
+  const translate = runtime.bind(units.system);
+
+  return div([
+    p(translate('order.line', { weight: 12 })),
+    button(
+      'imperial',
+      { type: 'button', click: units.system.useImperial },
+      'Imperial',
+    ),
+  ]);
+});
 ```
 
 The yielded service travels with the message: pass the reader to the template
 and a missing provider is a compile error, exactly as for a service yielded by
-the component factory. See
+the component. See
 [DI inside a translation](./runtime.md#di-inside-a-translation).
 
 `format` receives the value and a context carrying `locale` and, when the

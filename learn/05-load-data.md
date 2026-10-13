@@ -14,7 +14,7 @@ import { CraftHttpClient, craftService, query } from '@craft-ts/core';
 export const { TaskList } = craftService(
   { name: 'TaskList', providedIn: 'function' },
   function* () {
-    const tasksQuery = yield* query('tasksQuery', {
+    yield* query('tasksQuery', {
       // The initial params value immediately triggers the loader.
       params: () => ({ done: false }),
       loader: function* ({ params }) {
@@ -24,8 +24,6 @@ export const { TaskList } = craftService(
         }));
       },
     });
-
-    return tasksQuery;
   },
 );
 ```
@@ -63,26 +61,22 @@ ternary chain reads fine — just remember it makes the branch invisible to the
 ```typescript
 import { craftComponent, forNode, li, p, ul } from '@craft-ts/component';
 
-export const Tasks = craftComponent(
-  'Tasks',
-  {},
-  function* () {
-    const tasks = yield* TaskList();
-    return { tasks };
-  },
-  ({ tasks }) =>
-    tasks.isLoading()
-      ? p('Loading…')
-      : tasks.hasException()
-        ? p('Could not load tasks.')
-        : ul(
-            forNode(
-              () => tasks.value() ?? [],
-              { track: (task) => task.id },
-              (task) => li(task.title),
-            ),
+export const Tasks = craftComponent('Tasks', {}, function* () {
+  // The service exposes its query under its name.
+  const { tasksQuery: tasks } = yield* TaskList();
+
+  return tasks.isLoading()
+    ? p('Loading…')
+    : tasks.hasException()
+      ? p('Could not load tasks.')
+      : ul(
+          forNode(
+            () => tasks.value() ?? [],
+            { track: (task) => task.id },
+            (task) => li(task.title),
           ),
-);
+        );
+});
 ```
 
 When the branches depend on an exception **code** rather than a boolean, reach
@@ -109,7 +103,7 @@ import { CraftHttpClient, craftService, query } from '@craft-ts/core';
 export const { TaskSearch } = craftService(
   { name: 'TaskSearch', providedIn: 'function' },
   function* () {
-    const searchQuery = yield* query('searchQuery', {
+    yield* query('searchQuery', {
       method: (term: string) => term,
       loader: function* ({ params: term }) {
         return yield* CraftHttpClient.get(({ response }) => ({
@@ -119,7 +113,6 @@ export const { TaskSearch } = craftService(
       },
     });
 
-    return { searchQuery };
   },
 );
 ```
@@ -137,12 +130,12 @@ const { tasksQuery } =
       /* … */
     },
     ({ value, isLoading }) => ({
-      count: craftComputed(function* () {
+      count: craftUse(craftComputed('count', function* () {
         return (yield* value())?.length ?? 0;
-      }),
-      isEmpty: craftComputed(function* () {
+      })),
+      isEmpty: craftUse(craftComputed('isEmpty', function* () {
         return !(yield* isLoading()) && (yield* value())?.length === 0;
-      }),
+      })),
     }),
   );
 

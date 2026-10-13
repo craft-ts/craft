@@ -16,7 +16,7 @@ import { CraftHttpClient, craftService, mutation } from '@craft-ts/core';
 export const { TaskWrites } = craftService(
   { name: 'TaskWrites', providedIn: 'function' },
   function* () {
-    const createTask = yield* mutation('createTask', {
+    yield* mutation('createTask', {
       method: (payload: { title: string }) => payload,
       loader: function* ({ params }) {
         return yield* CraftHttpClient.post(({ response }) => ({
@@ -27,7 +27,6 @@ export const { TaskWrites } = craftService(
       },
     });
 
-    return { createTask };
   },
 );
 ```
@@ -64,7 +63,7 @@ export const { TaskSync } = craftService(
       },
     });
 
-    const tasksQuery = yield* query(
+    yield* query(
       'tasksQuery',
       {
         params: () => ({ done: false }),
@@ -80,7 +79,6 @@ export const { TaskSync } = craftService(
       }),
     );
 
-    return { createTask, tasksQuery };
   },
 );
 ```

@@ -65,8 +65,6 @@ export const { StartupFlag } = craftService(
       console.log('app started');
       return Promise.resolve();
     });
-
-    return true;
   },
 );
 ```
@@ -89,8 +87,6 @@ export const { AppStartLog } = craftService(
       yield* Console.log('This is a log from the appStart callback');
       return new Promise((resolve) => setTimeout(resolve, 1000));
     });
-
-    return 1;
   },
 );
 ```
@@ -155,8 +151,6 @@ const { AppStartLog } = craftService(
       yield* Console.log('startup log');
       return Promise.resolve();
     });
-
-    return true;
   },
 );
 

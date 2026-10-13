@@ -197,7 +197,8 @@ npx tsx libs/cli/src/bin/craft-ts.ts attest unwatched
 ```
 
 For the unified review surface, use the DevTool. It combines visual captures
-and template obligations in one queue:
+with the human review queue. Template-obligation generation is currently
+disabled; the old `template: true` config field is accepted but ignored.
 
 ```sh
 npm run attest:devtools
@@ -218,9 +219,10 @@ npm run attest:review-app:review
 ```
 
 The capture includes the review page's happy path at mobile and desktop sizes,
-the review queue in dark French, the regeneration confirmation, the visual-test
-inventory, and the template-obligation inventory. Every portable snapshot is
-replayed immediately and must reproduce the live layout digest.
+the review queue in dark French, the regeneration confirmation, and the
+visual-test inventory. Historical template-obligation fixtures remain covered
+by the review-app tests. Every portable snapshot is replayed immediately and
+must reproduce the live layout digest.
 The first run reports missing decisions until a reviewer explicitly accepts or
 rejects them. Later unchanged evidence is carried forward by the usual ledger.
 

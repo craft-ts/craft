@@ -47,15 +47,11 @@ type CardInput = {
   }>;
 };
 
-const Card = craftComponent(
-  'Card',
-  {},
-  (input: CardInput) => input,
-  ({ header, body }) =>
-    section([
-      header ? renderContent('header', header) : 'Default title',
-      renderContent('body', body),
-    ]),
+const Card = craftComponent('Card', {}, ({ header, body }: CardInput) =>
+  section([
+    header ? renderContent('header', header) : 'Default title',
+    renderContent('body', body),
+  ]),
 );
 
 Card({
@@ -103,15 +99,14 @@ ProjectionOf<Component>       → the logical capabilities of a component
 
 ## Logical projection by contract
 
-A component becomes projectable when its logic factory returns a `contract`
-property, built and checked with `satisfies`.
+A component becomes projectable when it declares the contract it answers in its
+meta, with `projection<Contract>()`.
 
 ```ts
-import { content, input } from '@craft-ts/component';
-
 import {
   button,
   craftComponent,
+  projection,
   renderContent,
   type ContentSlot,
   type ProjectionContractOf,
@@ -124,45 +119,41 @@ type ToolbarActionContract = {
   readonly disabled: () => boolean;
 };
 
+// The contract a parent may read is declared in the meta; the component's own
+// function stays what it always is — inputs in, nodes out.
 const ToolbarAction = craftComponent(
   'ToolbarAction',
-  {},
-  (input: {
+  { projection: projection<ToolbarActionContract>() },
+  function* (input: {
     readonly key: string;
     readonly content: ContentSlot;
     readonly trigger: () => void;
     readonly disabled?: () => boolean;
-  }) => ({
-    key: input.key,
-    contract: {
-      kind: 'toolbar-action',
-      trigger: input.trigger,
-      disabled: input.disabled ?? (() => false),
-    } satisfies ToolbarActionContract,
-    content: input.content,
-  }),
-  ({ contract, content }) =>
-    button('action',
+  }) {
+    return button(
+      'action',
       {
         type: 'button',
-        disabled: contract.disabled,
-        click: contract.trigger,
+        disabled: input.disabled ?? (() => false),
+        click: input.trigger,
       },
-      renderContent(content),
-    ),
+      renderContent(input.content),
+    );
+  },
 );
 
 type ExtractedContract = ProjectionContractOf<typeof ToolbarAction>;
 type ToolbarActionUnit = ProjectionOf<typeof ToolbarAction>;
 ```
 
-`ProjectionContractOf<Component>` extracts the type of `logicOutput.contract`.
+`ProjectionContractOf<Component>` extracts that contract.
 `ProjectionOf<Component>` adds the stable key the renderer expects. For generic
 consumers, `ProjectionSlot<Contract>` directly describes a collection of
 compatible units.
 
-Projection therefore depends on **neither** the component's name, **nor** a
-`projection` metadata field, **nor** a runtime registry.
+The marker is **type-only**: `projection<Contract>()` carries a contract and
+nothing else. Projection therefore depends on neither the component's name nor
+a runtime registry — the host reads the contract from the type.
 
 ## Explicit collections, order and stable keys
 
@@ -182,10 +173,11 @@ import {
 const Toolbar = craftComponent(
   'Toolbar',
   {},
-  (input: {
+  ({
+    actions,
+  }: {
     readonly actions: readonly ProjectionOf<typeof ToolbarAction>[];
-  }) => input,
-  ({ actions }) =>
+  }) =>
     div(
       { role: 'toolbar' },
       forNode(actions, { track: (action) => action.key }, (action) =>
@@ -205,27 +197,22 @@ Toolbar({
 The same `ToolbarAction` stays usable on its own:
 
 ```ts
-const Page = craftComponent(
-  'Page',
-  {},
-  () => ({}),
-  () => [
-    ToolbarAction({
-      key: 'standalone',
-      content: () => 'Direct action',
-      trigger: save,
-    }),
-    Toolbar({
-      actions: [
-        ToolbarAction({
-          key: 'projected',
-          content: () => 'Projected action',
-          trigger: save,
-        }),
-      ],
-    }),
-  ],
-);
+const Page = craftComponent('Page', {}, () => [
+  ToolbarAction({
+    key: 'standalone',
+    content: () => 'Direct action',
+    trigger: save,
+  }),
+  Toolbar({
+    actions: [
+      ToolbarAction({
+        key: 'projected',
+        content: () => 'Projected action',
+        trigger: save,
+      }),
+    ],
+  }),
+]);
 ```
 
 ## Styling projected content
@@ -278,25 +265,20 @@ import { noteSheet, styledCard } from './styledcard.style';
 const StyledCard = craftComponent(
   'StyledCard',
   {},
-  (input: { readonly body: ContentSlot }) => input,
-  ({ body }) => div({ class: styledCard.body }, renderContent('body', body)),
+  (props: { readonly body: ContentSlot }) =>
+    div({ class: styledCard.body }, renderContent('body', props.body)),
 );
 
-const Page = craftComponent(
-  'Page',
-  {},
-  () => ({}),
-  () =>
-    StyledCard({
-      body: content(() => p({ class: noteSheet.root }, 'Styled by its caller')),
-    }),
+const Page = craftComponent('Page', {}, () =>
+  StyledCard({
+    body: content(() => p({ class: noteSheet.root }, 'Styled by its caller')),
+  }),
 );
 ```
 
 Nothing reaches into the content: a caller that does not read
 `styledCardVars.accent` is unaffected by it, and a nested Craft component keeps
-its own classes. The deprecated `contentStyles` meta — CSS strings pushed into a
-slot — is refused by `no-component-css`.
+its own classes.
 
 ## Pitfalls
 
@@ -310,7 +292,6 @@ usable as a direct child, but the slot rejects it:
 const PlainCard = craftComponent(
   'PlainCard',
   {},
-  () => ({}),
   () => 'Card with no contract',
 );
 
@@ -339,11 +320,13 @@ explicit collection:
 const Dialog = craftComponent(
   'Dialog',
   {},
-  (input: {
+  ({
+    body,
+    actions,
+  }: {
     readonly body?: ContentSlot;
     readonly actions: readonly ProjectionOf<typeof ToolbarAction>[];
-  }) => input,
-  ({ body, actions }) =>
+  }) =>
     section({ role: 'dialog' }, [
       body ? renderContent(body) : [],
       footer(
@@ -359,8 +342,16 @@ Dialog({
     div(['Delete the account', 'This action cannot be undone.']),
   ),
   actions: [
-    ToolbarAction({ key: 'cancel', content: () => 'Cancel', trigger: closeDialog }),
-    ToolbarAction({ key: 'delete', content: () => 'Delete', trigger: deleteAccount }),
+    ToolbarAction({
+      key: 'cancel',
+      content: () => 'Cancel',
+      trigger: closeDialog,
+    }),
+    ToolbarAction({
+      key: 'delete',
+      content: () => 'Delete',
+      trigger: deleteAccount,
+    }),
   ],
 });
 ```
@@ -379,11 +370,13 @@ is a callable reactive value supplied by the caller:
 const OptionalToolbar = craftComponent(
   'OptionalToolbar',
   {},
-  (input: {
+  ({
+    visible,
+    actions,
+  }: {
     readonly visible: () => boolean;
     readonly actions: readonly ProjectionOf<typeof ToolbarAction>[];
-  }) => input,
-  ({ visible, actions }) =>
+  }) =>
     visible()
       ? forNode(actions, { track: (action) => action.key }, (action) =>
           renderContent(action),

@@ -77,28 +77,22 @@ import { state } from '@craft-ts/core';
 import { assign, unit } from '@craft-ts/style';
 import { card, cardVars } from './card.style';
 
-const UploadCard = craftComponent(
-  'UploadCard',
-  {},
-  function* () {
-    const progress = yield* state('progress', 40);
-    // The variant's point, or null for none: the attribute is then removed.
-    const tone = yield* state('tone', 'danger' as 'danger' | null);
-    return { progress, tone };
-  },
-  ({ progress, tone }) =>
-    // One constant class per element; the variant is an attribute.
-    div({ class: card.root, 'data-cardTone': tone }, [
-      h2({ class: card.title }, 'Upload'),
-      div({
-        class: card.bar,
-        // The only thing `style:` accepts: a typed variable, written by assign.
-        style: function* () {
-          return assign(cardVars.progress, unit.pct(yield* progress()));
-        },
-      }),
-    ]),
-);
+const UploadCard = craftComponent('UploadCard', {}, function* () {
+  const progress = yield* state('progress', 40);
+  // The variant's point, or null for none: the attribute is then removed.
+  const tone = yield* state('tone', 'danger' as 'danger' | null);
+  // One constant class per element; the variant is an attribute.
+  return div({ class: card.root, 'data-cardTone': tone }, [
+    h2({ class: card.title }, 'Upload'),
+    div({
+      class: card.bar,
+      // The only thing `style:` accepts: a typed variable, written by assign.
+      style: function* () {
+        return assign(cardVars.progress, unit.pct(yield* progress()));
+      },
+    }),
+  ]);
+});
 ```
 
 * `class` is always a sheet key (`card.root`), an array of them, or a typed
@@ -132,8 +126,7 @@ Per file, in `craftRules.configs.recommended`
 * `no-raw-class` — a `class` that does not trace back to a sheet imported from a
   `*.style` module;
 * `no-inline-style` — a `style` that is not `assign(...)`;
-* `no-component-css` — `meta.styles`, `meta.stylesUrl`, `meta.contentStyles`, and
-  any `.css` import other than `virtual:craft-style.css`;
+* `no-component-css` — any `.css` import other than `virtual:craft-style.css`;
 * `style-file-boundary` — a sheet importing anything but style vocabulary;
 * `no-raw-css-value`, `no-free-has` — a raw value or a hand-written `:has()`
   inside a sheet.
@@ -148,9 +141,8 @@ Across the application, in the base architecture rules
 * `style-obligations-discharged`, `no-dangling-css-vars` — a `requires` nobody
   provides, a variable read and never declared.
 
-`styles`, `stylesUrl`, `contentStyles` and `cssVars` still exist on the meta's
-type, marked `@deprecated`. They are kept so that the exception below stays
-possible, not as an alternative.
+The meta carries no CSS: `styles`, `stylesUrl` and `cssVars` do not exist on it.
+The only route left outside a sheet is the reasoned bypass below.
 
 ## The one real exception
 

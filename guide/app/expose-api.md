@@ -3,8 +3,10 @@ url: https://craft-ts.github.io/craft/guide/app/expose-api.md
 ---
 # Shaping a service's public API
 
-A service returns whatever should be public. These are the ways to consume less
-than everything a dependency exposes — which keeps the dependency graph precise,
+A service exposes every named primitive it yields (see
+[craftService](/guide/app/craft-service#what-a-service-exposes)); what should
+stay internal is wrapped in `craftPrivate(...)`. These are the ways to consume
+less than everything a dependency exposes — which keeps the dependency graph precise,
 and therefore keeps inference and test registers small.
 
 ## Single Property Shortcut
@@ -13,14 +15,14 @@ When only one public property is needed, `X.property()` is a shortcut for
 a one-property derivation.
 
 ```ts
-import { craftService } from '@craft-ts/core';
+import { craftService, craftExpose } from '@craft-ts/core';
 
 const { UsersApi } = craftService(
   { name: 'UsersApi', providedIn: 'global' },
-  () => ({
-    updateUser: (user: { id: string; name: string }) => Promise.resolve(user),
-    getUsers: () => Promise.resolve([]),
-  }),
+  function* () {
+    yield* craftExpose('updateUser', (user: { id: string; name: string }) => Promise.resolve(user));
+    yield* craftExpose('getUsers', () => Promise.resolve([]));
+  },
 );
 
 const { UserUpdater } = craftService(
@@ -28,10 +30,8 @@ const { UserUpdater } = craftService(
   function* () {
     const updateUser = yield* UsersApi.updateUser();
 
-    return {
-      rename: (user: { id: string; name: string }, name: string) =>
-        updateUser({ ...user, name }),
-    };
+    yield* craftExpose('rename', (user: { id: string; name: string }, name: string) =>
+      updateUser({ ...user, name }));
   },
 );
 ```
@@ -59,27 +59,24 @@ The same shortcut notation is available on the generated `X` helper. Use it
 inside a craft generator when only one property is needed:
 
 ```ts
-import { craftService, state } from '@craft-ts/core';
+import { craftExpose, craftService, state } from '@craft-ts/core';
 
 const { UsersApi } = craftService(
   { name: 'UsersApi', providedIn: 'global' },
   function* () {
-    const currentUser = yield* state('currentUser', {
+    yield* state('currentUser', {
       id: '1',
       name: 'Ada',
     });
-    return {
-      updateUser: (user: { id: string; name: string }) =>
-        Promise.resolve(user),
-      currentUser,
-    };
+    yield* craftExpose('updateUser', (user: { id: string; name: string }) =>
+      Promise.resolve(user));
   },
 );
 
 const { CurrentUser } = craftService(
   { name: 'CurrentUser', providedIn: 'global' },
   function* () {
-    return yield* UsersApi.currentUser();
+    yield* UsersApi.currentUser();
   },
 );
 ```
@@ -105,25 +102,29 @@ import { craftService, state } from '@craft-ts/core';
 const { SearchApi } = craftService(
   { name: 'SearchApi', providedIn: 'global' },
   function* () {
-    const isLoading = yield* state('isLoading', false);
-    const data = yield* state('data', [] as string[]);
-    return {
-      usersQuery: {
-        isLoading,
-        data,
-      },
-    };
+    const isLoading = yield* craftPrivate(state('isLoading', false));
+    const data = yield* craftPrivate(state('data', [] as string[]));
+    yield* craftExpose('usersQuery', {
+      isLoading,
+      data,
+    });
   },
 );
 
 const { SearchFacade } = craftService(
   { name: 'SearchFacade', providedIn: 'global' },
   function* () {
-    const isLoading = yield* SearchApi.usersQuery.isLoading();
-    return { isLoading };
+    yield* SearchApi.usersQuery.isLoading();
   },
 );
 ```
+
+A shortcut hands back the member it designates, and a reactive member (a
+`state`, a `craftComputed`, a query's `status`…) is **read**: `yield*
+SearchApi.usersQuery.isLoading()` is the loading flag itself, not a reader to
+call a second time. Yielded on its own, as above, the member is also exposed by
+the consumer under its own name (`isLoading`). Objects and methods are returned
+as they are; a method is called, with or without arguments.
 
 The dependency graph records only the accessed nested property
 (`derivedPropertiesUsed: { usersQuery: { isLoading: ... } }`), not the full
@@ -148,7 +149,7 @@ const { Counter } = craftService(
     const initialValue = inputs.initialValue
       ? yield* inputs.initialValue()
       : 0;
-    return { count: initialValue };
+    yield* craftExpose('count', initialValue);
   },
 );
 ```
@@ -182,31 +183,53 @@ const isLoading = yield* Counter.OmitInputs.userQuery.isLoading();
 `yield* X()` can expose only the part of a dependency that should remain public.
 
 ```ts
-import { craftService, state } from '@craft-ts/core';
+import { craftComputed, craftService, state } from '@craft-ts/core';
 
 const { Counter } = craftService(
   { name: 'Counter', providedIn: 'toProvide' },
   function* () {
-    const counter = yield* state('counter', 0, ({ update }) => ({
+    yield* state('counter', 0, ({ update }) => ({
       increment: () => update((value) => value + 1),
       decrement: () => update((value) => value - 1),
     }));
-    return counter;
   },
 );
 
 const { CounterExtended, provideCounterExtended } = craftService(
   { name: 'CounterExtended', providedIn: 'toProvide' },
   function* () {
-    return yield* Counter(undefined, ({ $self, increment }) => ({
-      $self,
-      incrementCounter: increment,
-    }));
+    // Only `counter` reaches this service; `decrement` is not part of the
+    // dependency, while the nested increment method remains available.
+    const { counter } = yield* Counter(
+      undefined,
+      ({ counter }) => ({ counter }),
+    );
+    yield* craftComputed('count', function* () {
+      return yield* counter();
+    });
+    yield* Counter.counter.increment();
   },
 );
+void CounterExtended;
+void provideCounterExtended;
 ```
 
 This keeps the dependency graph precise, which is important for both type inference and testing.
+
+When a service factory wants one member as part of its own API, yield the
+property shortcut directly. When it wants the full service, yield the service
+directly. Both forms expose under the natural lower-camel-case key:
+
+```typescript
+function* () {
+  yield* I18n.translate(); // exposes `translate`
+  yield* ClientCurrency(); // exposes `clientCurrency`
+}
+```
+
+Use `craftExpose('label', value)` when the public key differs from the source
+name or when exposing a value that is not a service dependency. The
+`craft-ts/prefer-direct-craft-service-exposure` rule flags same-name wrappers.
 
 ## See Also
 

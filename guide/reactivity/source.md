@@ -17,7 +17,7 @@ automatic cleanup and signal-based value tracking.
 * Event emission and subscription capabilities
 * Automatic subscription cleanup via `DestroyRef`
 * Signal-based value tracking for reactive access
-* Optional last value preservation for late subscribers
+* Optional memory for late subscribers (`{ replay }`, `{ initial }`)
 * Read-only variants for encapsulation
 
 ## Import
@@ -29,7 +29,14 @@ import { craftComputed, source$ } from '@craft-ts/core';
 ## Signature
 
 ```typescript
-function source$<T>(name: string): Source$<T>;
+function source$<T>(name: string, options?: SourceOptions<T>): Source$<T>;
+
+type SourceOptions<T> = {
+  /** A new subscriber first receives the last `replay` emitted values. */
+  replay?: number;
+  /** Starts the source holding this value; `value()` is then never `undefined`. */
+  initial?: T;
+};
 ```
 
 ### Parameters
@@ -56,7 +63,7 @@ The yielded value is the source instance. Its source API is unchanged:
 * **`subscribe(callback: (value: T) => void)`** - Subscribes to emissions with a callback
 * **`value: Signal<T | undefined>`** - A read-only signal containing the last emitted value (or `undefined` if no value has been emitted)
 * **`asReadonly()`** - Returns a read-only version of the source (only `subscribe` and `value`)
-* **`preserveLastValue()`** - Returns a source variant that immediately emits the last value to new subscribers
+* **`preserveLastValue()`** - *Deprecated, use `{ replay: 1 }`.* Returns a source variant that immediately emits the last value to new subscribers (nothing when no value was emitted yet)
 
 ## Types
 
@@ -101,7 +108,8 @@ type ReadonlySource$<T> = {
 ### Source services and dependency tracking
 
 Use a `craftService` as the dependency handle when a source is shared by
-multiple consumers:
+multiple consumers. The service exposes its source under its name, and
+`on$(Service, ...)` subscribes to the one source a service exposes:
 
 ```ts
 import { craftService, on$, source$, state } from '@craft-ts/core';
@@ -109,22 +117,23 @@ import { craftService, on$, source$, state } from '@craft-ts/core';
 const { Reset } = craftService(
   { name: 'Reset', providedIn: 'global' },
   function* () {
-    const reset$ = yield* source$<void>('reset$');
-    return reset$;
+    // With an explicit value type, repeat the name as a type argument:
+    // TypeScript cannot infer the one while you give the other.
+    yield* source$<void, 'reset$'>('reset$');
   },
 );
 
 const { Counter } = craftService(
   { name: 'Counter', providedIn: 'global' },
   function* () {
-    const counter = yield* state('counter', 0, ({ set }) => ({
+    yield* state('counter', 0, ({ set }) => ({
       reset: on$(Reset, () => set(0)),
     }));
 
-    const reset = yield* Reset();
-    return { counter, reset };
+    yield* Reset.reset$();
   },
 );
+void Counter;
 ```
 
 `on$(Reset, ...)` records `Reset` as a dependency of the primitive. Calling
@@ -153,14 +162,35 @@ message$.emit('Hello');
 console.log(message$.value()); // 'Hello'
 
 // Use in templates or craftComputed
-const uppercased = craftComputed('uppercased', function* () {
+const uppercased = craftUse(craftComputed('uppercased', function* () {
   return (yield* message$.value())?.toUpperCase();
-});
+}));
 ```
 
-### Last Value Preservation
+### Replay and initial value
 
-Use `preserveLastValue()` to ensure late subscribers receive the most recent value:
+Give the source a memory with options, instead of deriving a variant:
+
+```typescript
+const notifications$ = source$<string>('notifications$', { replay: 2 });
+notifications$.emit('a');
+notifications$.emit('b');
+notifications$.emit('c');
+// A late subscriber receives 'b' then 'c', then live emissions.
+notifications$.subscribe((message) => console.log(message));
+
+// `initial` seeds the source: `value()` is typed `T` (never undefined) and a
+// subscriber receives the current value first.
+const theme$ = source$<'light' | 'dark'>('theme$', { initial: 'light' });
+theme$.value(); // 'light'
+```
+
+`replay` keeps the last `n` values; `initial` implies `replay >= 1`.
+
+### Last Value Preservation (deprecated)
+
+`preserveLastValue()` predates the options above and is kept for compatibility;
+prefer `{ replay: 1 }`. It makes late subscribers receive the most recent value:
 
 ```typescript
 const counter$ = source$<number>('counter$');
@@ -225,32 +255,27 @@ const { counter } = state('counter', 0, ({ set, update }) => ({
 import { button, craftComponent, p } from '@craft-ts/component';
 import { on$, source$, state } from '@craft-ts/core';
 
-export const Counter = craftComponent(
-  'Counter',
-  {},
-  function* () {
-    // a source for reset events
-    const reset$ = source$<void>('reset$');
+export const Counter = craftComponent('Counter', {}, function* () {
+  // a source for reset events
+  const reset$ = source$<void>('reset$');
 
-    const counter = yield* state('counter', 0, ({ set, update }) => ({
-      increment: () => update((v) => v + 1),
-      decrement: () => update((v) => v - 1),
-      // internal: listens to reset$ and sets counter to 0.
-      // NOT exposed on the ref, because it is bound with on$
-      reset: on$(reset$, () => set(0)),
-    }));
+  const counter = yield* state('counter', 0, ({ set, update }) => ({
+    increment: () => update((v) => v + 1),
+    decrement: () => update((v) => v - 1),
+    // internal: listens to reset$ and sets counter to 0.
+    // NOT exposed on the ref, because it is bound with on$
+    reset: on$(reset$, () => set(0)),
+  }));
 
-    return { counter, reset$ };
-  },
-  ({ counter, reset$ }) => [
+  return [
     p(function* () {
       return `Count: ${yield* counter()}`;
     }),
     button({ click: counter.increment }, '+1'),
     button({ click: counter.decrement }, '-1'),
     button({ click: () => reset$.emit() }, 'Reset'),
-  ],
-);
+  ];
+});
 ```
 
 ### Multi-Source Coordination

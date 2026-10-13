@@ -8,7 +8,8 @@ url: https://craft-ts.github.io/craft/resources/migration.md
 1. primitive migration points
 2. service composition
 3. typed route collections and dependency checks
-4. legacy `component(...)` factories to `craftComponent(name, ...)`
+4. legacy `component(...)` factories to `craftComponent(name, meta, template)`,
+   folding a logic factory into the template generator
 5. baseline architecture tests
 
 The migration is intentionally conservative. Deterministic transformations are
@@ -76,10 +77,15 @@ debugged one stage at a time:
 ```shell
 npx craft-migrate-primitives --project tsconfig.app.json --root src --write
 npx craft-migrate-services --project tsconfig.app.json --root src --write
+npx craft-migrate-streams --project tsconfig.app.json --root src --write
 npx craft-migrate-routes --project tsconfig.app.json --root src --write
 npx craft-migrate-components --project tsconfig.app.json --root src --write
 npx craft-migrate-architecture --project tsconfig.app.json --root src --write
 ```
+
+`craft-migrate-streams` rewrites RxJS pipelines to [`@craft-ts/stream`](/guide/reactivity/streams#migrating-from-rxjs).
+It is not part of the aggregate `craft-migrate` run: it is all-or-nothing per file and leaves
+any file it cannot fully migrate untouched, with a diagnostic.
 
 For a pasted HTML or Web Component snippet, use the standalone template
 converter:
@@ -88,7 +94,7 @@ converter:
 printf '<section><h2>Hello</h2></section>' | npx craft-migrate-template
 ```
 
-The generated callback can be pasted as the fourth argument of
+The generated callback can be pasted as the third argument of
 `craftComponent(...)`. The interactive [template converter](/guide/components/template-migrator)
 uses the same converter.
 

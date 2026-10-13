@@ -22,7 +22,7 @@ read the outputs of the members before it through `insertions`.
 ## State
 
 ```typescript
-import { craftComputed, insertStatePipe, state } from '@craft-ts/core';
+import { craftComputed, insertStatePipe, state, craftUse } from '@craft-ts/core';
 
 const { counter } =
   yield *
@@ -34,9 +34,9 @@ const { counter } =
         increment: () => update((value) => value + 1),
       }),
       ({ state, insertions }) => ({
-        isOdd: craftComputed(function* () {
+        isOdd: craftUse(craftComputed('isOdd', function* () {
           return (yield* state()) % 2 === 1;
-        }),
+        })),
         incrementAndReport: function* () {
           yield* insertions.increment();
           return yield* state();
@@ -109,7 +109,7 @@ const { saveUser } =
 ## URL state
 
 ```typescript
-import { craftComputed, insertQueryParamsPipe, queryParams } from '@craft-ts/core';
+import { craftComputed, insertQueryParamsPipe, queryParams, craftUse } from '@craft-ts/core';
 
 const { filters } =
   yield *
@@ -123,9 +123,9 @@ const { filters } =
     },
     insertQueryParamsPipe(
       ({ state }) => ({
-        hasSearch: craftComputed(function* () {
+        hasSearch: craftUse(craftComputed('hasSearch', function* () {
           return (yield* state()).search.length > 0;
-        }),
+        })),
       }),
       ({ state, patch }) => ({
         nextPage: function* () {
@@ -182,9 +182,9 @@ state('board', initialBoard, (context) =>
       })),
     ),
     ({ state }) => ({
-      rowCount: craftComputed(function* () {
+      rowCount: craftUse(craftComputed('rowCount', function* () {
         return (yield* state()).grid.length;
-      }),
+      })),
     }),
   ),
 );

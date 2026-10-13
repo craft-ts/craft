@@ -75,18 +75,13 @@ const Card = craftComponent(
       attrs: { role: 'article' },
     },
   },
-  () => ({}),
   () => div([h2('A card')]),
 );
 
-const FeaturedCard = craftComponent(
-  'FeaturedCard',
-  {},
-  () => ({}),
-  () =>
-    // `class` merges with the host's; `attrs` would replace the host's
-    // `attrs` as a whole, so a single attribute is passed as a property.
-    Card({ class: cardSheet.featured, 'data-testid': 'featured-card' }),
+// `class` merges with the host's; `attrs` would replace the host's `attrs` as a
+// whole, so a single attribute is passed as a property.
+const FeaturedCard = craftComponent('FeaturedCard', {}, () =>
+  Card({ class: cardSheet.featured, 'data-testid': 'featured-card' }),
 );
 ```
 
@@ -120,7 +115,6 @@ import { panel } from './panel.style';
 const Panel = craftComponent(
   'Panel',
   {},
-  () => ({}),
   () =>
     div({ class: panel.root }, [
       h2({ class: panel.title }, 'Panel'),
@@ -199,9 +193,9 @@ const MyRestrictedCraftComponent = craftComponent(
   'MyRestrictedCraftComponent',
   {},
   function* () {
-    return { value: yield* RestrictedData() };
+    const value = yield* RestrictedData();
+    return p(`Private data: ${value}`);
   },
-  ({ value }) => p(`Private data: ${value}`),
 );
 
 const Restricted = MyRestrictedCraftComponent.pipe(
@@ -233,6 +227,87 @@ they can satisfy dependencies used by the component and its children. The
 variadic component `.pipe(...)` overload is currently kept permissive to avoid
 excessive TypeScript instantiation depth; runtime dispatch still rejects an
 unhandled exception code.
+
+## Providers configured by component inputs
+
+Use `withComponentProviders` when a component-local service needs the component's
+inputs. Its callback receives the template's typed `Input<T>` readers and runs
+once per rendered instance. Each instance owns its provider configuration and DI
+scope. Updating an input, the template, or a host prop keeps that scope and its
+services alive.
+
+Before, a provider configured in metadata can only refer to values available
+outside the component instance:
+
+```ts
+const Profile = craftComponent(
+  'Profile',
+  { providers: [provideProfileContext({ profileId: selectedProfileId })] },
+  (_inputs: { profileId: Input<string> }) => p(ProfileContext.label),
+);
+```
+
+After, pass the component's reader through `$provided`. The service consumes it
+as `CraftServiceInput<T>` inside a reactive primitive:
+
+```ts
+import {
+  craftComputed,
+  craftService,
+  type CraftServiceInput,
+} from '@craft-ts/core';
+import {
+  craftComponent,
+  p,
+  withComponentProviders,
+  type Input,
+} from '@craft-ts/component';
+
+const { ProfileContext, provideProfileContext } = craftService(
+  { name: 'ProfileContext', providedIn: 'toProvide' },
+  function* (inputs: { $provided: { profileId: CraftServiceInput<string> } }) {
+    yield* craftComputed('label', function* () {
+      return `Profile: ${yield* inputs.$provided.profileId()}`;
+    });
+  },
+);
+
+const Profile = craftComponent(
+  'Profile',
+  {},
+  (_inputs: { profileId: Input<string> }) => p(ProfileContext.label),
+).pipe(
+  withComponentProviders(({ profileId }) => [
+    provideProfileContext({ profileId }),
+  ]),
+);
+```
+
+The providers satisfy local dependencies and contribute their own dependencies
+and exception codes to the component's type contract. Chain another `.pipe(...)`
+to add an exception handler while preserving type inference.
+
+The list and its order must stay fixed. Put reactive variation in the values
+passed to services, such as the reader used by a `craftComputed` or query's
+`params`. Do not conditionally add, remove, or reorder providers. The recommended
+ESLint preset enforces this with
+[`craft-ts/require-fixed-component-provider-list`](/guide/routing/eslint-rules#fixed-component-provider-lists).
+The callback must be a concise arrow returning an array literal, without spreads
+or provider-selection branches. Helpers may contain their own implementation
+logic; the rule checks the declared list only.
+
+`withProviders` remains available with its existing reactive provider lifecycle
+described above. `withComponentProviders` selects a stable component scope; when
+combining provider operators, their entries retain declaration order and readers
+carry subsequent value changes.
+
+Use a `toProvide` service for state or context owned by this component, even if
+this component is its only consumer. `withComponentProviders` passes its inputs
+once into that service's `$provided` configuration; the component and its
+children then resolve the same `X()` instance without repeating those inputs.
+Use a `function` service for reusable per-call logic composed by other services,
+where each `X(inputs)` call should get a fresh context. See
+[service scopes](/guide/app/service-scopes) for the full choice.
 
 ## Choosing an exception utility
 
@@ -305,8 +380,8 @@ With `showSource: true`, the source and fallback are both rendered. Use
 `showSource: false` to hide the source explicitly. `position` can be set on
 each handler (`before` or `after`); the second argument remains available as a
 default for handlers that do not specify their own position. Existing function
-handlers keep their previous behavior. If the component factory or a provider
-fails before the template is created, there is no source block to preserve, so
+handlers keep their previous behavior. If the component fails while it declares
+what it takes, or one of its providers does, there are no nodes to preserve, so
 the fallback is rendered alone.
 
 ### `matchNode.exhaustive`: render a resource exception
@@ -330,8 +405,8 @@ the host component or directive:
 
 * a Craft directive can add its own classes to the root of the component using
   it, without a wrapper;
-* multiple directives can compose their logic, template and host classes
-  through `.pipe(...)`;
+* multiple directives can compose their service transforms, template and host
+  classes through `.pipe(...)`;
 * the CSS itself is emitted once, at build time, by the `@craft-ts/style`
   plugin: nothing is injected or reference-counted at runtime.
 
@@ -341,7 +416,7 @@ the host component or directive:
 * a `*.style.ts` sheet: the component's appearance, its variants as axes, its
   runtime values as typed variables;
 * `craftDirective`: behavior or customization reusable across components;
-* the factory: component-specific state and dependencies.
+* the component's own service: component-specific state and dependencies.
 
 ### How a parent reaches a child
 
@@ -368,24 +443,18 @@ import { titleSheet } from './card-2.style';
 const CardTitle = craftComponent(
   'CardTitle',
   {},
-  (text: Input<string>) => ({ text }),
-  ({ text }) => h2({ class: titleSheet.root }, text),
+  (props: { readonly text: Input<string> }) =>
+    h2({ class: titleSheet.root }, props.text),
 );
 
-const Card = craftComponent(
-  'Card',
-  {},
-  function* () {
-    const title = yield* state('title', 'Card');
-    return { title };
-  },
-  ({ title }) =>
-    // The card sets `data-cardActive`; its sheet writes the inherited
-    // variable; the title, a separate component, reads it.
-    div({ class: cardSheet.root, 'data-cardActive': 'true' }, [
-      CardTitle({ text: title }),
-    ]),
-);
+const Card = craftComponent('Card', {}, function* () {
+  const title = yield* state('title', 'Card');
+  // The card sets `data-cardActive`; its sheet writes the inherited
+  // variable; the title, a separate component, reads it.
+  return div({ class: cardSheet.root, 'data-cardActive': 'true' }, [
+    CardTitle({ text: title }),
+  ]);
+});
 ```
 
 The card sets `data-cardActive`, its sheet writes `cardVars.ink`, and the title,

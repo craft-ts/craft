@@ -15,9 +15,9 @@ export function keepDerivationsPure(graph: ArchitectureGraph) {
 ## The safe shape
 
 ```typescript
-const remaining = craftComputed('remaining', function* () {
+const remaining = craftUse(craftComputed('remaining', function* () {
   return (yield* tasks()).filter((task) => !task.done).length;
-});
+}));
 ```
 
 ## What it prevents
@@ -25,11 +25,11 @@ const remaining = craftComputed('remaining', function* () {
 This looks convenient but makes a derivation an imperative workflow:
 
 ```typescript
-const count = craftComputed('count', function* () {
+const count = craftUse(craftComputed('count', function* () {
   yield* audit.log('count recomputed');
   yield* tasks.set(normalizeTasks(yield* tasks()));
   return (yield* tasks()).length;
-});
+}));
 ```
 
 Now reading `count` can write state, invoke a method, or trigger another
@@ -48,7 +48,7 @@ const tasks = yield* state(
   ({ set }) => ({ set }),
 );
 
-const remaining = craftComputed('remaining', function* () {
+const remaining = craftUse(craftComputed('remaining', function* () {
   // The write is not on the next line, but the helper belongs to this computed.
   const normalizeAndStore = function* (value: Task[]) {
     yield* tasks.set(normalizeTasks(value));
@@ -57,7 +57,7 @@ const remaining = craftComputed('remaining', function* () {
   const current = yield* tasks();
   yield* normalizeAndStore(current);
   return current.filter((task) => !task.done).length;
-});
+}));
 ```
 
 The graph still records the relationship:
@@ -74,15 +74,15 @@ computed and the write target, rather than relying on a reviewer to notice a
 The same applies to an indirect method call:
 
 ```typescript
-const refresh = craftMethod('refresh', function* () {
+const refresh = craftUse(craftMethod('refresh', function* () {
   yield* tasks.set(initialTasks);
-});
+}));
 
-const count = craftComputed('count', function* () {
+const count = craftUse(craftComputed('count', function* () {
   const runRefresh = () => refresh();
   yield* runRefresh();
   return (yield* tasks()).length;
-});
+}));
 ```
 
 The rule sees the `calls` edge from `count` to `refresh`. This is why the check
@@ -93,13 +93,13 @@ The fix is to keep the computed read-only and move the write to an explicit
 method or event:
 
 ```typescript
-const normalize = craftMethod('normalize', function* () {
+const normalize = craftUse(craftMethod('normalize', function* () {
   yield* tasks.set(normalizeTasks(yield* tasks()));
-});
+}));
 
-const remaining = craftComputed('remaining', function* () {
+const remaining = craftUse(craftComputed('remaining', function* () {
   return (yield* tasks()).filter((task) => !task.done).length;
-});
+}));
 ```
 
 ## Where the side effect belongs

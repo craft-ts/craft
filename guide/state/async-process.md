@@ -57,9 +57,9 @@ const { shareContent } =
       },
     },
     ({ resource }) => ({
-      isMenuOpen: craftComputed(function* () {
+      isMenuOpen: craftUse(craftComputed('isMenuOpen', function* () {
         return (yield* resource.status()) === 'loading';
-      }),
+      })),
     }),
   );
 

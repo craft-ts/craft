@@ -83,12 +83,12 @@ const { usersQuery } = query(
     { initialValue: [] as Data[] },
     ({ state, settledState, set }) => ({
       // a computed derived from the current page
-      totalOfUnCompletedData: craftComputed(function* () {
+      totalOfUnCompletedData: craftUse(craftComputed('totalOfUnCompletedData', function* () {
         return (yield* state()).filter((d) => !d.completed).length;
-      }),
-      settledCount: craftComputed(function* () {
+      })),
+      settledCount: craftUse(craftComputed('settledCount', function* () {
         return (yield* settledState()).length;
-      }),
+      })),
       markAsCompleted: function* (id: string) {
         const current = yield* state();
         return yield* set(
@@ -119,41 +119,47 @@ The pagination outputs (`currentPageData`, `currentPageStatus`, `isPlaceHolderDa
 ::: details A full paginated component
 
 ```typescript
-import { button, craftComponent, div, forNode, ifNode, span } from '@craft-ts/component';
-import { craftComputed, query, state } from '@craft-ts/core';
+import {
+  button,
+  craftComponent,
+  div,
+  forNode,
+  ifNode,
+  span,
+} from '@craft-ts/component';
+import { craftComputed, craftUse, query, state } from '@craft-ts/core';
 
-export const UsersList = craftComponent(
-  'UsersList',
-  {},
-  function* () {
-    const page = yield* state('page', 1, ({ state, update, set }) => ({
-      next: () => update((value) => value + 1),
-      previous: function* () {
-        const current = yield* state();
-        return yield* set(Math.max(1, current - 1));
-      },
-      isFirst: craftComputed(function* () {
+export const UsersList = craftComponent('UsersList', {}, function* () {
+  const page = yield* state('page', 1, ({ state, update, set }) => ({
+    next: () => update((value) => value + 1),
+    previous: function* () {
+      const current = yield* state();
+      return yield* set(Math.max(1, current - 1));
+    },
+    isFirst: craftUse(
+      craftComputed('isFirst', function* () {
         return (yield* state()) === 1;
       }),
-      label: craftComputed(function* () {
+    ),
+    label: craftUse(
+      craftComputed('label', function* () {
         return `Page ${yield* state()}`;
       }),
-    }));
+    ),
+  }));
 
-    const userQuery = yield* query(
-      'userQuery',
-      {
-        params: page,
-        identifier: (page) => `page-${page}`,
-        loader: async ({ params }) =>
-          (await fetch(`/api/users?page=${params}`)).json() as Promise<User[]>,
-      },
-      insertPaginationPlaceholderData({ initialValue: [] as User[] }),
-    );
+  const userQuery = yield* query(
+    'userQuery',
+    {
+      params: page,
+      identifier: (page) => `page-${page}`,
+      loader: async ({ params }) =>
+        (await fetch(`/api/users?page=${params}`)).json() as Promise<User[]>,
+    },
+    insertPaginationPlaceholderData({ initialValue: [] as User[] }),
+  );
 
-    return { page, userQuery };
-  },
-  ({ page, userQuery }) => [
+  return [
     div(
       {
         class: function* () {
@@ -162,10 +168,8 @@ export const UsersList = craftComponent(
             : 'users-list';
         },
       },
-      forNode(
-        userQuery.currentPageData,
-        { track: (user) => user.id },
-        (user) => UserCard({ user }),
+      forNode(userQuery.currentPageData, { track: (user) => user.id }, (user) =>
+        UserCard({ user }),
       ),
     ),
 
@@ -179,8 +183,8 @@ export const UsersList = craftComponent(
     ifNode(userQuery.isPlaceHolderData, () =>
       div({ class: pagerSheet.loading }, 'Loading new page…'),
     ),
-  ],
-);
+  ];
+});
 ```
 
 :::

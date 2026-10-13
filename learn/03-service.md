@@ -3,53 +3,57 @@ url: https://craft-ts.github.io/craft/learn/03-service.md
 ---
 # 3. Move logic out of the component
 
-**Goal:** turn your task state into a service other components can use.
+**Goal:** move component-owned task state behind a named service that the
+component and its children can consume.
 
-## From component factory to `craftService`
+## From the component to `craftService`
 
 The factory body moves out almost unchanged — it was already a generator:
 
 ```ts
-import { craftComputed, craftService, state } from '@craft-ts/core';
+import { craftComputed, craftService, craftUse, state } from '@craft-ts/core';
 
-export const { TaskList } = craftService(
-  { name: 'TaskList', providedIn: 'function' },
+export const { TaskList, provideTaskList } = craftService(
+  { name: 'TaskList', providedIn: 'toProvide' },
   function* () {
-    const tasks = yield* state('tasks', [] as Task[], ({ state, update }) => ({
+    yield* state('tasks', [] as Task[], ({ state, update }) => ({
       add: (title: string) => update((current) => [...current, newTask(title)]),
       toggle: (id: string) =>
         update((current) =>
           current.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
         ),
-      remaining: craftComputed(function* () {
-        return (yield* state()).filter((t) => !t.done).length;
-      }),
+      remaining: craftUse(
+        craftComputed('remaining', function* () {
+          return (yield* state()).filter((t) => !t.done).length;
+        }),
+      ),
     }));
-
-    return tasks;
   },
 );
 ```
 
-A service is the same shape as a component's logic factory: a generator that
-yields what it needs and returns a context. The only additions are a **name** and
-a **scope**.
+A service is the same shape as a component, minus the nodes: a generator that
+yields what it needs. The differences: a **name**, a **scope** — and no
+`return`. A service exposes every named primitive it yields, under its name, so
+`TaskList` exposes `tasks` and has a `toProvide` scope because the component
+owns this mutable state.
 
 ## Using it
 
-The component now yields the service instead of declaring the state:
+The component mounts one service instance in its provider scope, then resolves
+it without passing inputs each time:
 
 ```typescript
 export const Tasks = craftComponent(
   'Tasks',
-  {},
+  { providers: [provideTaskList()] },
   function* () {
-    const tasks = yield* TaskList();
-    return { tasks };
+    const { tasks } = yield* TaskList();
+
+    return [
+      /* unchanged */
+    ];
   },
-  ({ tasks }) => [
-    /* unchanged */
-  ],
 );
 ```
 
@@ -58,30 +62,39 @@ is no `injectTaskList` and no class to import.
 
 ## Picking a scope
 
-`scope` is the one decision to make. Four you will actually use:
+Choose a scope from the lifetime and owner of the service:
 
 | Scope       | Instance                   | Use it when                                                |
 | ----------- | -------------------------- | ---------------------------------------------------------- |
-| `function`  | fresh on every injection   | the service belongs to a single component (**start here**)  |
-| `toProvide` | one per `provideX()` mount | a parent, or a route, shares it with children               |
+| `toProvide` | one per provider scope     | a component, feature, or route owns state or context        |
+| `function`  | fresh on every `X(...)`    | reusable per-call logic is composed by other services      |
 | `global`    | one for the whole app      | genuinely app-wide state                                    |
 | `abstract`  | none — a contract          | the implementation is decided elsewhere                     |
 
-Default to `function`. It needs no provider and it says out loud "this instance
-is not shared". Move to `toProvide` the day a child component needs the *same*
-instance, and provide it at the component or the route:
+Use `toProvide` even when only the owning component uses the service. A
+provider keeps that component's state in one instance and lets child
+components resolve the same instance. `provideX()` registers the provider; the
+service factory runs only when `X()` is first resolved. `appStart: true` is the
+eager exception.
+
+For a reusable operation called by other services, use `function`. Every
+`X(inputs)` helper call creates a fresh service context and receives its own
+inputs. It is not a cached state store for a component.
+
+The service in this lesson has no configurable inputs, so a regular component
+provider is enough:
 
 ```typescript
 export const Tasks = craftComponent(
   'Tasks',
   { providers: [provideTaskList()] },
   function* () {
-    const tasks = yield* TaskList();
-    return { tasks };
+    const { tasks } = yield* TaskList();
+
+    return [
+      /* … */
+    ];
   },
-  ({ tasks }) => [
-    /* … */
-  ],
 );
 ```
 
@@ -94,30 +107,32 @@ proof in place.
 The two remaining scopes (`manuallyProvidedAtRoot`, and the details of
 `abstract`) are covered in [Service scopes](/guide/app/service-scopes).
 
-## Parameterising an instance
+## Passing configuration
 
-A service can take **inputs**: the factory's first parameter is an object the
-call site supplies. Changing inputs are yieldable readers
-(`CraftServiceInput<T>`) — yield them so the input-to-service edge stays in
-the graph:
+A reusable `function` service can take **call-site inputs**. Changing values are
+yieldable readers (`CraftServiceInput<T>`) — yield them so the input-to-service
+edge stays in the graph:
 
 ```typescript
-export const { TaskList } = craftService(
-  { name: 'TaskList', providedIn: 'function' },
-  function* (inputs: { projectId: CraftServiceInput<string> }) {
-    const tasks = yield* state('tasks', [] as Task[] /* … */);
-    const projectId = yield* inputs.projectId();
-    return tasks;
+import { craftExpose, craftService, type CraftServiceInput } from '@craft-ts/core';
+
+export const { TaskDetails } = craftService(
+  { name: 'TaskDetails', providedIn: 'function' },
+  function* (inputs: { taskId: CraftServiceInput<string> }) {
+    yield* craftExpose('taskId', yield* inputs.taskId());
   },
 );
 ```
 
 ```typescript
-const tasks = yield* TaskList({ projectId: currentProjectId });
+const { taskId } = yield* TaskDetails({ taskId: 'task-42' });
 ```
 
-Inputs are how you get several configured instances out of one `function`-scoped
-service, instead of duplicating it.
+Use this shape when each service call needs its own parameters. When values
+configure state owned by a component or route, put them under `$provided` on a
+`toProvide` service and register them once. For component inputs, use
+`withComponentProviders`; [Service inputs](/guide/app/craft-service#service-inputs)
+shows the complete example.
 
 ## Giving the service its own providers
 
@@ -154,20 +169,22 @@ API](/guide/app/expose-api) — come back once the tutorial is done.
 
 ## Exposing less than everything
 
-A service returns whatever it wants to be public. Here `TaskList` returns the
-whole `tasks` ref. If a consumer only needs one property, it can say so:
+A service's API is what it yields; wrap what should stay internal in
+`craftPrivate(...)`. If a consumer only needs one exposed property, it can say
+so:
 
 ```typescript
-const remaining = yield* TaskList.remaining();
+const tasks = yield* TaskList.tasks();
 ```
 
-The dependency graph then records that only `remaining` was used — which makes
+The dependency graph then records that only `tasks` was used — which makes
 tests smaller, and is why [step 10](/learn/10-testing) is short.
 
 ## What you gained
 
-Logic that is reusable, injectable and testable, declared as a function with a
-name and a scope — no `@Injectable`, no constructor.
+Component-owned state now lives in a named, injectable and testable service —
+no `@Injectable`, no constructor. Reusable per-call logic can use the `function`
+scope and compose other services without owning a shared instance.
 
 [← 2. Derive instead of duplicate](/learn/02-derive)
 

@@ -80,34 +80,28 @@ import { card, meter, meterVars, panel } from './card.style';
 const Card = craftComponent(
   'Card',
   {},
-  (progress: Input<number>) => ({ progress }),
-  ({ progress }) =>
+  (props: { readonly progress: Input<number> }) =>
     article({ class: card.root }, [
       'Card',
       div({
         class: meter.fill,
         style: function* () {
-          return assign(meterVars.value, unit.pct(yield* progress()));
+          return assign(meterVars.value, unit.pct(yield* props.progress()));
         },
       }),
     ]),
 );
 
-const Page = craftComponent(
-  'Page',
-  {},
-  function* () {
-    const alertProgress = yield* state('alertProgress', 20);
-    const panelProgress = yield* state('panelProgress', 80);
-    return { alertProgress, panelProgress };
-  },
-  ({ alertProgress, panelProgress }) => [
+const Page = craftComponent('Page', {}, function* () {
+  const alertProgress = yield* state('alertProgress', 20);
+  const panelProgress = yield* state('panelProgress', 80);
+  return [
     // Per instance: a variant sets the variables it changes.
     Card({ progress: alertProgress, 'data-cardLook': 'alert' }),
     // Forwarded: the panel's variable becomes the card's ink.
     div({ class: panel.root }, [Card({ progress: panelProgress })]),
-  ],
-);
+  ];
+});
 ```
 
 ## Per instance: a variant sets what it changes
@@ -150,11 +144,3 @@ never write one by hand. Two rules follow from the registration:
   suite catches it;
 * a prefix belongs to one sheet: `cssVars` throws when two sheets declare the
   same prefix.
-
-## `meta.cssVars`
-
-The `cssVars` field of `craftComponent`'s meta — a contract extracted from a
-CSS string, with `required()`, `inherit`, `omit` and `forward()` at the call
-site — belongs to the component CSS that `no-component-css` refuses. It is
-`@deprecated`, kept only so that an [attested bypass](/guide/components/styles#the-one-real-exception)
-stays possible.

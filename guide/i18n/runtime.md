@@ -65,7 +65,7 @@ the dependency does — the dependency being an ordinary Craft reader, typically
 the `state` that holds the active locale:
 
 ```ts
-import { craftService, state } from '@craft-ts/core';
+import { craftExpose, craftService, state } from '@craft-ts/core';
 
 type Locale = 'en-US' | 'fr-FR';
 
@@ -83,7 +83,8 @@ export const { I18n } = craftService(
       },
     }));
 
-    return { language, setLocale: language.setLocale, translate: runtime.bind(language) };
+    // Consumers use the scoped method at `I18n.language.setLocale`.
+    yield* craftExpose('translate', runtime.bind(language));
   },
 );
 ```
@@ -119,7 +120,7 @@ p({ title: translate('order', { amount: 1234.5 }) }, 'Order');
 
 Both forms carry `ClientCurrency` into the component dependency contract, so
 the route check reports a missing provider at compile time, just as it does for
-a service yielded by the component factory.
+a service the component yields.
 
 The reader is a function, so `yield* translate(...)` does not type-check; and
 driving it yourself inside a template generator (`yield* translate(...)()`)

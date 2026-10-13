@@ -52,11 +52,10 @@ const { UserRequirement, provideUser } = craftService(
 
 // 2. A guard that resolves the user.
 const { Auth } = craftService({ name: 'Auth', providedIn: 'global' }, function* () {
-  const auth = yield* query('auth', {
+  yield* query('auth', {
     params: () => true,
     loader: async () => ({}) as User,
   });
-  return auth;
 });
 
 export const { demoRoutes } = craftRoutes('demo', [
@@ -64,8 +63,8 @@ export const { demoRoutes } = craftRoutes('demo', [
     componentDeps: {} as import('./query').GenDeps_GlobalQuery,
     loadComponent: ({ withRetry }) => withRetry(import('./query')),
     canActivate: function* () {
-      const user = yield* Auth();
-      const userValue = user.value();
+      const auth = yield* Auth.auth();
+      const userValue = auth.value();
       if (!userValue) {
         return false;
       }
@@ -80,7 +79,7 @@ export const { demoRoutes } = craftRoutes('demo', [
 ]);
 ```
 
-The routed component can now yield `User()` from its Craft component factory and receive the value
+The routed component can now yield `User()` and receive the value
 that the guard resolved — without ever touching the fully-qualified route helper.
 
 ## The helpers object
@@ -145,7 +144,7 @@ const { User, provideUser } = craftService(
   }),
 ])
 
-// In the routed component factory:
+// In the routed component:
 const user = yield* User(); // User
 ```
 

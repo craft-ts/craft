@@ -1,6 +1,5 @@
 ---
-url: >-
-  https://craft-ts.github.io/craft/guide/testing/architecture/craft-effect-network.md
+url: https://craft-ts.github.io/craft/guide/testing/architecture/craft-effect-network.md
 ---
 # Keep `craftEffect` off the network
 
@@ -39,15 +38,15 @@ The write has no explicit user action or mutation relationship in its declaratio
 
 ## The intended alternatives
 
-* use `query` / `queryEffect` for reads;
-* use `mutation` / `mutationEffect` for writes;
-* use `asyncProcess` / `asyncProcessEffect` for explicit commands;
-* keep `craftEffect` for reactive side effects such as logging, focus or
+- use `query` / `queryEffect` for reads;
+- use `mutation` / `mutationEffect` for writes;
+- use `asyncProcess` / `asyncProcessEffect` for explicit commands;
+- keep `craftEffect` for reactive side effects such as logging, focus or
   integration with a non-Craft sink.
 
 The rule protects the semantic boundary, not the use of Effects in general.
 
 ## See also
 
-* [craftEffect](/guide/reactivity/craft-effect)
-* [Which primitive should I use?](/guide/concepts/choose-primitive)
+- [craftEffect](/guide/reactivity/craft-effect)
+- [Which primitive should I use?](/guide/concepts/choose-primitive)

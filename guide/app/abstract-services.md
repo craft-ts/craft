@@ -84,5 +84,5 @@ its own guarded data / params. See
 
 ## See Also
 
-* [Service scopes](/guide/app/service-scopes)
-* [Route providers](/guide/routing/route-providers)
+- [Service scopes](/guide/app/service-scopes)
+- [Route providers](/guide/routing/route-providers)

@@ -246,4 +246,4 @@ Conventionally these live in `src/i18n/project-tokens.ts`, which is where
 
 ## Next
 
-* [The runtime](./runtime.md) — spending a catalogue built from these.
+- [The runtime](./runtime.md) — spending a catalogue built from these.

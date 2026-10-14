@@ -289,6 +289,8 @@ you just wrote. See [Insertions](/guide/concepts/insertions).
 State that carries its own behaviour, a template that only renders, and a
 composition mechanism that scales past the first three methods.
 
+
 [← 1. Your first state](/learn/01-first-state)
 
 [3. Move logic out of the component →](/learn/03-service)
+

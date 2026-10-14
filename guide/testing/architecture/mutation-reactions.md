@@ -1,6 +1,5 @@
 ---
-url: >-
-  https://craft-ts.github.io/craft/guide/testing/architecture/mutation-reactions.md
+url: https://craft-ts.github.io/craft/guide/testing/architecture/mutation-reactions.md
 ---
 # Mutations must have a read-side reaction
 
@@ -66,5 +65,5 @@ generic `allow: ['*']` convention.
 
 ## See also
 
-* [Reacting to mutations](/guide/state/react-on-mutation)
-* [Write server data](/learn/06-mutate-data)
+- [Reacting to mutations](/guide/state/react-on-mutation)
+- [Write server data](/learn/06-mutate-data)

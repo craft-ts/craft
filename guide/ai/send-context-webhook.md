@@ -10,10 +10,10 @@ state, and optionally the DOM and computed CSS.
 
 Typical uses include:
 
-* asking an AI assistant to explain or fix a broken screen;
-* preparing a reproducible bug report or a support ticket;
-* investigating a failed HTTP request, navigation, mutation, or query;
-* sending a consistent, structured context to an internal debugging agent.
+- asking an AI assistant to explain or fix a broken screen;
+- preparing a reproducible bug report or a support ticket;
+- investigating a failed HTTP request, navigation, mutation, or query;
+- sending a consistent, structured context to an internal debugging agent.
 
 The feature is user-driven. It does not call an AI service by itself. Without
 an `endpoint`, everything stays in the browser and the user copies the prompt
@@ -35,8 +35,8 @@ export const minimalAiContextProviders = [provideSendContextToAi({ recording: tr
 
 The two entry points are equivalent:
 
-* open the launcher to start with an empty context, then interact with the app;
-* right-click a component to start with that component already selected.
+- open the launcher to start with an empty context, then interact with the app;
+- right-click a component to start with that component already selected.
 
 From the chat, the user can add more elements with another right-click, remove
 selected elements, write an instruction, record or clear the timeline, and
@@ -46,15 +46,15 @@ choose which sections to include in the generated Markdown prompt.
 
 The session combines several kinds of context:
 
-* **Selected elements**: tag name, text, outer HTML, and optionally a selector.
-* **Component information**: the host name, Craft host tags, click coordinates,
+- **Selected elements**: tag name, text, outer HTML, and optionally a selector.
+- **Component information**: the host name, Craft host tags, click coordinates,
   the clicked element, and truncated host HTML.
-* **Timeline**: DOM interactions, HTTP requests, router activity, primitive
+- **Timeline**: DOM interactions, HTTP requests, router activity, primitive
   activity, and app snapshot reports. HTTP and navigation entries are linked by
   operation and correlation IDs when those services provide them.
-* **App snapshots**: the reports emitted by the app snapshot registry while the
+- **App snapshots**: the reports emitted by the app snapshot registry while the
   context is being prepared.
-* **DOM and CSS captures**: the selected component or the full page, including
+- **DOM and CSS captures**: the selected component or the full page, including
   computed styles. These captures are optional because they can be large and
   briefly pause the page while they are collected.
 
@@ -95,11 +95,11 @@ does not restore the app's complete initial state.
 
 After validation, use:
 
-* `Play` to replay interactions at the intervals recorded in the session;
-* `Pause` to hold replay before the next interaction;
-* `Next step` to dispatch one interaction and advance Craft's virtual clock
+- `Play` to replay interactions at the intervals recorded in the session;
+- `Pause` to hold replay before the next interaction;
+- `Next step` to dispatch one interaction and advance Craft's virtual clock
   to that event's recorded time;
-* `Stop` to end replay and restore the normal Craft clock and `fetch`.
+- `Stop` to end replay and restore the normal Craft clock and `fetch`.
 
 Recorded HTTP responses are returned for matching `fetch` requests. A request
 with no recorded match stops replay and is rejected; it is never sent through

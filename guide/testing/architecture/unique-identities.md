@@ -1,6 +1,5 @@
 ---
-url: >-
-  https://craft-ts.github.io/craft/guide/testing/architecture/unique-identities.md
+url: https://craft-ts.github.io/craft/guide/testing/architecture/unique-identities.md
 ---
 # Unique `craftUnique` identities
 
@@ -52,5 +51,5 @@ The complete identity is the pair, not the key alone.
 
 ## See also
 
-* [Persisted primitive identities](./persisted-identities)
-* [Persistence](/guide/state/persistence)
+- [Persisted primitive identities](./persisted-identities)
+- [Persistence](/guide/state/persistence)

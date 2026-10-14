@@ -261,10 +261,10 @@ handler for a code nothing can produce) are both type errors, naming the offendi
 **`HttpError` appears or disappears depending on the `craftUntilSettled` form.**
 This is the most common surprise:
 
-* `craftUntilSettled(CraftHttpClient.get(...))` **excludes** `HttpError` from the
+- `craftUntilSettled(CraftHttpClient.get(...))` **excludes** `HttpError` from the
   routable union and rethrows it. The outlet sends that navigation error to the
   global error component.
-* `craftUntilSettled(queryRef)` routes every exception the query exposes. When
+- `craftUntilSettled(queryRef)` routes every exception the query exposes. When
   its loader returns a `CraftHttpClient` request, that **includes** `HttpError`,
   so the route must declare an explicit handler such as
   `HttpError: craftExceptionHandler(function* ({ globalError }) { return globalError(); })`.
@@ -287,7 +287,7 @@ reactive phase entirely with `noop()`.
 
 ## See Also
 
-* [Exceptions as values](/guide/concepts/exceptions) — the concept
-* [Route guards](/guide/routing/guards) — where exceptions are raised
-* [Global error component](/guide/routing/global-error-component)
-* [Architecture rules](/guide/testing/architecture) — `assertRouteDiProofs` keeps the exhaustiveness assert in place
+- [Exceptions as values](/guide/concepts/exceptions) — the concept
+- [Route guards](/guide/routing/guards) — where exceptions are raised
+- [Global error component](/guide/routing/global-error-component)
+- [Architecture rules](/guide/testing/architecture) — `assertRouteDiProofs` keeps the exhaustiveness assert in place

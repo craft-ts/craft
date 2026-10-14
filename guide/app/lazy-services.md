@@ -54,11 +54,11 @@ interface CraftLazyLoadHelpers {
 }
 ```
 
-* `craftLazy(...)` is a [`craftGen`](/guide/concepts/generators) program: `yield*`-composable and
+- `craftLazy(...)` is a [`craftGen`](/guide/concepts/generators) program: `yield*`-composable and
   [`.pipe(...)`](/guide/advanced/program-operators)-able.
-* Its resolved value is the module `T`, **untouched** — the module's exported `craftGen`s keep their
+- Its resolved value is the module `T`, **untouched** — the module's exported `craftGen`s keep their
   own exception unions.
-* On a final import failure it returns a `CraftLazyLoadError` (`code: 'CRAFT_LAZY_LOAD_ERROR'`),
+- On a final import failure it returns a `CraftLazyLoadError` (`code: 'CRAFT_LAZY_LOAD_ERROR'`),
   which `craftGen` surfaces as a short-circuit → the enclosing resource's `status()` becomes
   `'exception'`.
 
@@ -66,7 +66,7 @@ interface CraftLazyLoadHelpers {
 `craftLazy` awaits its import through the async program pump, so it can only be `yield*`-ed from an
 **`asyncProcess` loader** or a **route guard/resolver**. It cannot be used inside a synchronous
 [`craftMethod`](/guide/reactivity/craft-method) (that driver throws on an await request). A `craftMethod`
-may only *trigger* the enclosing `asyncProcess`.
+may only _trigger_ the enclosing `asyncProcess`.
 :::
 
 ## With `asyncProcess`
@@ -166,11 +166,13 @@ search state. `toProvide` gives that owner one lazy instance. If its
 configuration comes from component inputs, pass it once with
 `withComponentProviders`; the service itself is then resolved with `Search()`.
 
+
+
 Exception propagation is fully typed, with **no** manual plumbing:
 
-* `craftLazy` may add `CRAFT_LAZY_LOAD_ERROR`;
-* `craftUntilSettled(searchModule)` relays it to `searchResult`;
-* `search(q)` relays its own `E1 | E2`.
+- `craftLazy` may add `CRAFT_LAZY_LOAD_ERROR`;
+- `craftUntilSettled(searchModule)` relays it to `searchResult`;
+- `search(q)` relays its own `E1 | E2`.
 
 So `searchResult.exception()?._tag` is exactly `'CRAFT_LAZY_LOAD_ERROR' | 'E1' | 'E2'`, and
 `searchResult.value()` keeps the return type of `search`.
@@ -205,7 +207,7 @@ craftRoute(
 ```
 
 This is the code-splitting counterpart of a lazy `loadComponent`: instead of splitting the
-*component*, you split the *data-loading logic* it depends on, with the same retry + error screen
+_component_, you split the _data-loading logic_ it depends on, with the same retry + error screen
 guarantees as [Route Load Errors](/guide/routing/route-load-errors).
 
 ## Handling the load error
@@ -276,6 +278,6 @@ The dynamic `import(url)` used for cache-busting is itself overridable through `
 
 ## See Also
 
-* [craftService](/guide/app/craft-service)
-* [asyncProcess](/guide/state/async-process) — the usual driver for `craftLazy`
-* [Route load errors](/guide/routing/route-load-errors) — the same retry engine
+- [craftService](/guide/app/craft-service)
+- [asyncProcess](/guide/state/async-process) — the usual driver for `craftLazy`
+- [Route load errors](/guide/routing/route-load-errors) — the same retry engine

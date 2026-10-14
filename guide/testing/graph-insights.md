@@ -79,14 +79,14 @@ npx craft graph \
 `craft-dependency-graph.report.json`; `--format all` writes them next to the JSON
 graph and the HTML explorer. The report contains:
 
-* a summary: nodes and relations per kind, diagnostics per code;
-* god nodes and hotspots;
-* dependency cycles and unused primitive methods;
-* relations between features, when `--feature-glob` names the feature with a
+- a summary: nodes and relations per kind, diagnostics per code;
+- god nodes and hotspots;
+- dependency cycles and unused primitive methods;
+- relations between features, when `--feature-glob` names the feature with a
   `:name` capture;
-* the violations of the rules `assertArchitecture` enforces, grouped by rule;
-* coverage per route, when a coverage report is applied with `--coverage`;
-* documentation per kind, when JSDoc or Markdown pages were collected.
+- the violations of the rules `assertArchitecture` enforces, grouped by rule;
+- coverage per route, when a coverage report is applied with `--coverage`;
+- documentation per kind, when JSDoc or Markdown pages were collected.
 
 Every section is sorted and every id is relative to the root, so two reports of
 the same code are identical whatever the checkout path. Commit the Markdown file
@@ -120,10 +120,10 @@ that can change what it renders — without counting a statement twice.
 
 Coverage is never guessed:
 
-* a node without a line range, or in a file the report does not mention, has
+- a node without a line range, or in a file the report does not mention, has
   no `coverage` field. `CRAFT_GRAPH_COVERAGE_UNKNOWN` diagnostics count them per
   kind;
-* a route lists how many nodes of its slice are unknown next to its percentage,
+- a route lists how many nodes of its slice are unknown next to its percentage,
   which only describes the measured part.
 
 ```typescript
@@ -148,9 +148,9 @@ export const { injectUserService } = craftService(/* … */, function* () {
 });
 ```
 
-* `summary` and `tags` come from the JSDoc of the declaration, or of the
+- `summary` and `tags` come from the JSDoc of the declaration, or of the
   statement around it (`export const x = query(…)`).
-* `rationale` collects the `// WHY:`, `// NOTE:` and `// HACK:` comments, each
+- `rationale` collects the `// WHY:`, `// NOTE:` and `// HACK:` comments, each
   credited to the innermost node that contains it: the comment above `user`
   belongs to the query, not to the service.
 
@@ -177,14 +177,14 @@ before-and-after examples.
 `craft graph --format html` (or `all`) writes a self-contained explorer. On top
 of the route view it shows:
 
-* in the details panel, the node's metrics, coverage, JSDoc, justification
+- in the details panel, the node's metrics, coverage, JSDoc, justification
   comments and the pages that document it — unknown values read "inconnu",
   never `0`;
-* a heat map selector (complexity, fan-in, coverage) that colours the node
+- a heat map selector (complexity, fan-in, coverage) that colours the node
   cards, with a striped pattern for unknown values;
-* "path from" and "path to" buttons that highlight the shortest chain of
+- "path from" and "path to" buttons that highlight the shortest chain of
   relations between two nodes, following their direction;
-* the ten hotspots in the sidebar, and their count next to the uncovered nodes
+- the ten hotspots in the sidebar, and their count next to the uncovered nodes
   in the header.
 
 ## Agents

@@ -57,18 +57,19 @@ type _CheckAppDI = RouteCheckedDI<
 type _CanRunApp = CanRun<_CheckAppDI>;
 ```
 
+
 `RouteCheckedDI` compares:
 
-* the dependencies declared by the routed component
-* the providers available from the app, parent mount, route and component
+- the dependencies declared by the routed component
+- the providers available from the app, parent mount, route and component
 
 If a route depends on a service that is not provided, or if a routed component expects an input that
 the route does not supply, `_CanRunApp` turns that mismatch into a TypeScript error in the routes file.
 
 Typical errors look like:
 
-* `The Counter service is not provided in path: "some-path"`
-* `Input "userId" is not provided in path: "some-path"`
+- `The Counter service is not provided in path: "some-path"`
+- `Input "userId" is not provided in path: "some-path"`
 
 ## 2. Define routes with `craftRoute` and collect them with `craftRoutes`
 
@@ -146,13 +147,13 @@ export const appConfig = craftAppConfig({
 
 Notes:
 
-* `appRoutes.toRoutes()` gives the router the real runtime routes.
-* Route params are bound to component inputs by name; there is nothing to opt into.
-* `provideCraftRouter(...)` also takes the craft loading features
+- `appRoutes.toRoutes()` gives the router the real runtime routes.
+- Route params are bound to component inputs by name; there is nothing to opt into.
+- `provideCraftRouter(...)` also takes the craft loading features
   (`withErrorComponent`, `withRouteLoadError`, `withTransitionTimings`, …) in
   the same call, e.g.
   `provideCraftRouter(appRoutes.toRoutes(), withErrorComponent({ component: MyGlobalErrorScreen }))`.
-* Render `CraftRouterOutlet()` from `@craft-ts/component` inside your Craft
+- Render `CraftRouterOutlet()` from `@craft-ts/component` inside your Craft
   component tree: the URL commits immediately and the outlet drives the
   pending UI and centralised exception handling.
   (The features also work standalone via `provideCraftLoading(...)`.)
@@ -160,7 +161,7 @@ Notes:
   a navigation error handler and an internal recovery route. See
   [Non-blocking navigation & pending UI](/guide/routing/pending-ui) and
   [Route Load Errors](/guide/routing/route-load-errors).
-* For lazy routes, `loadChildren` should return the named route tree exported by the child collection, for example `childRoutes.childRoutes`.
+- For lazy routes, `loadChildren` should return the named route tree exported by the child collection, for example `childRoutes.childRoutes`.
 
 ### When a routes file gets big
 
@@ -201,9 +202,9 @@ export type GenDeps_TestComponent = GetDeps<{
 
 Adjust `--root` to your real source root:
 
-* `src` for an application
-* `projects/my-app/src` for a workspace app
-* `libs/my-feature/src` for a library
+- `src` for an application
+- `projects/my-app/src` for a workspace app
+- `libs/my-feature/src` for a library
 
 If you use a project-level `craft-brand.config.ts`, you can extend the script:
 
@@ -230,23 +231,23 @@ After changing a component's DI-related shape, refresh its generated alias.
 
 Typical triggers:
 
-* adding or removing `inject(...)`
-* changing constructor injection
-* changing component `imports`
-* changing `providers`
-* changing `viewProviders`
+- adding or removing `inject(...)`
+- changing constructor injection
+- changing component `imports`
+- changing `providers`
+- changing `viewProviders`
 
 Recommended workflow:
 
-* first generation or bulk refactor: `npm run craft:brand`
-* one file without `GenDeps_*`: run the dependency generator for the relevant source root
-* one file with `GenDeps_*`: run `eslint --fix` for the file
-* CLI alternative for one file: `eslint --fix src/app/feature/my-component.ts`
+- first generation or bulk refactor: `npm run craft:brand`
+- one file without `GenDeps_*`: run the dependency generator for the relevant source root
+- one file with `GenDeps_*`: run `eslint --fix` for the file
+- CLI alternative for one file: `eslint --fix src/app/feature/my-component.ts`
 
 Important limits:
 
-* the Quick Fix only handles the current file
-* if you rename the component class, rerun the generator so the `GenDeps_*` alias name stays aligned
+- the Quick Fix only handles the current file
+- if you rename the component class, rerun the generator so the `GenDeps_*` alias name stays aligned
 
 :::warning
 An Eslint error does not trigger a compilation error, so make sure to run the Quick Fix or `eslint --fix` after changing a component's DI shape. Otherwise, `main.ts` will not see the updated `GenDeps_*` and may miss real DI errors.
@@ -278,7 +279,7 @@ Full setup — analysis tsconfig, catalog, Nx target — is on
 
 ## See Also
 
-* [CLI automation](/guide/routing/automation) — let the CLI write routes for you
-* [Architecture rules](/guide/testing/architecture) — `assertRouteDiProofs` keeps the proofs armed
-* [Route guards](/guide/routing/guards) — the next thing you'll add
-* [Scaling routes](/guide/routing/scaling) — when one routes file gets too big
+- [CLI automation](/guide/routing/automation) — let the CLI write routes for you
+- [Architecture rules](/guide/testing/architecture) — `assertRouteDiProofs` keeps the proofs armed
+- [Route guards](/guide/routing/guards) — the next thing you'll add
+- [Scaling routes](/guide/routing/scaling) — when one routes file gets too big

@@ -193,6 +193,6 @@ and `patch` for wrappers, WebMCP tools, and other advanced patterns. See
 
 ## See Also
 
-* [Which primitive should I use?](/guide/concepts/choose-primitive)
-* [Browser boundaries](/guide/testing/browser-boundaries) — mocking native APIs
-* [Anatomy of a primitive](/guide/concepts/primitive-anatomy)
+- [Which primitive should I use?](/guide/concepts/choose-primitive)
+- [Browser boundaries](/guide/testing/browser-boundaries) — mocking native APIs
+- [Anatomy of a primitive](/guide/concepts/primitive-anatomy)

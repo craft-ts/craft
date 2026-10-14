@@ -91,7 +91,7 @@ is ever assembled in the browser, so what the browser gets is exactly what the
 emitter proved.
 
 **The dump**, when `dumpPath` is set. A JSON picture of the registry — classes,
-atoms, and typed variables — written on *every* emission, so it can never
+atoms, and typed variables — written on _every_ emission, so it can never
 describe a sheet older than the CSS that was served alongside it. The dump is
 the style half of the dependency graph: it is what
 [`style_impact`, `style_matrix` and `style_debt`](./testing.md#what-the-graph-adds)
@@ -133,7 +133,7 @@ into its own program.
 
 ## Next
 
-* [Define your design system](./define.md) — palette, axes, theme: where `bp`,
+- [Define your design system](./define.md) — palette, axes, theme: where `bp`,
   `scheme` and `palette` come from.
-* [Tokens and typed variables](./tokens.md) — level 1.
-* [Axes and the visual matrix](./variants.md) — level 2.
+- [Tokens and typed variables](./tokens.md) — level 1.
+- [Axes and the visual matrix](./variants.md) — level 2.

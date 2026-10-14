@@ -50,7 +50,7 @@ checking nothing — the same shape as `assertExhaustiveRouteExceptions`.
 
 ## Content cases
 
-The matrix covers *conditions*, not *data* — and the eighty-character title, the
+The matrix covers _conditions_, not _data_ — and the eighty-character title, the
 empty list and the seven-figure price are what break layouts most often. No type
 can derive them, so they are declared:
 

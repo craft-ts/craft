@@ -77,7 +77,7 @@ typed params, same string as `runtime.t` — the snippet above is checked agains
 
 The error channel is `never` on purpose: a translation that reaches this point
 cannot fail on a bad key or a bad parameter, because neither compiles. What
-*can* fail is the locale not being loaded, and that is a defect in the app's
+_can_ fail is the locale not being loaded, and that is a defect in the app's
 startup, which is why it throws `I18nRuntimeError` rather than becoming a typed
 failure every call site would have to handle.
 

@@ -34,9 +34,9 @@ provider of publication for the same artefact. Both read the same manifest.
 
 The `static` runtime carries a mode:
 
-* **`spa`** — one document, and unknown paths fall back to it. The route table
+- **`spa`** — one document, and unknown paths fall back to it. The route table
   lives in the browser.
-* **`ssg`** — one pre-rendered document per route. The route list is part of the
+- **`ssg`** — one pre-rendered document per route. The route list is part of the
   contract, and any route that cannot be reduced to a single document has to be
   declared as needing a server runtime.
 
@@ -105,19 +105,19 @@ today.
 
 ## What the tooling never does
 
-* It never writes a secret. The manifest declares the *names* of the
+- It never writes a secret. The manifest declares the _names_ of the
   environment variables and whether they are required; a declared value is a
   reported error.
-* It never mutates an infrastructure by itself. Publishing and provisioning
+- It never mutates an infrastructure by itself. Publishing and provisioning
   belong to a provider package, and applying a plan always needs `--yes`.
-* It never replaces the build. `check` reads what the build declares and what
+- It never replaces the build. `check` reads what the build declares and what
   it produced; Vite, Nx and the application scripts stay in charge.
 
 ## Where to go next
 
-* [Manifest reference](./manifest.md) — every field, every default.
-* [Diagnostics](./diagnostics.md) — every code, its cause and its fix.
-* [Providers](./providers.md) — the capability matrix and the limits of each
+- [Manifest reference](./manifest.md) — every field, every default.
+- [Diagnostics](./diagnostics.md) — every code, its cause and its fix.
+- [Providers](./providers.md) — the capability matrix and the limits of each
   entry.
-* [Alchemy provider](./alchemy.md) — credentials, state, stages, outputs and
+- [Alchemy provider](./alchemy.md) — credentials, state, stages, outputs and
   rollback for the infrastructure provider.

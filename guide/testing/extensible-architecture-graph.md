@@ -1,6 +1,5 @@
 ---
-url: >-
-  https://craft-ts.github.io/craft/guide/testing/extensible-architecture-graph.md
+url: https://craft-ts.github.io/craft/guide/testing/extensible-architecture-graph.md
 ---
 # Extensible architecture graph
 
@@ -12,8 +11,8 @@ dependency-injection system.
 
 The extension has two separate parts:
 
-* a type extension, which gives rules typed `kind` details;
-* a runtime collector, which reads the TypeScript program and contributes
+- a type extension, which gives rules typed `kind` details;
+- a runtime collector, which reads the TypeScript program and contributes
   nodes, relations, diagnostics, and source proofs.
 
 Importing the types never activates a collector.

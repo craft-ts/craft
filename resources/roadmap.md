@@ -35,7 +35,7 @@ Another area I am actively exploring is how to create a design system that is
 as type-safe as possible. The aim is to make design-system APIs expressive and
 safe to use while preserving a good development experience.
 
-* Improve the type-level techniques used by the library so that they are more
+- Improve the type-level techniques used by the library so that they are more
   efficient. In particular, I want to reduce type compilation time and make
   the feedback loop faster for developers.
 

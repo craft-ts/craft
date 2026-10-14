@@ -137,6 +137,7 @@ const { users } = query(
 );
 ```
 
+
 ## Pitfalls
 
 **Optimistic without a fallback.** `optimisticPatch` / `optimisticUpdate` show a
@@ -152,7 +153,7 @@ handle that case inside a `filter`.
 
 ## See Also
 
-* [query](/guide/state/server-state) — the read side
-* [Mutations](/guide/state/mutations) — the write side
-* [Insertions](/guide/concepts/insertions) — composing several reactions
-* [Architecture rules](/guide/testing/architecture) — `assertMutationHasReactOn` flags a mutation no query reacts to
+- [query](/guide/state/server-state) — the read side
+- [Mutations](/guide/state/mutations) — the write side
+- [Insertions](/guide/concepts/insertions) — composing several reactions
+- [Architecture rules](/guide/testing/architecture) — `assertMutationHasReactOn` flags a mutation no query reacts to

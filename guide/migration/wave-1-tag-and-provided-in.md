@@ -103,9 +103,9 @@ CraftTS's, and the codemod leaves them alone by construction.
 
 None of this costs anything. Measured across the rename:
 
-* discrimination: **6.8 ns/op** on both sides;
-* test-suite wall time: **+0.02%**;
-* type-check instantiations on the published build: **−0.00%**.
+- discrimination: **6.8 ns/op** on both sides;
+- test-suite wall time: **+0.02%**;
+- type-check instantiations on the published build: **−0.00%**.
 
 `@craft-ts/effect` is marginally *cheaper* afterwards, because mapping an
 Effect error onto a craft exception stopped being a transposition and became

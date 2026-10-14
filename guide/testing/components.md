@@ -77,6 +77,7 @@ DOM element type, while `class`, `data-*`, and `aria-*` criteria are matched
 against the rendered element. Prefer `data-*` and `aria-*`: a class comes from a
 sheet and is a list of atoms, not a name a test should depend on.
 
+
 ```ts
 import { button, craftComponent, div } from '@craft-ts/component';
 import { setupCraftComponentTemplateTest } from '@craft-ts/component/testing';
@@ -107,6 +108,7 @@ it('finds the save button', async () => {
   test.destroy();
 });
 ```
+
 
 The notation `tag('name', props, children)` is generic: `tag` means the HTML
 helper for the element you want. There is no separate `tag` function. For a
@@ -157,6 +159,8 @@ const brandedStatusElement = test.locator('span', {
 expect(brandedStatusElement.textContent).toBe('ready');
 test.destroy();
 ```
+
+
 
 This template has no `ifNode`, `forNode`, or `deferNode`, so
 `brandedStatusElement` is an `HTMLSpanElement`, never `undefined`; optional
@@ -283,6 +287,7 @@ type _DisabledBindingIsCorrect = Expect<
 >;
 ```
 
+
 TypeScript performs this check. It fails if the branded `counter.disabled` read
 is no longer exposed by the rendered template. It does not replace the
 rendering test; it verifies the template contract without a DOM.
@@ -316,11 +321,11 @@ never entries in `register`.
 
 Resolution follows the same rules as service tests:
 
-* an object is a mock and is available in `mocks`;
-* `'real'` keeps the real service;
-* `'notReached'` documents a branch removed by a parent mock;
-* `'provided'` requests the value provided by the parent injector;
-* a `provideX(...)` provider explicitly configures a service.
+- an object is a mock and is available in `mocks`;
+- `'real'` keeps the real service;
+- `'notReached'` documents a branch removed by a parent mock;
+- `'provided'` requests the value provided by the parent injector;
+- a `provideX(...)` provider explicitly configures a service.
 
 Providers declared in `meta.providers` are available in the component scope.
 Upstream providers go in `providers`:
@@ -369,7 +374,7 @@ you think, that a list item renders its label. That is its own page:
 
 ## See Also
 
-* [Testing services](/guide/testing/services)
-* [Browser boundaries](/guide/testing/browser-boundaries)
-* [Architecture rules](/guide/testing/architecture) — constraints on the whole app graph
-* [Routing setup](/guide/routing/setup) — where `GenDeps_*` comes from
+- [Testing services](/guide/testing/services)
+- [Browser boundaries](/guide/testing/browser-boundaries)
+- [Architecture rules](/guide/testing/architecture) — constraints on the whole app graph
+- [Routing setup](/guide/routing/setup) — where `GenDeps_*` comes from

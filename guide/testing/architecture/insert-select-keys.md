@@ -1,6 +1,5 @@
 ---
-url: >-
-  https://craft-ts.github.io/craft/guide/testing/architecture/insert-select-keys.md
+url: https://craft-ts.github.io/craft/guide/testing/architecture/insert-select-keys.md
 ---
 # Unique `insertSelect` keys per host
 
@@ -51,5 +50,5 @@ they are really one public slice.
 
 ## See also
 
-* [Selecting](/guide/state/select)
-* [Typed insertion pipes](/guide/concepts/insertion-pipes)
+- [Selecting](/guide/state/select)
+- [Typed insertion pipes](/guide/concepts/insertion-pipes)

@@ -45,14 +45,14 @@ craftStyle({ reset: false });
 Also on by default (`base: false` to opt out). It states once, for the whole
 document, what components used to have to remember one by one:
 
-* `color-scheme` follows the `scheme` axis, so scrollbars and form controls
+- `color-scheme` follows the `scheme` axis, so scrollbars and form controls
   turn dark with the page;
-* every `:focus-visible` gets a visible ring;
-* scrolling is smooth only for users who did not ask for less motion, and
+- every `:focus-visible` gets a visible ring;
+- scrolling is smooth only for users who did not ask for less motion, and
   under `prefers-reduced-motion` **every** animation and transition collapses
   to an instant. The guard is `!important` in the earliest layer, the one
   place that beats every later layer, so no component can forget it;
-* `accent-color` and `::selection` come from the theme.
+- `accent-color` and `::selection` come from the theme.
 
 The colours and sizes are typed theme variables, exported as `craftBase`:
 `accent`, `focusRing`, `focusWidth`, `focusOffset`, `selectionBg`,
@@ -119,13 +119,13 @@ export const bodyFont = defineFont('body', {
 
 `defineFont` replaces the three things a `styles.css` used to carry:
 
-* **the `@import url(fonts.googleapis…)`** — the plugin injects a `preconnect`
+- **the `@import url(fonts.googleapis…)`** — the plugin injects a `preconnect`
   to both Google origins, then the stylesheet preloaded and applied, into
   `<head>` of `index.html`. An `@import` inside the CSS could only be
   discovered once the CSS itself had downloaded;
-* **the `@font-face` blocks** — `localFont({ files: [...] })` emits them, and
+- **the `@font-face` blocks** — `localFont({ files: [...] })` emits them, and
   preloads the `.woff2` files;
-* **the `* { font-family: … !important }`** — the returned token is a family
+- **the `* { font-family: … !important }`** — the returned token is a family
   stack, used once with `fontFamily(bodyFont)` on `body` and inherited from
   there. Form controls inherit it through the reset.
 

@@ -23,9 +23,9 @@ import type { CraftProgramOperator, CraftRetryPolicy } from '@craft-ts/core';
 Every `craftGen` invocation is a **program**: a `yield*`-composable generator that carries three
 typed channels:
 
-* **`A`** — the success value returned through `yield*`
-* **`E`** — the union of `craftException` codes it may short-circuit with (type-level only)
-* **dependencies** — the craft service yields relayed to the surrounding driver
+- **`A`** — the success value returned through `yield*`
+- **`E`** — the union of `craftException` codes it may short-circuit with (type-level only)
+- **dependencies** — the craft service yields relayed to the surrounding driver
 
 Invocations now expose `.pipe(...)`, which applies **program operators** left-to-right:
 
@@ -50,10 +50,10 @@ right answer was local ("fall back to an empty report", "retry the flaky call").
 
 With `.pipe`:
 
-* `catchTag` recovers a code **where the fallback is known** — the code leaves `E`, so the route
+- `catchTag` recovers a code **where the fallback is known** — the code leaves `E`, so the route
   no longer requires a handler for it
-* `retry` re-executes the whole upstream chain on failure
-* everything stays typed: `E` shrinks/grows through each operator, and route exhaustiveness keeps
+- `retry` re-executes the whole upstream chain on failure
+- everything stays typed: `E` shrinks/grows through each operator, and route exhaustiveness keeps
   checking the **remaining** codes
 
 ## `catchTag(code, handler)`
@@ -84,9 +84,9 @@ resolve: craftResolve(function* () {
 
 Type effects:
 
-* `E' = E \ code` plus whatever the handler itself may produce
-* `A' = A | handler success value`
-* the handler receives the caught exception (`code` + `payload`)
+- `E' = E \ code` plus whatever the handler itself may produce
+- `A' = A | handler success value`
+- the handler receives the caught exception (`code` + `payload`)
 
 A handler can also **re-enter** the exception channel by returning a `craftException` (the new
 code is added to `E`):
@@ -183,11 +183,11 @@ export type CraftRetryPolicy = {
 
 Notes:
 
-* `E` and `A` are unchanged — retry may exhaust and rethrow the same exception
-* a non-zero `delayMs` suspends between attempts (an internal await-request), so it needs an
+- `E` and `A` are unchanged — retry may exhaust and rethrow the same exception
+- a non-zero `delayMs` suspends between attempts (an internal await-request), so it needs an
   async driver: a route chain or a primitive loader. In a purely synchronous context the usual
   await-not-supported behaviour of that driver applies
-* only re-invocable programs can be retried (a `craftGen` invocation or a `.pipe` stage); passing
+- only re-invocable programs can be retried (a `craftGen` invocation or a `.pipe` stage); passing
   a hand-built bare generator raises an explicit error on the first needed retry
 
 ## Programs inside `query` / `mutation` / `asyncProcess` loaders
@@ -244,24 +244,24 @@ const timed =
 
 Guidelines:
 
-* always consume the received program with `yield*` (a generator that is never driven does
+- always consume the received program with `yield*` (a generator that is never driven does
   nothing)
-* relay foreign yields untouched so dependency tracking keeps working
-* let `CraftGenShortCircuit` propagate unless handling exceptions is the operator's purpose
+- relay foreign yields untouched so dependency tracking keeps working
+- let `CraftGenShortCircuit` propagate unless handling exceptions is the operator's purpose
 
 ## How it behaves
 
-* Operators are plain generator wrappers: no driver knows about them, and `E` travels only at the
+- Operators are plain generator wrappers: no driver knows about them, and `E` travels only at the
   type level (the runtime signal is a thrown `CraftGenShortCircuit`)
-* `.pipe` folds left-to-right; each stage is itself a program, so operators after it can replay it
+- `.pipe` folds left-to-right; each stage is itself a program, so operators after it can replay it
   (that is how `retry` after `catchTag` re-runs the recovery too)
-* `catchTag.exhaustive` rethrows a code outside its typed map (runtime safety net for exceptions
+- `catchTag.exhaustive` rethrows a code outside its typed map (runtime safety net for exceptions
   that escaped the types)
 
 ## See Also
 
-* [`craftGen`](/guide/concepts/generators) — building programs
-* [`Route Guards`](/guide/routing/guards) — where guard programs run
-* [`Exception Handling`](/guide/concepts/exceptions) — the route-boundary
+- [`craftGen`](/guide/concepts/generators) — building programs
+- [`Route Guards`](/guide/routing/guards) — where guard programs run
+- [`Exception Handling`](/guide/concepts/exceptions) — the route-boundary
   counterpart (`handleExceptions`)
-* [`query`](/guide/state/server-state) — loaders as programs
+- [`query`](/guide/state/server-state) — loaders as programs

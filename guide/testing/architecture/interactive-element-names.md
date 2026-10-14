@@ -1,6 +1,5 @@
 ---
-url: >-
-  https://craft-ts.github.io/craft/guide/testing/architecture/interactive-element-names.md
+url: https://craft-ts.github.io/craft/guide/testing/architecture/interactive-element-names.md
 ---
 # Named interactive elements
 
@@ -47,6 +46,6 @@ local omissions; the architecture rule catches duplicates across components.
 
 ## See also
 
-* [Components](/guide/components/)
-* [Live page MCP](/guide/ai/dev-page)
-* [Testing components](/guide/testing/components)
+- [Components](/guide/components/)
+- [Live page MCP](/guide/ai/dev-page)
+- [Testing components](/guide/testing/components)

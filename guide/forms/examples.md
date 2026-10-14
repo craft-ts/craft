@@ -142,6 +142,6 @@ const { userFormState } = state(
 
 ## See Also
 
-* [Forms overview](/guide/forms/)
-* [Validators](/guide/forms/validation)
-* [Nested forms](/guide/forms/nested)
+- [Forms overview](/guide/forms/)
+- [Validators](/guide/forms/validation)
+- [Nested forms](/guide/forms/nested)

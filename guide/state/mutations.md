@@ -195,6 +195,6 @@ and `patch` for wrappers, WebMCP tools, and other advanced patterns. See
 
 ## See Also
 
-* [query](/guide/state/server-state) — the read side
-* [Reacting to mutations](/guide/state/react-on-mutation)
-* [Submitting a form](/guide/forms/submit) — wiring a form to a mutation
+- [query](/guide/state/server-state) — the read side
+- [Reacting to mutations](/guide/state/react-on-mutation)
+- [Submitting a form](/guide/forms/submit) — wiring a form to a mutation

@@ -61,9 +61,9 @@ nobody will".
 Remove the provider and the typecheck fails:
 
 > `ERROR_unmet_context_requirement: "'scrollPort.block' is required by this
-> subtree and nothing above it provides one. declare it on the layout component
-> that owns the scrollable area. An overflow on the direct parent would create a
-> second scroll port, and the sticky element would stick to the wrong container."`
+subtree and nothing above it provides one. declare it on the layout component
+that owns the scrollable area. An overflow on the direct parent would create a
+second scroll port, and the sticky element would stick to the wrong container."`
 
 What is missing, where to put it, and what the obvious wrong fix would do.
 
@@ -72,7 +72,7 @@ What is missing, where to put it, and what the obvious wrong fix would do.
 The requirement is carried by the type of the render tree. It crosses a
 component boundary only where the tree is typed all the way through. One
 component in the path that hands back a loosely typed subtree, and the demand
-stops travelling — silently, because nothing is wrong with *that* component.
+stops travelling — silently, because nothing is wrong with _that_ component.
 
 So level 3 is not something you get for the components you migrated. You get it
 for a route once the route is migrated, and not before. The dependency graph

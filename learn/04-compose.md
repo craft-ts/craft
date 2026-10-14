@@ -142,6 +142,8 @@ guards yield, route providers yield.
 guards and route helpers. See [Generators](/guide/concepts/generators).
 :::
 
+
 [← 3. Move logic out of the component](/learn/03-service)
 
 [5. Load server data →](/learn/05-load-data)
+

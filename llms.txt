@@ -4,228 +4,228 @@
 
 After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resources/ai-agents. In local development, the open development tab is driven by the function-registry MCP tool `page` — see /guide/ai/dev-page. yield* every Craft reader. Scaffold architecture/ at bootstrap and run it during a feature; do not add an architecture rule for the feature. Keep authored application code within the Craft primitives and service model.
 
-## Table of Contents
+## Learn
 
-### Learn
+- [Learn @craft-ts](https://craft-ts.github.io/craft/learn.md): This is the guided path.
+- [1. Your first state](https://craft-ts.github.io/craft/learn/01-first-state.md): Goal: get a reactive value on screen, and meet the two building blocks you will use in every step — craftComponent and a primitive.
+- [2. Derive instead of duplicate](https://craft-ts.github.io/craft/learn/02-derive.md): Goal: attach methods and derived values to your state, instead of scattering them across the component.
+- [3. Move logic out of the component](https://craft-ts.github.io/craft/learn/03-service.md): Goal: move component-owned task state behind a named service that the component and its children can consume.
+- [4. Compose services](https://craft-ts.github.io/craft/learn/04-compose.md): Goal: understand yield* — the one idea the whole library is built on.
+- [5. Load server data](https://craft-ts.github.io/craft/learn/05-load-data.md): Goal: replace the hand-rolled load() from step 4 with query, and get loading, error and exception state for free.
+- [6. Write server data](https://craft-ts.github.io/craft/learn/06-mutate-data.md): Goal: create a task on the server, and make the list update before the request even comes back.
+- [7. Put state in the URL](https://craft-ts.github.io/craft/learn/07-url-state.md): Goal: make the "show done tasks" filter and the page number survive a refresh and a copy-pasted link — without syncing anything by hand.
+- [8. Build a form](https://craft-ts.github.io/craft/learn/08-forms.md): Goal: a "new task" form with validation and a typed submit — derived from state, not declared next to it.
+- [9. Wire up routing](https://craft-ts.github.io/craft/learn/09-routing.md): Goal: put the tasks page behind a route, and make a missing provider a compile error instead of a blank screen.
+- [10. Test what you wrote](https://craft-ts.github.io/craft/learn/10-testing.md): Goal: test TaskList and the Tasks component without guessing what to mock — the dependency graph tells you.
+- [Where to go next](https://craft-ts.github.io/craft/learn/next.md): You have the whole mental model: declare with a name, yield what you do not own, derive the rest.
 
-- [Learn @craft-ts](https://craft-ts.github.io/craft/learn.md)
-- [1. Your first state](https://craft-ts.github.io/craft/learn/01-first-state.md)
-- [2. Derive instead of duplicate](https://craft-ts.github.io/craft/learn/02-derive.md)
-- [3. Move logic out of the component](https://craft-ts.github.io/craft/learn/03-service.md)
-- [4. Compose services](https://craft-ts.github.io/craft/learn/04-compose.md)
-- [5. Load server data](https://craft-ts.github.io/craft/learn/05-load-data.md)
-- [6. Write server data](https://craft-ts.github.io/craft/learn/06-mutate-data.md)
-- [7. Put state in the URL](https://craft-ts.github.io/craft/learn/07-url-state.md)
-- [8. Build a form](https://craft-ts.github.io/craft/learn/08-forms.md)
-- [9. Wire up routing](https://craft-ts.github.io/craft/learn/09-routing.md)
-- [10. Test what you wrote](https://craft-ts.github.io/craft/learn/10-testing.md)
-- [Where to go next](https://craft-ts.github.io/craft/learn/next.md)
+## Learn with Effect
 
-### Learn with Effect
+- [Effect users: start here](https://craft-ts.github.io/craft/learn-effect/00-start-here.md): This page is for teams that already use Effect and are evaluating CraftTS for the frontend.
+- [Learn CraftTS with Effect](https://craft-ts.github.io/craft/learn-effect.md): Effect This is the guided path for teams that already use Effect and want CraftTS to own the UI, reactivity and application graph.
+- [1. Start with a Craft component](https://craft-ts.github.io/craft/learn-effect/01-first-component.md): Goal: render a reactive task list before introducing Effect.
+- [2. Derive UI state](https://craft-ts.github.io/craft/learn-effect/02-derive.md): Goal: calculate UI state from the source of truth, and understand the yield* rule that Craft and Effect share.
+- [3. Put the domain in Effect](https://craft-ts.github.io/craft/learn-effect/03-effect-domain.md): Goal: define typed business failures and services without making the Craft component know how they are provided.
+- [4. Load data with Effect](https://craft-ts.github.io/craft/learn-effect/04-load-data.md): Goal: expose an Effect<A, E, R> as a Craft query.
+- [5. Write data with Effect](https://craft-ts.github.io/craft/learn-effect/05-write-data.md): Goal: model writes and explicit processes as Effects while retaining Craft's mutation lifecycle.
+- [6. Provide Layers and route the app](https://craft-ts.github.io/craft/learn-effect/06-layers-routing.md): Goal: make Effect requirements explicit at the same scopes as your Craft injectors.
+- [7. Build forms and validate boundaries](https://craft-ts.github.io/craft/learn-effect/07-forms-validation.md): Goal: use Craft forms for interaction and Effect Schema for data that crosses a boundary.
+- [8. Test the graph](https://craft-ts.github.io/craft/learn-effect/08-testing.md): Goal: test Effect programs, their Layers and the Craft boundary without mocking the whole application.
+- [9. Call server functions — proof of concept](https://craft-ts.github.io/craft/learn-effect/09-server-functions.md): Not a final contract The server-function integration is currently a proof of concept.
 
-- [Effect users: start here](https://craft-ts.github.io/craft/learn-effect/00-start-here.md)
-- [Learn CraftTS with Effect](https://craft-ts.github.io/craft/learn-effect.md)
-- [1. Start with a Craft component](https://craft-ts.github.io/craft/learn-effect/01-first-component.md)
-- [2. Derive UI state](https://craft-ts.github.io/craft/learn-effect/02-derive.md)
-- [3. Put the domain in Effect](https://craft-ts.github.io/craft/learn-effect/03-effect-domain.md)
-- [4. Load data with Effect](https://craft-ts.github.io/craft/learn-effect/04-load-data.md)
-- [5. Write data with Effect](https://craft-ts.github.io/craft/learn-effect/05-write-data.md)
-- [6. Provide Layers and route the app](https://craft-ts.github.io/craft/learn-effect/06-layers-routing.md)
-- [7. Build forms and validate boundaries](https://craft-ts.github.io/craft/learn-effect/07-forms-validation.md)
-- [8. Test the graph](https://craft-ts.github.io/craft/learn-effect/08-testing.md)
-- [9. Call server functions — proof of concept](https://craft-ts.github.io/craft/learn-effect/09-server-functions.md)
+## AI agents
 
-### AI agents
+- [AI agents](https://craft-ts.github.io/craft/guide/ai.md): This section gathers everything that gives an AI agent access to CraftTS knowledge, application state, runtime behavior, or debugging context.
+- [Coding agents](https://craft-ts.github.io/craft/resources/ai-agents.md): CraftTS has a deliberate vocabulary.
+- [MCP tools](https://craft-ts.github.io/craft/guide/ai/mcp-tools.md): CraftTS exposes separate MCP servers for documentation, a running application, local logs, and the static dependency graph.
+- [Live page MCP](https://craft-ts.github.io/craft/guide/ai/dev-page.md): The running development tab publishes its named controls.
+- [Send application context to AI](https://craft-ts.github.io/craft/guide/ai/send-context-webhook.md): provideSendContextToAi adds a developer-oriented context inspector to a Craft application.
 
-- [AI agents](https://craft-ts.github.io/craft/guide/ai.md)
-- [Coding agents](https://craft-ts.github.io/craft/resources/ai-agents.md): Point Cursor, Claude, Copilot, and other coding agents at CraftTS docs, MCP tools, and Agent Skills after you import @craft-ts/core.
-- [MCP tools](https://craft-ts.github.io/craft/guide/ai/mcp-tools.md)
-- [Live page MCP](https://craft-ts.github.io/craft/guide/ai/dev-page.md)
-- [Send application context to AI](https://craft-ts.github.io/craft/guide/ai/send-context-webhook.md)
+## Overview
 
-### Core concepts
+- [Guide](https://craft-ts.github.io/craft/guide.md): The guide is organised by what you are trying to do.
+- [Create a CraftTS project](https://craft-ts.github.io/craft/guide/create-project.md): Use craft create to generate a framework-independent CraftTS application with routing, a typed API example, linting, tests, and the architecture contract already wired up.
 
-- [The mental model](https://craft-ts.github.io/craft/guide/concepts/mental-model.md)
-- [Which primitive should I use?](https://craft-ts.github.io/craft/guide/concepts/choose-primitive.md)
-- [Anatomy of a primitive](https://craft-ts.github.io/craft/guide/concepts/primitive-anatomy.md)
-- [Generators and `yield*`](https://craft-ts.github.io/craft/guide/concepts/generators.md)
-- [Insertions](https://craft-ts.github.io/craft/guide/concepts/insertions.md)
-- [Typed insertion pipes](https://craft-ts.github.io/craft/guide/concepts/insertion-pipes.md)
-- [Exceptions as values](https://craft-ts.github.io/craft/guide/concepts/exceptions.md)
+## Core concepts
 
-### Managing state
+- [The mental model](https://craft-ts.github.io/craft/guide/concepts/mental-model.md): Three words describe everything @craft-ts does: declare, yield, derive.
+- [Which primitive should I use?](https://craft-ts.github.io/craft/guide/concepts/choose-primitive.md): There are five primitives.
+- [Anatomy of a primitive](https://craft-ts.github.io/craft/guide/concepts/primitive-anatomy.md): The five primitives — state, query, mutation, queryParams, asyncProcess — share one shape.
+- [Generators and yield*](https://craft-ts.github.io/craft/guide/concepts/generators.md): yield* is the one mechanism the whole library rests on.
+- [Insertions](https://craft-ts.github.io/craft/guide/concepts/insertions.md): An insertion is a function that receives a primitive's internals and returns what to expose on it.
+- [Typed insertion pipes](https://craft-ts.github.io/craft/guide/concepts/insertion-pipes.md): Each primitive accepts one insertion directly.
+- [Exceptions as values](https://craft-ts.github.io/craft/guide/concepts/exceptions.md): A declared failure is a value you return, not something you throw.
 
-- [Local state](https://craft-ts.github.io/craft/guide/state/local-state.md)
-- [State machines](https://craft-ts.github.io/craft/guide/state/state-machines.md)
-- [query](https://craft-ts.github.io/craft/guide/state/server-state.md)
-- [Mutations](https://craft-ts.github.io/craft/guide/state/mutations.md)
-- [queryParams](https://craft-ts.github.io/craft/guide/state/url-state.md)
-- [asyncProcess](https://craft-ts.github.io/craft/guide/state/async-process.md)
-- [Selecting a sub-state](https://craft-ts.github.io/craft/guide/state/select.md)
-- [Reacting to mutations](https://craft-ts.github.io/craft/guide/state/react-on-mutation.md)
-- [Collections](https://craft-ts.github.io/craft/guide/state/collections.md)
-- [Collection utilities](https://craft-ts.github.io/craft/guide/state/collections-utils.md)
-- [Persistence](https://craft-ts.github.io/craft/guide/state/persistence.md)
-- [GlobalPersisterHandler](https://craft-ts.github.io/craft/guide/state/persistence-handler.md)
-- [Pagination placeholders](https://craft-ts.github.io/craft/guide/state/pagination-placeholder.md)
-- [Schema validation](https://craft-ts.github.io/craft/guide/state/schema-validation.md)
+## Managing state
 
-### Recommended approaches
+- [Local state](https://craft-ts.github.io/craft/guide/state/local-state.md): state holds a value you own, in memory, as a signal — with its methods and derived values attached to it rather than scattered around it.
+- [State machines](https://craft-ts.github.io/craft/guide/state/state-machines.md): craftStateMachine models a finite workflow as a named, typed, reactive primitive.
+- [query](https://craft-ts.github.io/craft/guide/state/server-state.md): query fetches data and owns its whole lifecycle — loading, resolved, exception — re-running itself when its inputs change.
+- [Mutations](https://craft-ts.github.io/craft/guide/state/mutations.md): mutation is query's counterpart for writes: same shape, triggered explicitly, owning its own loading and failure state.
+- [queryParams](https://craft-ts.github.io/craft/guide/state/url-state.md): queryParams is a state whose home is the URL's query string.
+- [asyncProcess](https://craft-ts.github.io/craft/guide/state/async-process.md): asyncProcess runs an async operation and tracks its status, for work that is neither a server read nor a server write.
+- [Selecting a sub-state](https://craft-ts.github.io/craft/guide/state/select.md): insertSelect targets a nested part of a state and attaches insertions to that part, so the logic lives next to the data it operates on rather than at the top of a deeply nested object.
+- [Reacting to mutations](https://craft-ts.github.io/craft/guide/state/react-on-mutation.md): insertReactOnMutation declares the link between a write and the reads it affects: patch the query optimistically, reload it, or both — without calling refetch() from the mutation's call site.
+- [Collections](https://craft-ts.github.io/craft/guide/state/collections.md): insertEntities generates typed collection methods — add, remove, update, upsert — directly on a primitive holding an array of entities, including arrays nested inside an object.
+- [Collection utilities](https://craft-ts.github.io/craft/guide/state/collections-utils.md): The immutable array helpers behind insertEntities — addOne, updateMany, upsertOne and friends.
+- [Persistence](https://craft-ts.github.io/craft/guide/state/persistence.md): insertStoragePersister saves a primitive's value through the configured storage backend and restores it on the next visit — with expiry, background revalidation and a validation hook, so stale or c…
+- [GlobalPersisterHandler](https://craft-ts.github.io/craft/guide/state/persistence-handler.md): Clears everything @craft-ts has persisted through the active StoragePersister, in one call.
+- [Pagination placeholders](https://craft-ts.github.io/craft/guide/state/pagination-placeholder.md): insertPaginationPlaceholderData keeps the previous page on screen while the next one loads, so paging through a list never flashes an empty state.
+- [Schema validation](https://craft-ts.github.io/craft/guide/state/schema-validation.md): Primitives accept any schema implementing StandardSchemaV1, so Zod, Valibot, ArkType, Effect Schema or a hand-written schema all work — and none of them becomes a dependency of @craft-ts.
 
-- [Inject at the point of use](https://craft-ts.github.io/craft/guide/patterns/inject-at-point-of-use.md)
+## Recommended approaches
 
-### Structuring the app
+- [Inject at the point of use](https://craft-ts.github.io/craft/guide/patterns/inject-at-point-of-use.md): This page introduces the first recommended approach for structuring a Craft application.
 
-- [craftService](https://craft-ts.github.io/craft/guide/app/craft-service.md)
-- [Service scopes](https://craft-ts.github.io/craft/guide/app/service-scopes.md)
-- [Shaping a service's public API](https://craft-ts.github.io/craft/guide/app/expose-api.md)
-- [Abstract services](https://craft-ts.github.io/craft/guide/app/abstract-services.md)
-- [App start](https://craft-ts.github.io/craft/guide/app/app-start.md)
-- [Lazy services](https://craft-ts.github.io/craft/guide/app/lazy-services.md)
-- [Public and protected server functions](https://craft-ts.github.io/craft/guide/app/server-functions.md)
-- [craftRegisterFor](https://craft-ts.github.io/craft/guide/app/register.md)
-- [Target wrapper](https://craft-ts.github.io/craft/guide/app/target-wrapper.md)
+## Structuring the app
 
-### Routing & type-safe DI
+- [craftService](https://craft-ts.github.io/craft/guide/app/craft-service.md): A service is a factory with a name and a scope — not a class.
+- [Service scopes](https://craft-ts.github.io/craft/guide/app/service-scopes.md): scope decides who owns a craftService instance and how its factory receives configuration.
+- [Shaping a service's public API](https://craft-ts.github.io/craft/guide/app/expose-api.md): A service exposes every named primitive it yields (see craftService); what should stay internal is wrapped in craftPrivate(...).
+- [Abstract services](https://craft-ts.github.io/craft/guide/app/abstract-services.md): An abstract service declares a contract with no implementation, and forces a concrete one to be supplied downstream.
+- [App start](https://craft-ts.github.io/craft/guide/app/app-start.md): onAppStart declares work that must run — and finish — before the application renders, owned by the service that needs it rather than by a global bootstrap file.
+- [Lazy services](https://craft-ts.github.io/craft/guide/app/lazy-services.md): craftLazy(load) code-splits a service, the way loadComponent code-splits a component — and reuses the same retry and cache-busting engine.
+- [Public and protected server functions](https://craft-ts.github.io/craft/guide/app/server-functions.md): serverFunction is a transport contract.
+- [craftRegisterFor](https://craft-ts.github.io/craft/guide/app/register.md): craftRegisterFor exposes, within a Craft injection scope, the services, components and directives that are currently alive in it.
+- [Target wrapper](https://craft-ts.github.io/craft/guide/app/target-wrapper.md): provideCraftTargetWrapper wraps the registration of every Craft component or directive created in the current injector, giving you a hook at the moment each one comes to life.
 
-- [Routing setup](https://craft-ts.github.io/craft/guide/routing/setup.md)
-- [CLI automation](https://craft-ts.github.io/craft/guide/routing/automation.md)
-- [ESLint rules](https://craft-ts.github.io/craft/guide/routing/eslint-rules.md)
-- [Route providers](https://craft-ts.github.io/craft/guide/routing/route-providers.md)
-- [Route guards](https://craft-ts.github.io/craft/guide/routing/guards.md)
-- [Route exception handling](https://craft-ts.github.io/craft/guide/routing/exception-handling.md)
-- [Non-blocking navigation](https://craft-ts.github.io/craft/guide/routing/pending-ui.md)
-- [Global error component](https://craft-ts.github.io/craft/guide/routing/global-error-component.md)
-- [Route load errors](https://craft-ts.github.io/craft/guide/routing/route-load-errors.md)
-- [Scaling routes](https://craft-ts.github.io/craft/guide/routing/scaling.md)
+## Routing & type-safe DI
 
-### Components & templates
+- [Routing setup](https://craft-ts.github.io/craft/guide/routing/setup.md): Six steps turn plain route definitions into routes the compiler checks: a missing provider, a misspelled input or a route pointing at nothing becomes a build error instead of a blank screen.
+- [CLI automation](https://craft-ts.github.io/craft/guide/routing/automation.md): Writing a typed route by hand means four pieces that must agree: the route, its componentDeps, the withRetry wrapper and the DI check.
+- [ESLint rules](https://craft-ts.github.io/craft/guide/routing/eslint-rules.md): The rule set is not decoration: several checks in this documentation only work because a rule generated or maintained the code they read.
+- [Route providers](https://craft-ts.github.io/craft/guide/routing/route-providers.md): A route can provide services built from its own URL — the :userId in the path, its data, its query params, the value its guard resolved — with full type-safe dependency tracking.
+- [Route guards](https://craft-ts.github.io/craft/guide/routing/guards.md): A guard is a bare function* on canActivate / canMatch.
+- [Route exception handling](https://craft-ts.github.io/craft/guide/routing/exception-handling.md): When a guard, a matcher or a resolver raises a declared exception, this page is where you say what happens next: redirect, render a dedicated component, stay put, or carry on.
+- [Non-blocking navigation](https://craft-ts.github.io/craft/guide/routing/pending-ui.md): By default, a slow guard or resolver can leave the current screen unchanged with no feedback.
+- [Global error component](https://craft-ts.github.io/craft/guide/routing/global-error-component.md): One component, declared once, for every failure a route decided not to handle locally.
+- [Route load errors](https://craft-ts.github.io/craft/guide/routing/route-load-errors.md): This is the failure mode nothing else covers: the route is valid, the guards passed, and the JavaScript chunk itself never arrives — a stale hash after a deploy, a flaky network, an offline user.
+- [Scaling routes](https://craft-ts.github.io/craft/guide/routing/scaling.md): RouteCheckedDI validates one routed component at a time.
 
-- [Components](https://craft-ts.github.io/craft/guide/components.md)
-- [Activating `@craft-ts/style`](https://craft-ts.github.io/craft/guide/style/setup.md)
-- [Typed styles](https://craft-ts.github.io/craft/guide/style.md)
-- [Defining your design system](https://craft-ts.github.io/craft/guide/style/define.md)
-- [Tokens and typed variables](https://craft-ts.github.io/craft/guide/style/tokens.md)
-- [Global foundation and fonts](https://craft-ts.github.io/craft/guide/style/foundation.md)
-- [Pseudo-elements and animations](https://craft-ts.github.io/craft/guide/style/pseudo-elements.md)
-- [Axes and the visual matrix](https://craft-ts.github.io/craft/guide/style/variants.md)
-- [Context obligations](https://craft-ts.github.io/craft/guide/style/obligations.md)
-- [Testing what you built](https://craft-ts.github.io/craft/guide/style/testing.md)
-- [Text contrast, proven without a browser](https://craft-ts.github.io/craft/guide/style/contrast.md)
-- [Attestation: a judgement that survives a refactor](https://craft-ts.github.io/craft/guide/style/attestation.md)
-- [Template obligations](https://craft-ts.github.io/craft/guide/style/template-obligations.md)
-- [Typed CSS variables](https://craft-ts.github.io/craft/guide/components/css-variables.md)
-- [Fine-grained reactivity](https://craft-ts.github.io/craft/guide/components/fine-grained-reactivity.md)
-- [Progressive rendering with `scheduleFor`](https://craft-ts.github.io/craft/guide/components/schedule-for.md)
-- [Directives and `.pipe(...)`](https://craft-ts.github.io/craft/guide/components/directives.md)
-- [settledValue & pendingNode](https://craft-ts.github.io/craft/guide/components/pending-node.md)
-- [Accessibility](https://craft-ts.github.io/craft/guide/components/accessibility.md)
-- [Customizing components and directives](https://craft-ts.github.io/craft/guide/components/customization.md)
-- [Content projection](https://craft-ts.github.io/craft/guide/components/content-projection.md)
-- [Styling a component: the only way](https://craft-ts.github.io/craft/guide/components/styles.md)
-- [Template migrator](https://craft-ts.github.io/craft/guide/components/template-migrator.md)
+## Components & templates
 
-### Forms
+- [Components](https://craft-ts.github.io/craft/guide/components.md): A Craft component is a function, not a class.
+- [Activating @craft-ts/style](https://craft-ts.github.io/craft/guide/style/setup.md): The typed style system is not a runtime library you import and call.
+- [Typed styles](https://craft-ts.github.io/craft/guide/style.md): The only way to style a component This section is @craft-ts/style: typed values, CSS emitted at build time, and a visual matrix you can enumerate.
+- [Defining your design system](https://craft-ts.github.io/craft/guide/style/define.md): The other pages in this section spend bp, scheme, palette, v, space and unit as if they were already in scope.
+- [Tokens and typed variables](https://craft-ts.github.io/craft/guide/style/tokens.md): Level 1.
+- [Global foundation and fonts](https://craft-ts.github.io/craft/guide/style/foundation.md): An app built on @craft-ts/style has no styles.css.
+- [Pseudo-elements and animations](https://craft-ts.github.io/craft/guide/style/pseudo-elements.md): A component sheet can style what used to need a hand-written selector — ::before, ::placeholder, @keyframes, transition — with the same typed vocabulary as the rest of the sheet.
+- [Axes and the visual matrix](https://craft-ts.github.io/craft/guide/style/variants.md): Level 2.
+- [Context obligations](https://craft-ts.github.io/craft/guide/style/obligations.md): Level 3.
+- [Testing what you built](https://craft-ts.github.io/craft/guide/style/testing.md): The matrix says what the states are.
+- [Text contrast, proven without a browser](https://craft-ts.github.io/craft/guide/style/contrast.md): npm run style:check reads your sheets and your templates and answers one question, for every element it can prove holds text, in every state your axes can produce: is this text readable on the back…
+- [Attestation: a judgement that survives a refactor](https://craft-ts.github.io/craft/guide/style/attestation.md): A snapshot suite records what the output was.
+- [Template obligations](https://craft-ts.github.io/craft/guide/style/template-obligations.md): Paused: craft-ts attest no longer generates template obligations.
+- [Typed CSS variables](https://craft-ts.github.io/craft/guide/components/css-variables.md): A component's styling API is a set of typed custom properties declared with cssVars in its sheet.
+- [Fine-grained reactivity](https://craft-ts.github.io/craft/guide/components/fine-grained-reactivity.md): Craft templates are reactive at the binding level.
+- [Progressive rendering with scheduleFor](https://craft-ts.github.io/craft/guide/components/schedule-for.md): forNode renders synchronously by default.
+- [Directives and .pipe(...)](https://craft-ts.github.io/craft/guide/components/directives.md): A Craft directive declares transformations: it can change the service a component takes, and it can wrap the template the component returns — so behaviour and markup travel together, and compose.
+- [settledValue & pendingNode](https://craft-ts.github.io/craft/guide/components/pending-node.md): Reading an async value in a template without ever handling undefined — and being told at compile time when the loading state has nowhere to go.
+- [Accessibility](https://craft-ts.github.io/craft/guide/components/accessibility.md): Craft already enforces exhaustive exceptions, pendingNode, and reactive templates.
+- [Customizing components and directives](https://craft-ts.github.io/craft/guide/components/customization.md): Craft splits customization into three layers, and which one you reach for depends on how far the change should travel: Layer Changes Root-element host The component's own root defaults A *.style.ts…
+- [Content projection](https://craft-ts.github.io/craft/guide/components/content-projection.md): Projection is a rendering context, not a category of component.
+- [Styling a component: the only way](https://craft-ts.github.io/craft/guide/components/styles.md): A component is styled through @craft-ts/style, and through nothing else.
+- [Template migrator](https://craft-ts.github.io/craft/guide/components/template-migrator.md): Paste an HTML snippet or a web component from a UI library's documentation.
 
-- [Forms](https://craft-ts.github.io/craft/guide/forms.md)
-- [Validators](https://craft-ts.github.io/craft/guide/forms/validation.md)
-- [Submitting a form](https://craft-ts.github.io/craft/guide/forms/submit.md)
-- [Nested forms](https://craft-ts.github.io/craft/guide/forms/nested.md)
-- [Form exception handling](https://craft-ts.github.io/craft/guide/forms/exceptions.md)
-- [Complete form examples](https://craft-ts.github.io/craft/guide/forms/examples.md)
+## Forms
 
-### Testing
+- [Forms](https://craft-ts.github.io/craft/guide/forms.md): There is no FormBuilder here.
+- [Validators](https://craft-ts.github.io/craft/guide/forms/validation.md): Validators are declared on a field and produce typed exceptions — so the errors a field can raise are known to the compiler, not discovered at runtime.
+- [Submitting a form](https://craft-ts.github.io/craft/guide/forms/submit.md): insertFormSubmit connects the form to a mutation, so submission gets its loading state, its failure state and — the point — a typed union of the exceptions submission can produce, inferred from tha…
+- [Nested forms](https://craft-ts.github.io/craft/guide/forms/nested.md): insertSelectFormTree targets a branch of the form, and insertSubFormField declares a sub-form inside it — for state that is not flat.
+- [Form exception handling](https://craft-ts.github.io/craft/guide/forms/exceptions.md): Form validation exceptions are typed UI obligations.
+- [Complete form examples](https://craft-ts.github.io/craft/guide/forms/examples.md): Two forms end to end, assembling the pieces from the other pages: a flat creation form with validation and submission, then a nested one.
 
-- [Testing services](https://craft-ts.github.io/craft/guide/testing/services.md)
-- [Testing components](https://craft-ts.github.io/craft/guide/testing/components.md)
-- [Type-level tests](https://craft-ts.github.io/craft/guide/testing/type-level.md)
-- [Browser boundaries](https://craft-ts.github.io/craft/guide/testing/browser-boundaries.md)
-- [Extensible architecture graph](https://craft-ts.github.io/craft/guide/testing/extensible-architecture-graph.md)
-- [Graph insights](https://craft-ts.github.io/craft/guide/testing/graph-insights.md)
-- [Craft graph vs Nx](https://craft-ts.github.io/craft/guide/testing/craft-graph-vs-nx.md)
+## Testing
 
-#### Architecture rules
+- [Testing services](https://craft-ts.github.io/craft/guide/testing/services.md): Most test setups let you forget a dependency and find out at runtime.
+- [Testing components](https://craft-ts.github.io/craft/guide/testing/components.md): A component is one function, so the seam is no longer inside it: it is the service the component takes.
+- [Type-level tests](https://craft-ts.github.io/craft/guide/testing/type-level.md): Some of what a template guarantees is not observable at runtime — it is in the types.
+- [Browser boundaries](https://craft-ts.github.io/craft/guide/testing/browser-boundaries.md): A browser boundary is the line between your logic and the outside world: localStorage, navigator, location, the network.
+- [Extensible architecture graph](https://craft-ts.github.io/craft/guide/testing/extensible-architecture-graph.md): The Craft architecture graph is extensible by TypeScript backend, without making the graph engine import that backend.
+- [Graph insights](https://craft-ts.github.io/craft/guide/testing/graph-insights.md): The dependency graph behind the architecture rules also measures what it models.
+- [Craft graph vs Nx](https://craft-ts.github.io/craft/guide/testing/craft-graph-vs-nx.md): Nx organises the workspace.
 
-- [Architecture rules](https://craft-ts.github.io/guide/testing/architecture.md)
-- [Declarative architecture baseline](https://craft-ts.github.io/guide/testing/architecture/declarative-baseline.md)
-- [Unique `craftUnique` identities](https://craft-ts.github.io/guide/testing/architecture/unique-identities.md)
-- [Unique HTTP endpoint ownership](https://craft-ts.github.io/guide/testing/architecture/http-endpoint-ownership.md)
-- [Pure `craftComputed` derivations](https://craft-ts.github.io/guide/testing/architecture/computed-purity.md)
-- [No dependency cycles](https://craft-ts.github.io/guide/testing/architecture/dependency-cycles.md)
-- [Mutations must have a read-side reaction](https://craft-ts.github.io/guide/testing/architecture/mutation-reactions.md)
-- [Route DI proofs and exception coverage](https://craft-ts.github.io/guide/testing/architecture/route-di-proofs.md)
-- [Route page components each live in their own file](https://craft-ts.github.io/guide/testing/architecture/route-component-files.md)
-- [Folder path boundaries](https://craft-ts.github.io/guide/testing/architecture/path-boundaries.md)
-- [Exclusive branch links](https://craft-ts.github.io/guide/testing/architecture/exclusive-links.md)
-- [Persisted primitives need a unique identity](https://craft-ts.github.io/guide/testing/architecture/persisted-identities.md)
-- [Unique `insertSelect` keys per host](https://craft-ts.github.io/guide/testing/architecture/insert-select-keys.md)
-- [Keep `craftEffect` off the network](https://craft-ts.github.io/guide/testing/architecture/craft-effect-network.md)
-- [Keep `craftEffect` out of imperative synchronisation](https://craft-ts.github.io/guide/testing/architecture/craft-effect-imperative-sync.md)
-- [Named interactive elements](https://craft-ts.github.io/guide/testing/architecture/interactive-element-names.md)
-- [Metric thresholds](https://craft-ts.github.io/guide/testing/architecture/metric-thresholds.md)
-- [Queries and mutations must reach server state](https://craft-ts.github.io/guide/testing/architecture/server-state-loader.md)
-- [Primitive loader requirements](https://craft-ts.github.io/guide/testing/architecture/primitive-loader-requirements.md)
+## Testing — Architecture rules
 
-### Reactivity utilities
+- [Architecture rules](https://craft-ts.github.io/craft/guide/testing/architecture.md): Architecture tests answer one question: Is the dependency shape of the app still allowed?
+- [Declarative architecture baseline](https://craft-ts.github.io/craft/guide/testing/architecture/declarative-baseline.md): assertDeclarativeArchitecture is the first architecture test to add to a Craft app.
+- [Unique craftUnique identities](https://craft-ts.github.io/craft/guide/testing/architecture/unique-identities.md): assertCraftUnique checks that every craftUnique(...) identity is a static, single-use identity in the application graph.
+- [Unique HTTP endpoint ownership](https://craft-ts.github.io/craft/guide/testing/architecture/http-endpoint-ownership.md): assertHttpEndpointUnique treats an HTTP endpoint as the pair of its method and URL.
+- [Pure craftComputed derivations](https://craft-ts.github.io/craft/guide/testing/architecture/computed-purity.md): assertCraftComputedPure requires a craftComputed to read dependencies and return a value.
+- [No dependency cycles](https://craft-ts.github.io/craft/guide/testing/architecture/dependency-cycles.md): assertNoDependencyCycles checks directed depends-on edges between services, components and computeds: export function keepTheDependencyGraphAcyclic(graph: ArchitectureGraph) { assertNoDependencyCyc…
+- [Mutations must have a read-side reaction](https://craft-ts.github.io/craft/guide/testing/architecture/mutation-reactions.md): assertMutationHasReactOn requires every mutation to have an insertReactOnMutation edge to a query, unless the mutation is explicitly allowed: export function keepReadsFreshAfterWrites(graph: Archit…
+- [Route DI proofs and exception coverage](https://craft-ts.github.io/craft/guide/testing/architecture/route-di-proofs.md): assertRouteDiProofs keeps type-level routing guarantees armed at runtime in CI.
+- [Route page components each live in their own file](https://craft-ts.github.io/craft/guide/testing/architecture/route-component-files.md): assertRouteComponentsInSeparateFiles requires every component attached to a route through component, loadComponent or a lazy import() to live outside the route-definition file.
+- [Folder path boundaries](https://craft-ts.github.io/craft/guide/testing/architecture/path-boundaries.md): assertPathBoundaries applies architectural allowlists and denylists to paths inside one application.
+- [Exclusive branch links](https://craft-ts.github.io/craft/guide/testing/architecture/exclusive-links.md): noExclusiveLink(a, b) checks that two branches do not depend on each other through a private leak.
+- [Persisted primitives need a unique identity](https://craft-ts.github.io/craft/guide/testing/architecture/persisted-identities.md): assertPersistedPrimitiveHasUnique checks the inverse of the general identity rule: every primitive using storage persistence must receive a craftUnique identity.
+- [Unique insertSelect keys per host](https://craft-ts.github.io/craft/guide/testing/architecture/insert-select-keys.md): assertInsertSelectUnique requires each insertSelect key to appear once on a given host primitive: export function keepSelectedInsertionKeysUnambiguous( graph: ArchitectureGraph, ) { assertInsertSel…
+- [Keep craftEffect off the network](https://craft-ts.github.io/craft/guide/testing/architecture/craft-effect-network.md): assertCraftEffectNoNetwork prevents a reactive craftEffect from calling HTTP or a mutation: export function keepNetworkWorkInResources(graph: ArchitectureGraph) { assertCraftEffectNoNetwork(graph.g…
+- [Keep craftEffect out of imperative synchronisation](https://craft-ts.github.io/craft/guide/testing/architecture/craft-effect-imperative-sync.md): assertCraftEffectNoImperativeSync prevents a craftEffect from writing a state/source or triggering another query, mutation or async process: export function keepResourceTransitionsDeclarative(graph…
+- [Named interactive elements](https://craft-ts.github.io/craft/guide/testing/architecture/interactive-element-names.md): assertInteractiveElementNamed requires a unique literal Craft name on every interactive element: export function keepInteractiveControlsAddressable(graph: ArchitectureGraph) { assertInteractiveElem…
+- [Metric thresholds](https://craft-ts.github.io/craft/guide/testing/architecture/metric-thresholds.md): assertMetricThresholds is an optional architecture rule inspired by the complexity checks in Sonar.
+- [Queries and mutations must reach server state](https://craft-ts.github.io/craft/guide/testing/architecture/server-state-loader.md): assertQueryMutationHasServerState verifies that query and mutation loaders reach an approved server-state boundary, such as CraftHttpClient or a client-exposed server-function family: export functi…
+- [Primitive loader requirements](https://craft-ts.github.io/craft/guide/testing/architecture/primitive-loader-requirements.md): assertPrimitiveLoaderRequirements is the configurable form of the server-state rule.
 
-- [craftComputed](https://craft-ts.github.io/craft/guide/reactivity/craft-computed.md)
-- [craftEffect](https://craft-ts.github.io/craft/guide/reactivity/craft-effect.md)
-- [craftMethod](https://craft-ts.github.io/craft/guide/reactivity/craft-method.md)
-- [source$](https://craft-ts.github.io/craft/guide/reactivity/source.md)
-- [on$](https://craft-ts.github.io/craft/guide/reactivity/on.md)
-- [fromEventToSource$](https://craft-ts.github.io/craft/guide/reactivity/from-event-to-source.md)
-- [sourceFromEvent](https://craft-ts.github.io/craft/guide/reactivity/source-from-event.md)
-- [Typed streams](https://craft-ts.github.io/craft/guide/reactivity/streams.md)
-- [afterRecomputation](https://craft-ts.github.io/craft/guide/reactivity/after-recomputation.md)
+## Reactivity utilities
 
-### Internationalisation
+- [craftComputed](https://craft-ts.github.io/craft/guide/reactivity/craft-computed.md): A yieldable reactive value that can read Craft dependencies and other reactive Craft values with yield*.
+- [craftEffect](https://craft-ts.github.io/craft/guide/reactivity/craft-effect.md): An effect that can resolve craft dependencies with yield*.
+- [craftMethod](https://craft-ts.github.io/craft/guide/reactivity/craft-method.md): Wraps a generator so it can be called like an ordinary method — from a template, an event handler, anywhere outside the craft driver — while still resolving its dependencies with yield*.
+- [source$](https://craft-ts.github.io/craft/guide/reactivity/source.md): An event source: something you emit() to, that others react to — with automatic cleanup and signal-based value tracking.
+- [on$](https://craft-ts.github.io/craft/guide/reactivity/on.md): Binds a callback to a source$, with automatic cleanup.
+- [fromEventToSource$](https://craft-ts.github.io/craft/guide/reactivity/from-event-to-source.md): Turns a DOM event into a readonly source$, with automatic cleanup.
+- [sourceFromEvent](https://craft-ts.github.io/craft/guide/reactivity/source-from-event.md): Creates a source$ from DOM events or event emitters.
+- [afterRecomputation](https://craft-ts.github.io/craft/guide/reactivity/after-recomputation.md): Runs a callback after a recomputation has settled, rather than in the middle of one.
 
-- [Type-safe i18n](https://craft-ts.github.io/craft/guide/i18n.md)
-- [The catalogue](https://craft-ts.github.io/craft/guide/i18n/catalog.md)
-- [Tokens](https://craft-ts.github.io/craft/guide/i18n/tokens.md)
-- [The runtime](https://craft-ts.github.io/craft/guide/i18n/runtime.md)
-- [i18n with Effect](https://craft-ts.github.io/craft/guide/i18n/effect.md)
+## Internationalisation
 
-### Deployment (experimental)
+- [Type-safe i18n](https://craft-ts.github.io/craft/guide/i18n.md): @craft-ts/i18n is the CraftTS i18n integration.
+- [The catalogue](https://craft-ts.github.io/craft/guide/i18n/catalog.md): A catalogue is a plain nested object.
+- [Tokens](https://craft-ts.github.io/craft/guide/i18n/tokens.md): A token is the unit that makes a message parameter typed.
+- [The runtime](https://craft-ts.github.io/craft/guide/i18n/runtime.md): createI18nRuntime turns a set of locales into the object the application translates through.
+- [i18n with Effect](https://craft-ts.github.io/craft/guide/i18n/effect.md): @craft-ts/i18n-effect is an adapter, and only an adapter.
 
-- [Deploying a CraftTS application](https://craft-ts.github.io/craft/guide/deployment.md)
-- [Manifest reference](https://craft-ts.github.io/craft/guide/deployment/manifest.md)
-- [Deployment diagnostics](https://craft-ts.github.io/craft/guide/deployment/diagnostics.md)
-- [Deployment providers](https://craft-ts.github.io/craft/guide/deployment/providers.md)
-- [Alchemy provider](https://craft-ts.github.io/craft/guide/deployment/alchemy.md)
+## Deployment (experimental)
 
-### Going further
+- [Deploying a CraftTS application](https://craft-ts.github.io/craft/guide/deployment.md): Experimental The deployment tooling is the newest part of CraftTS and it is not settled.
+- [Manifest reference](https://craft-ts.github.io/craft/guide/deployment/manifest.md): Experimental Manifest fields can still be added, renamed or removed between minor versions.
+- [Deployment diagnostics](https://craft-ts.github.io/craft/guide/deployment/diagnostics.md): Experimental Codes can be added, and their messages can change, between minor versions.
+- [Deployment providers](https://craft-ts.github.io/craft/guide/deployment/providers.md): Experimental The provider contract is not settled: the method signatures below, the capability list and the plan shape can still change between minor versions.
+- [Alchemy provider](https://craft-ts.github.io/craft/guide/deployment/alchemy.md): Experimental — validate in a non-production account first This provider is the least validated part of the deployment tooling.
 
-- [SSR and hydration](https://craft-ts.github.io/craft/guide/advanced/ssr-hydration.md)
-- [Using Effect with CraftTS](https://craft-ts.github.io/craft/guide/advanced/effect.md)
-- [Program operators](https://craft-ts.github.io/craft/guide/advanced/program-operators.md)
-- [Pattern matching](https://craft-ts.github.io/craft/guide/advanced/pattern-matching.md)
-- [Observability](https://craft-ts.github.io/craft/guide/advanced/observability.md)
-- [AI agents](https://craft-ts.github.io/craft/guide/ai.md)
-- [Temporal runtime](https://craft-ts.github.io/craft/guide/advanced/temporal-runtime.md)
+## Going further
 
-### Reference
+- [SSR and hydration](https://craft-ts.github.io/craft/guide/advanced/ssr-hydration.md): Craft can render a complete application to deterministic HTML on the server, transfer its serializable state, and then attach the browser runtime to the existing DOM.
+- [Using Effect with CraftTS](https://craft-ts.github.io/craft/guide/advanced/effect.md): Effect belongs in CraftTS when the problem is a domain program: composing services, modelling typed failures, controlling resources, or running an operation that crosses an I/O boundary.
+- [Program operators](https://craft-ts.github.io/craft/guide/advanced/program-operators.md): .pipe(...) composes, recovers and retries a craftGen program with Effect-inspired operators — without leaving the generator model.
+- [Pattern matching](https://craft-ts.github.io/craft/guide/advanced/pattern-matching.md): craftMatch is type-safe pattern matching over a bare literal union (a string / number / enum union).
+- [Observability](https://craft-ts.github.io/craft/guide/advanced/observability.md): Because every dependency is resolved through one system, that system is also the place to cross-cut them all — logging, timing, correlation ids, snapshots — with no change to the business code.
+- [Temporal runtime](https://craft-ts.github.io/craft/guide/advanced/temporal-runtime.md): Craft treats time as a runtime capability rather than as a direct call to the browser or Node timer APIs.
 
-- [API index](https://craft-ts.github.io/craft/reference.md)
+## Reference
 
-### Resources
+- [API index](https://craft-ts.github.io/craft/reference.md): Every documented export, with the page that covers it.
 
-- [Examples](https://craft-ts.github.io/craft/resources/examples.md)
-- [Coding agents](https://craft-ts.github.io/craft/resources/ai-agents.md): Point Cursor, Claude, Copilot, and other coding agents at CraftTS docs, MCP tools, and Agent Skills after you import @craft-ts/core.
-- [Migrating an existing application](https://craft-ts.github.io/craft/resources/migration.md)
-- [Migrating to `_tag` and `providedIn`](https://craft-ts.github.io/craft/guide/migration/wave-1-tag-and-provided-in.md)
-- [Effect compatibility and maturity](https://craft-ts.github.io/craft/resources/effect-compatibility.md)
-- [Adopting CraftTS progressively](https://craft-ts.github.io/craft/resources/effect-adoption.md)
-- [Press Kit](https://craft-ts.github.io/craft/resources/press-kit.md)
-- [Roadmap](https://craft-ts.github.io/craft/resources/roadmap.md)
-- [Untitled](https://craft-ts.github.io/craft/resources/backlog.md)
+## Resources
 
-### Other
+- [Examples](https://craft-ts.github.io/craft/resources/examples.md): Every example below is a real route of one of the demo applications.
+- [Migrating an existing application](https://craft-ts.github.io/craft/resources/migration.md): craft-migrate runs the CraftTS codemods in a safe, explicit order: primitive migration points service composition typed route collections and dependency checks legacy component(...) factories to cr…
+- [Migrating to _tag and providedIn](https://craft-ts.github.io/craft/guide/migration/wave-1-tag-and-provided-in.md): Two renames on the public API: // exceptions craftException({ code: 'UserNotFound' }, payload) craftException({ _tag: 'UserNotFound' }, payload) // after // services craftService({ name: 'UserApi',…
+- [Effect compatibility and maturity](https://craft-ts.github.io/craft/resources/effect-compatibility.md): This page describes the current repository contract.
+- [Adopting CraftTS progressively](https://craft-ts.github.io/craft/resources/effect-adoption.md): You do not need to rewrite an Effect application before evaluating CraftTS.
+- [Press Kit](https://craft-ts.github.io/craft/resources/press-kit.md): Resources and information about @craft-ts/core for articles, presentations, and sharing.
+- [Roadmap](https://craft-ts.github.io/craft/resources/roadmap.md): @craft-ts/core is evolving through real-world usage, careful experimentation, and feedback from the community.
+- [Backlog](https://craft-ts.github.io/craft/resources/backlog.md): [ ] For query/mutation/AsyncProcess insertions, expose a set and state similar to other primitive states that will simplify creating reusable insertions.
 
-- [Create a CraftTS project](https://craft-ts.github.io/craft/guide/create-project.md)
-- [Fixed URL routing with hashes](https://craft-ts.github.io/craft/guide/routing/hash-location.md)
-- [Folder layout organizer](https://craft-ts.github.io/craft/guide/testing/folder-layout.md)
-- [Guide](https://craft-ts.github.io/craft/guide.md)
-- [Primitive method usage](https://craft-ts.github.io/craft/guide/testing/architecture/primitive-method-usage.md)
-- [Resource params should prefer URL-backed state](https://craft-ts.github.io/craft/guide/testing/architecture/resource-params-query-state.md)
-- [Unused primitive methods](https://craft-ts.github.io/craft/guide/testing/architecture/unused-primitive-method.md)
+## Other
+
+- [Typed streams](https://craft-ts.github.io/craft/guide/reactivity/streams.md): @craft-ts/stream is a small, typed stream library built on the same ideas as the rest of craft-ts: every operator adds its dependencies and its exceptions to the type of the stream, so you can read…
+- [Fixed URL routing with hashes](https://craft-ts.github.io/craft/guide/routing/hash-location.md): Use withHashLocation() when a client application must stay at the same browser path and the static host only serves /: import { provideCraftRouter, withHashLocation } from '@craft-ts/core'; provide…
+- [Primitive method usage](https://craft-ts.github.io/craft/guide/testing/architecture/primitive-method-usage.md): assertPrimitiveMethodsUsedOnce requires every method exposed by a primitive insertion to have one source-level call site.
+- [Resource params should prefer URL-backed state](https://craft-ts.github.io/craft/guide/testing/architecture/resource-params-query-state.md): assertResourceParamsPreferQueryParams rejects query and asyncProcess params that depend on a local state.
+- [Unused primitive methods](https://craft-ts.github.io/craft/guide/testing/architecture/unused-primitive-method.md): assertNoUnusedPrimitiveMethods requires every method exposed by a primitive insertion to have at least one call site in the project.
+- [Folder layout organizer](https://craft-ts.github.io/craft/guide/testing/folder-layout.md): craft organize analyzes a fresh Craft dependency graph and proposes a folder layout.
+- [/](https://craft-ts.github.io/craft/): Packages The toolkit is split into focused packages.

@@ -58,6 +58,8 @@ The next step defines the domain operation and the services it requires.
 Derived state that stays reactive and a clear division: Craft derives the UI;
 Effect composes the domain program.
 
+
 [← 1. Start with a Craft component](/learn-effect/01-first-component)
 
 [3. Put the domain in Effect →](/learn-effect/03-effect-domain)
+

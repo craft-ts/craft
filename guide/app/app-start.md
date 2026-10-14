@@ -24,10 +24,10 @@ import { onAppStart } from '@craft-ts/core';
 
 Important constraints:
 
-* the owning service must be declared with `appStart: true`
-* a service can declare `yield* onAppStart(...)` only once
-* the callback can be a plain function or a generator function
-* nested `onAppStart(...)` calls inside the callback are not supported
+- the owning service must be declared with `appStart: true`
+- a service can declare `yield* onAppStart(...)` only once
+- the callback can be a plain function or a generator function
+- nested `onAppStart(...)` calls inside the callback are not supported
 
 `craftAppConfig(...)` runs registered app-start services during application initialization.
 
@@ -69,6 +69,7 @@ export const { StartupFlag } = craftService(
 );
 ```
 
+
 ## Generator Callback
 
 Use a generator callback when startup logic needs to `yield*` crafted dependencies.
@@ -91,11 +92,13 @@ export const { AppStartLog } = craftService(
 );
 ```
 
+
+
 The callback generator supports the same dependency-yield semantics as a normal crafted generator for:
 
-* `yield* X(...)`
-* `yield*` exposure tokens returned by derivation callbacks
-* browser boundaries such as `yield* Console.log(...)`
+- `yield* X(...)`
+- `yield*` exposure tokens returned by derivation callbacks
+- browser boundaries such as `yield* Console.log(...)`
 
 Dependencies used only inside this callback are merged into the parent service dependency graph.
 
@@ -165,6 +168,7 @@ export const appConfig = craftAppConfig({
 });
 ```
 
+
 ::: tip The registry augmentation is generated
 The `declare module` block is written for you by the craft-ts ESLint plugin —
 you rarely type it by hand.
@@ -184,9 +188,9 @@ If the callback only uses `Console`, the owning service dependency graph include
 
 This means startup-only dependencies are still visible to:
 
-* `GetServiceDependencies<typeof X>`
-* route/app DI checks built on top of service metadata
-* test helpers that inspect crafted dependency graphs
+- `GetServiceDependencies<typeof X>`
+- route/app DI checks built on top of service metadata
+- test helpers that inspect crafted dependency graphs
 
 ## Runtime Behavior
 
@@ -196,9 +200,9 @@ It registers a startup hook that is executed when the application initializer ru
 
 If the callback returns:
 
-* `void`: startup continues immediately
-* `Promise`: startup waits for the promise to resolve
-* `Observable`: startup waits until the observable completes
+- `void`: startup continues immediately
+- `Promise`: startup waits for the promise to resolve
+- `Observable`: startup waits until the observable completes
 
 Generator callbacks preserve the same waiting behavior. The generator itself resolves first, then its returned `Promise` / `Observable` / `void` is used as the startup result.
 
@@ -226,5 +230,5 @@ Nested declarations are rejected at runtime.
 
 ## See Also
 
-* [`craftService`](/guide/app/craft-service)
-* [`Browser Boundaries`](/guide/testing/browser-boundaries)
+- [`craftService`](/guide/app/craft-service)
+- [`Browser Boundaries`](/guide/testing/browser-boundaries)

@@ -102,58 +102,58 @@ platform executes that shape.
 
 ### `alchemy`
 
-* **Artefact** — Public directory plus the runtime entry declared by the manifest.
-* **Local preview** — `craft-ts deploy preview --provider alchemy`
-* **Credentials** — Cloudflare or AWS credentials read from the environment by the Alchemy CLI.
-* **Limit** — Requires the Alchemy CLI and a reachable state backend.
-* **Limit** — Shipped as the separate package `@craft-ts/deploy-alchemy`.
+- **Artefact** — Public directory plus the runtime entry declared by the manifest.
+- **Local preview** — `craft-ts deploy preview --provider alchemy`
+- **Credentials** — Cloudflare or AWS credentials read from the environment by the Alchemy CLI.
+- **Limit** — Requires the Alchemy CLI and a reachable state backend.
+- **Limit** — Shipped as the separate package `@craft-ts/deploy-alchemy`.
 
 ### `docker`
 
-* **Artefact** — Image built from the SSR entry and the client output.
-* **Local preview** — `docker compose -f docker-compose.production.yml up`
-* **Credentials** — Registry credentials handled by the Docker CLI.
-* **Limit** — No static-only publication path: a plain bucket is cheaper.
-* **Limit** — Provisioning of the host is out of scope.
+- **Artefact** — Image built from the SSR entry and the client output.
+- **Local preview** — `docker compose -f docker-compose.production.yml up`
+- **Credentials** — Registry credentials handled by the Docker CLI.
+- **Limit** — No static-only publication path: a plain bucket is cheaper.
+- **Limit** — Provisioning of the host is out of scope.
 
 ### `cloudflare-pages`
 
-* **Artefact** — Public directory uploaded as-is.
-* **Local preview** — `wrangler pages dev <publicDir>`
-* **Credentials** — `CLOUDFLARE_API_TOKEN` read by Wrangler.
-* **Limit** — SSR and Worker runtimes need a Worker deployment, not Pages.
+- **Artefact** — Public directory uploaded as-is.
+- **Local preview** — `wrangler pages dev <publicDir>`
+- **Credentials** — `CLOUDFLARE_API_TOKEN` read by Wrangler.
+- **Limit** — SSR and Worker runtimes need a Worker deployment, not Pages.
 
 ### `vercel`
 
-* **Artefact** — Public directory plus an optional Node server entry.
-* **Local preview** — `vercel dev`
-* **Credentials** — `VERCEL_TOKEN` read by the Vercel CLI.
-* **Limit** — Worker and Lambda runtimes map to platform-specific functions and are not covered by this matrix.
-* **Limit** — Infrastructure provisioning is partial and platform-owned.
+- **Artefact** — Public directory plus an optional Node server entry.
+- **Local preview** — `vercel dev`
+- **Credentials** — `VERCEL_TOKEN` read by the Vercel CLI.
+- **Limit** — Worker and Lambda runtimes map to platform-specific functions and are not covered by this matrix.
+- **Limit** — Infrastructure provisioning is partial and platform-owned.
 
 ### `netlify`
 
-* **Artefact** — Public directory plus a functions directory.
-* **Local preview** — `netlify dev`
-* **Credentials** — `NETLIFY_AUTH_TOKEN` read by the Netlify CLI.
-* **Limit** — The Lambda capability is served by Netlify Functions, not by AWS Function URLs.
-* **Limit** — No infrastructure provisioning.
+- **Artefact** — Public directory plus a functions directory.
+- **Local preview** — `netlify dev`
+- **Credentials** — `NETLIFY_AUTH_TOKEN` read by the Netlify CLI.
+- **Limit** — The Lambda capability is served by Netlify Functions, not by AWS Function URLs.
+- **Limit** — No infrastructure provisioning.
 
 ### `firebase`
 
-* **Artefact** — Hosting public directory plus Cloud Functions.
-* **Local preview** — `firebase emulators:start`
-* **Credentials** — Firebase CLI login or a service account key.
-* **Limit** — No Worker runtime.
-* **Limit** — Infrastructure provisioning is partial and project-scoped.
+- **Artefact** — Hosting public directory plus Cloud Functions.
+- **Local preview** — `firebase emulators:start`
+- **Credentials** — Firebase CLI login or a service account key.
+- **Limit** — No Worker runtime.
+- **Limit** — Infrastructure provisioning is partial and project-scoped.
 
 ### `github-pages`
 
-* **Artefact** — Public directory published as a Pages artefact.
-* **Local preview** — none
-* **Credentials** — The `GITHUB_TOKEN` of the publishing workflow.
-* **Limit** — No server runtime at all.
-* **Limit** — SPA fallback requires a `404.html` copy of the fallback document.
+- **Artefact** — Public directory published as a Pages artefact.
+- **Local preview** — none
+- **Credentials** — The `GITHUB_TOKEN` of the publishing workflow.
+- **Limit** — No server runtime at all.
+- **Limit** — SPA fallback requires a `404.html` copy of the fallback document.
 
 ## Using a provider
 

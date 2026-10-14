@@ -142,11 +142,11 @@ server, then publish only verified values to the handler context.
 
 Treat these as constraints of the POC, not promises of the final design:
 
-* the browser transport and development plugin are local experimental adapters;
-* client/server file boundaries are checked by the current architecture graph,
+- the browser transport and development plugin are local experimental adapters;
+- client/server file boundaries are checked by the current architecture graph,
   but deployment integration is still evolving;
-* middleware APIs and the server registry may be renamed or reshaped;
-* the server must re-check authorization even if the client has a matching
+- middleware APIs and the server registry may be renamed or reshaped;
+- the server must re-check authorization even if the client has a matching
   Effect Layer.
 
 See the running examples in
@@ -160,6 +160,8 @@ You can experiment with typed Effect server calls while keeping an explicit
 client/server boundary. Keep this chapter isolated from stable application
 contracts until the POC is replaced by a final server-function API.
 
+
 [← 8. Test the graph](/learn-effect/08-testing)
 
 [Back to the overview →](/learn-effect/)
+

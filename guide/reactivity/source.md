@@ -14,11 +14,11 @@ automatic cleanup and signal-based value tracking.
 
 `source$` provides a lightweight event streaming solution that combines:
 
-* Event emission and subscription capabilities
-* Automatic subscription cleanup via `DestroyRef`
-* Signal-based value tracking for reactive access
-* Optional memory for late subscribers (`{ replay }`, `{ initial }`)
-* Read-only variants for encapsulation
+- Event emission and subscription capabilities
+- Automatic subscription cleanup via `DestroyRef`
+- Signal-based value tracking for reactive access
+- Optional memory for late subscribers (`{ replay }`, `{ initial }`)
+- Read-only variants for encapsulation
 
 ## Import
 
@@ -41,7 +41,7 @@ type SourceOptions<T> = {
 
 ### Parameters
 
-* **`name: string`** - Name matching the variable/property this source is assigned to. Used for host tagging and dev-tools snapshot reporting, consistent with `craftComputed`/`craftEffect`. The [`craft-ts/craft-source-name-match`](/guide/routing/eslint-rules) ESLint rule enforces the match and offers a quick fix.
+- **`name: string`** - Name matching the variable/property this source is assigned to. Used for host tagging and dev-tools snapshot reporting, consistent with `craftComputed`/`craftEffect`. The [`craft-ts/craft-source-name-match`](/guide/routing/eslint-rules) ESLint rule enforces the match and offers a quick fix.
 
 ### Returns
 
@@ -59,11 +59,11 @@ const reset$ = yield* source$<void>('reset$');
 
 The yielded value is the source instance. Its source API is unchanged:
 
-* **`emit(value: T)`** - Emits a value to all subscribers and updates the internal signal
-* **`subscribe(callback: (value: T) => void)`** - Subscribes to emissions with a callback
-* **`value: Signal<T | undefined>`** - A read-only signal containing the last emitted value (or `undefined` if no value has been emitted)
-* **`asReadonly()`** - Returns a read-only version of the source (only `subscribe` and `value`)
-* **`preserveLastValue()`** - *Deprecated, use `{ replay: 1 }`.* Returns a source variant that immediately emits the last value to new subscribers (nothing when no value was emitted yet)
+- **`emit(value: T)`** - Emits a value to all subscribers and updates the internal signal
+- **`subscribe(callback: (value: T) => void)`** - Subscribes to emissions with a callback
+- **`value: Signal<T | undefined>`** - A read-only signal containing the last emitted value (or `undefined` if no value has been emitted)
+- **`asReadonly()`** - Returns a read-only version of the source (only `subscribe` and `value`)
+- **`preserveLastValue()`** - _Deprecated, use `{ replay: 1 }`._ Returns a source variant that immediately emits the last value to new subscribers (nothing when no value was emitted yet)
 
 ## Types
 
@@ -135,6 +135,7 @@ const { Counter } = craftService(
 );
 void Counter;
 ```
+
 
 `on$(Reset, ...)` records `Reset` as a dependency of the primitive. Calling
 `reset.emit()` only publishes an event; it does not create or modify the
@@ -322,10 +323,10 @@ setTimeout(() => {
 
 ## Related
 
-* [on$](/guide/reactivity/on) - Subscribe to sources with automatic cleanup in state insertions
+- [on$](/guide/reactivity/on) - Subscribe to sources with automatic cleanup in state insertions
 
 ## See Also
 
-* [on$](/guide/reactivity/on) — reacting to a source
-* [fromEventToSource$](/guide/reactivity/from-event-to-source)
-* [sourceFromEvent](/guide/reactivity/source-from-event)
+- [on$](/guide/reactivity/on) — reacting to a source
+- [fromEventToSource$](/guide/reactivity/from-event-to-source)
+- [sourceFromEvent](/guide/reactivity/source-from-event)

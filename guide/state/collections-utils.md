@@ -129,7 +129,7 @@ const users = [{ id: 1, name: 'Alice' }];
 const result = removeAll<User>(); // []
 ```
 
-***
+---
 
 ### addOne
 
@@ -150,7 +150,7 @@ const result = addOne({
 // [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
 ```
 
-***
+---
 
 ### addMany
 
@@ -180,7 +180,7 @@ const result = addMany({
 // [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }, { id: 3, name: 'Charlie' }]
 ```
 
-***
+---
 
 ### setAll
 
@@ -198,7 +198,7 @@ const result = setAll({ newEntities: [{ id: 2, name: 'Bob' }] });
 // [{ id: 2, name: 'Bob' }]
 ```
 
-***
+---
 
 ### setOne
 
@@ -244,7 +244,7 @@ const result2 = setOne({
 // [{ sku: 'A1', name: 'Widget Updated' }]
 ```
 
-***
+---
 
 ### setMany
 
@@ -276,7 +276,7 @@ const result = setMany({
 // [{ id: 1, name: 'Alice Updated' }, { id: 2, name: 'Bob' }]
 ```
 
-***
+---
 
 ### updateOne
 
@@ -305,7 +305,7 @@ const result = updateOne({
 // [{ id: 1, name: 'Alice Updated', email: 'alice@example.com' }]
 ```
 
-***
+---
 
 ### updateMany
 
@@ -340,7 +340,7 @@ const result = updateMany({
 // [{ id: 1, name: 'Alice Updated' }, { id: 2, name: 'Bob Updated' }]
 ```
 
-***
+---
 
 ### upsertOne
 
@@ -376,7 +376,7 @@ const result2 = upsertOne({
 // [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
 ```
 
-***
+---
 
 ### upsertMany
 
@@ -408,7 +408,7 @@ const result = upsertMany({
 // [{ id: 1, name: 'Alice Updated' }, { id: 2, name: 'Bob' }]
 ```
 
-***
+---
 
 ### removeOne
 
@@ -446,7 +446,7 @@ const result2 = removeOne({
 // []
 ```
 
-***
+---
 
 ### removeMany
 
@@ -476,7 +476,7 @@ const result = removeMany({ ids: [1, 2], entities: users });
 // [{ id: 3, name: 'Charlie' }]
 ```
 
-***
+---
 
 ### map
 
@@ -506,7 +506,7 @@ const result = map({
 // [{ id: 1, name: 'ALICE' }, { id: 2, name: 'BOB' }]
 ```
 
-***
+---
 
 ### mapOne
 
@@ -540,7 +540,7 @@ const result = mapOne({
 // [{ id: 1, name: 'ALICE' }, { id: 2, name: 'bob' }]
 ```
 
-***
+---
 
 ### computedTotal
 
@@ -561,7 +561,7 @@ const total = computedTotal({ entities: users });
 // 2
 ```
 
-***
+---
 
 ### computedIds
 
@@ -599,5 +599,5 @@ const skus = computedIds({
 
 ## See Also
 
-* [Collections](/guide/state/collections) — generating these as methods on a primitive
-* [Reacting to mutations](/guide/state/react-on-mutation) — the usual place to call them by hand
+- [Collections](/guide/state/collections) — generating these as methods on a primitive
+- [Reacting to mutations](/guide/state/react-on-mutation) — the usual place to call them by hand

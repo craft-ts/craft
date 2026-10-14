@@ -104,15 +104,15 @@ const remaining = craftUse(craftComputed('remaining', function* () {
 
 ## Where the side effect belongs
 
-* derive a value with `craftComputed`;
-* react to an event with `on$`;
-* update a primitive from a user action with a method;
-* run external work with `craftEffect` or an explicit resource primitive.
+- derive a value with `craftComputed`;
+- react to an event with `on$`;
+- update a primitive from a user action with a method;
+- run external work with `craftEffect` or an explicit resource primitive.
 
 Separating these roles makes the dependency graph explainable and tests
 deterministic.
 
 ## See also
 
-* [The mental model](/guide/concepts/mental-model)
-* [`craftComputed`](/guide/reactivity/craft-computed)
+- [The mental model](/guide/concepts/mental-model)
+- [`craftComputed`](/guide/reactivity/craft-computed)

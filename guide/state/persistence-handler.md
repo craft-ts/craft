@@ -32,10 +32,10 @@ localStorage and sessionStorage implementations remove every key that starts
 with the `craft-ts-` prefix from their respective backend. This ensures
 complete cleanup of all data cached by `@craft-ts`, including:
 
-* Persisted queries
-* Persisted mutations
-* Persisted async processes
-* Any other data cached by the `@craft-ts` persistence layer
+- Persisted queries
+- Persisted mutations
+- Persisted async processes
+- Any other data cached by the `@craft-ts` persistence layer
 
 ## The common case — clearing on logout
 
@@ -51,6 +51,7 @@ const { LogoutHandler } = craftService(
   },
 );
 ```
+
 
 ## Force refresh all data
 
@@ -81,6 +82,7 @@ const { AccountSwitcher } = craftService(
   },
 );
 ```
+
 
 ::: details Other situations where this comes up
 
@@ -136,6 +138,6 @@ handleDataError() {
 
 ## See Also
 
-* [Local Storage Persister](/guide/state/persistence)
-* [Query](/guide/state/server-state)
-* [Mutation](/guide/state/mutations)
+- [Local Storage Persister](/guide/state/persistence)
+- [Query](/guide/state/server-state)
+- [Mutation](/guide/state/mutations)

@@ -188,6 +188,6 @@ chunk-loading scenarios remain covered by the browser tests.
 
 ## See Also
 
-* [Routing setup](/guide/routing/setup) — what the CLI generates for you
-* [Architecture rules](/guide/testing/architecture) — `assertRouteDiProofs` is the app-facing routing check
-* [Scaling routes](/guide/routing/scaling) — `craft route split`
+- [Routing setup](/guide/routing/setup) — what the CLI generates for you
+- [Architecture rules](/guide/testing/architecture) — `assertRouteDiProofs` is the app-facing routing check
+- [Scaling routes](/guide/routing/scaling) — `craft route split`

@@ -52,5 +52,5 @@ feature services or any two catalog lookups.
 
 ## See also
 
-* [Path boundaries](./path-boundaries)
-* [Architecture graph lookups](/guide/testing/architecture#looking-up-nodes)
+- [Path boundaries](./path-boundaries)
+- [Architecture graph lookups](/guide/testing/architecture#looking-up-nodes)

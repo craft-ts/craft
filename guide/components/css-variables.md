@@ -139,8 +139,8 @@ Every variable declared with `cssVars` is emitted as an `@property` block by the
 build plugin, with its syntax, its `inherits` flag and its initial value. You
 never write one by hand. Two rules follow from the registration:
 
-* an initial value must be computationally independent — `unit.px(16)`, not
+- an initial value must be computationally independent — `unit.px(16)`, not
   `unit.rem(1)` — or the browser drops the whole registration; the architecture
   suite catches it;
-* a prefix belongs to one sheet: `cssVars` throws when two sheets declare the
+- a prefix belongs to one sheet: `cssVars` throws when two sheets declare the
   same prefix.

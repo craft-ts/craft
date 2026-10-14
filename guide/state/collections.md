@@ -36,11 +36,11 @@ import {
 
 `insertEntities` bridges entity utility functions with reactive primitives by:
 
-* **Adding methods** - Automatically generates typed methods from entity utilities
-* **Path support** - Works with nested properties using dot notation
-* **Custom identifiers** - Supports custom ID selectors beyond default `id` property
-* **Parallel queries** - Enables entity manipulation in query instances with `select` parameter
-* **Type inference** - Full TypeScript support with automatic method name generation
+- **Adding methods** - Automatically generates typed methods from entity utilities
+- **Path support** - Works with nested properties using dot notation
+- **Custom identifiers** - Supports custom ID selectors beyond default `id` property
+- **Parallel queries** - Enables entity manipulation in query instances with `select` parameter
+- **Type inference** - Full TypeScript support with automatic method name generation
 
 ::: warning
 This API currently promotes state imperative change. I am planning to improve this in the future, in order to keep state as much as I can declarative.
@@ -85,8 +85,8 @@ Array of entity utility functions to expose as methods on the state/query.
 
 Custom function to extract the unique identifier from entities. Defaults to:
 
-* For objects with `id` property: `(entity) => entity.id`
-* For primitives (string/number): `(entity) => entity`
+- For objects with `id` property: `(entity) => entity.id`
+- For primitives (string/number): `(entity) => entity`
 
 ### `path` (optional)
 
@@ -96,8 +96,8 @@ Dot-notation path to a nested array property. When provided, method names are pr
 
 ## Method Naming
 
-* **Without path**: Method names match utility function names (e.g., `addOne`, `removeMany`)
-* **With path**: Method names are prefixed with camelCase path (e.g., `productsAddOne`, `catalogProductsRemoveMany`)
+- **Without path**: Method names match utility function names (e.g., `addOne`, `removeMany`)
+- **With path**: Method names are prefixed with camelCase path (e.g., `productsAddOne`, `catalogProductsRemoveMany`)
 
 ## The common case
 
@@ -131,8 +131,8 @@ tags.removeOne({ id: 'typescript' });
 console.log(tags()); // ['craft', 'signals']
 ```
 
-::: details More examples — nested paths, queries, CRUD, URL state
 
+::: details More examples — nested paths, queries, CRUD, URL state
 #### Managing objects with default ID
 
 ```typescript
@@ -533,7 +533,6 @@ filters.selectedIdsAddOne({ entity: 'item-2' });
 filters.selectedIdsRemoveOne({ id: 'item-1' });
 // URL: ?selectedIds=item-2
 ```
-
 :::
 
 ## Pitfalls
@@ -590,6 +589,6 @@ products.updateOne({
 
 ## See Also
 
-* [Collection utilities](/guide/state/collections-utils) — the underlying functions
-* [Selecting a sub-state](/guide/state/select) — for one branch rather than the list
-* [Insertions](/guide/concepts/insertions)
+- [Collection utilities](/guide/state/collections-utils) — the underlying functions
+- [Selecting a sub-state](/guide/state/select) — for one branch rather than the list
+- [Insertions](/guide/concepts/insertions)

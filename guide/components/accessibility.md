@@ -78,13 +78,13 @@ headingSection([
 The snippet above is the core of the API. The skip-link and `main` belong to
 the application shell:
 
-* `heading()` reads the current level (1–6) and renders `h1`…`h6`.
-* `headingSection(...)` increments by one for the subtree — comment
+- `heading()` reads the current level (1–6) and renders `h1`…`h6`.
+- `headingSection(...)` increments by one for the subtree — comment
   fragments, no DOM wrapper, like `ifNode`.
-* `headingRoot(...)` resets to `h1` (dialog, explicit reset). A `dialog` also
+- `headingRoot(...)` resets to `h1` (dialog, explicit reset). A `dialog` also
   sets its own outline root (the dialog title = level 1 **inside** the
   dialog). SFCs loaded via `loadComponent` stay on `heading()`.
-* `h1()`…`h6()` remain for raw HTML. The `prefer-relative-heading` rule
+- `h1()`…`h6()` remain for raw HTML. The `prefer-relative-heading` rule
   forbids them inside a `craftComponent` (outside specs).
 
 A reusable component exposes `heading()` without a local `headingSection`:
@@ -94,10 +94,10 @@ outside a `headingSection` **doesn't compile** (same DNA as `pendingNode`).
 Any SFC mounted via `loadComponent` / `loadCraftComponent` calls `heading()` —
 not `headingRoot()`. The rank (h1 vs h2+) comes from the parent:
 
-* **Page** (sibling under the shell): `heading()` is the h1.
-* **Layout** (SFC with `CraftRouterOutlet`): `heading()` +
+- **Page** (sibling under the shell): `heading()` is the h1.
+- **Layout** (SFC with `CraftRouterOutlet`): `heading()` +
   `headingSection([…, CraftRouterOutlet()])` so the child inherits h2+.
-* **Shell** (`App`): `skipLink` + `main` + `CraftRouterOutlet`, **without**
+- **Shell** (`App`): `skipLink` + `main` + `CraftRouterOutlet`, **without**
   `heading()` above the outlet. Otherwise two h1s, or children stuck at the
   same level as the chrome's title.
 

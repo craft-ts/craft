@@ -214,6 +214,8 @@ Use Effect for computations, I/O and service dependencies.
 Effect's typed result becomes a reactive Craft resource without a manual
 subscription or signal conversion.
 
+
 [← 3. Put the domain in Effect](/learn-effect/03-effect-domain)
 
 [5. Write data with Effect →](/learn-effect/05-write-data)
+

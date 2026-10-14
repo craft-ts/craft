@@ -492,14 +492,14 @@ workflow, including success handling and exception transformations.
 
 ## The pages
 
-* **[Validation](/guide/forms/validation)** — built-in, custom and async validators
-* **[Submitting](/guide/forms/submit)** — wiring a form to a mutation, typed submit exceptions
-* **[Nested forms](/guide/forms/nested)** — sub-trees and sub-form fields
-* **[Exception handling](/guide/forms/exceptions)** — reading and shaping form errors
-* **[Complete examples](/guide/forms/examples)** — two forms end to end
+- **[Validation](/guide/forms/validation)** — built-in, custom and async validators
+- **[Submitting](/guide/forms/submit)** — wiring a form to a mutation, typed submit exceptions
+- **[Nested forms](/guide/forms/nested)** — sub-trees and sub-form fields
+- **[Exception handling](/guide/forms/exceptions)** — reading and shaping form errors
+- **[Complete examples](/guide/forms/examples)** — two forms end to end
 
 ## See Also
 
-* [Validators](/guide/forms/validation)
-* [Submitting](/guide/forms/submit)
-* [Learn step 8](/learn/08-forms) — a form built end to end
+- [Validators](/guide/forms/validation)
+- [Submitting](/guide/forms/submit)
+- [Learn step 8](/learn/08-forms) — a form built end to end

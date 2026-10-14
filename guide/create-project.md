@@ -38,15 +38,15 @@ npx --yes --package @craft-ts/dev-tools@beta craft create my-app
 
 The generator presents menus in this order:
 
-* the application type: frontend-only or full-stack;
-* for a full-stack app, the backend runtime: `promise` or `effect` (EffectTS
+- the application type: frontend-only or full-stack;
+- for a full-stack app, the backend runtime: `promise` or `effect` (EffectTS
   v4 is recommended);
-* the frontend runtime: `plain` or `effect`;
-* type-safe i18n, its locales, and its default locale;
-* the design system;
-* typed CSS;
-* a standalone or Nx workspace;
-* integrations for Codex, Cursor, or Claude Code.
+- the frontend runtime: `plain` or `effect`;
+- type-safe i18n, its locales, and its default locale;
+- the design system;
+- typed CSS;
+- a standalone or Nx workspace;
+- integrations for Codex, Cursor, or Claude Code.
 
 The frontend and backend choices are independent. The frontend choice controls
 whether CraftTS's Effect adapter is installed in the browser; the backend
@@ -123,10 +123,10 @@ committing when the repository already contains application code.
 During the interactive flow, reference sources are vendored automatically with
 `git subtree`:
 
-* CraftTS sources go into `.references/craft-ts`;
-* EffectTS sources are also vendored when an Effect frontend or backend is
+- CraftTS sources go into `.references/craft-ts`;
+- EffectTS sources are also vendored when an Effect frontend or backend is
   selected;
-* the sources are committed in the project repository for agents without
+- the sources are committed in the project repository for agents without
   replacing the installed npm packages.
 
 There is no reference confirmation prompt. The same defaults apply in
@@ -262,11 +262,11 @@ can actually measure.
 
 Two things to know before your first failure:
 
-* **A result the analysis cannot prove fails the run.** `--allow-indeterminate`
+- **A result the analysis cannot prove fails the run.** `--allow-indeterminate`
   turns those into warnings and you have to type it. A check whose default
   treats "I could not tell" as "fine" reports a clean bill on the part of the
   application it did not understand.
-* **A clean run is a contrast proof, not an accessibility audit.**
+- **A clean run is a contrast proof, not an accessibility audit.**
 
 [Text contrast](./style/contrast.md) has the full coverage contract: what is
 proven, what comes back as `indeterminate`, and how to close a gap honestly.
@@ -277,16 +277,16 @@ The generated `eslint.config.mjs` imports `@craft-ts/dev-tools/eslint-rules`
 and activates the selected `recommended` or `effect` preset. These presets
 enforce the same architecture as the generated project guide:
 
-* remote reads and writes stay directly in query or mutation loaders; they
+- remote reads and writes stay directly in query or mutation loaders; they
   must not be hidden in `craftMethod`;
-* `query`, `mutation` and `asyncProcess` loaders are generator functions;
+- `query`, `mutation` and `asyncProcess` loaders are generator functions;
   express asynchronous work with `yield*`, never with `async` or a native
   `Promise` return;
-* resource loaders infer their result instead of using casts such as
+- resource loaders infer their result instead of using casts such as
   `as PromiseLike<...>`;
-* route-visible filters, search, sort and pagination use route-level
+- route-visible filters, search, sort and pagination use route-level
   `queryParams`, not component-local `state`;
-* template event handlers emit one `source$`; query, mutation and state react
+- template event handlers emit one `source$`; query, mutation and state react
   through `on$` instead of chaining imperative method calls.
 
 The generated agent skill repeats these boundaries so new features follow the

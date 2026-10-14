@@ -210,9 +210,9 @@ export default [
 ];
 ```
 
-* `require-reactive-template-bindings` rejects direct reads of signals,
+- `require-reactive-template-bindings` rejects direct reads of signals,
   Craft values, and component inputs during VNode construction.
-* `no-render-writes` rejects detectable `set`, `update`, and `mutate` calls from
+- `no-render-writes` rejects detectable `set`, `update`, and `mutate` calls from
   templates and binding callbacks while allowing event and output handlers.
 
 See the [ESLint rules reference](/guide/routing/eslint-rules) for the complete
@@ -222,10 +222,10 @@ configuration.
 
 After a binding dependency changes:
 
-* the affected DOM value changes;
-* the node keeps its identity;
-* unrelated bindings do not evaluate;
-* the component template does not emit a new `component / update` trace.
+- the affected DOM value changes;
+- the node keeps its identity;
+- unrelated bindings do not evaluate;
+- the component template does not emit a new `component / update` trace.
 
 The current template trace reports component and structural renders, not each
 individual text or property effect. The absence of a component update therefore
@@ -241,7 +241,7 @@ the DOM they served.
 1. Move comparisons, formatting, and display decisions into named derived
    primitive values such as `items.isEmpty`.
 2. Pass yieldable readers to text bindings (`p(counter)`), or use a generator
-   when the binding must format: `p(function* () { return \`Count: ${yield\* counter()}\`; })\`.
+   when the binding must format: `p(function* () { return \`Count: ${yield* counter()}\`; })`.
 3. Pass yieldable readers to DOM properties such as `value`, `disabled`, and
    `title`.
 4. Return complete reactive class and style readers from the primitive.

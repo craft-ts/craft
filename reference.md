@@ -3,7 +3,7 @@ url: https://craft-ts.github.io/craft/reference.md
 ---
 # API index
 
-Every documented export, with the page that covers it. Use Ctrl/⌘+F.
+Every documented export, with the page that covers it. Use <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>F</kbd>.
 
 For an explanation rather than a lookup, start from the [Guide](/guide/).
 Coding agents: [llms.txt](https://craft-ts.github.io/craft/llms.txt) and
@@ -242,7 +242,7 @@ parameter with a Standard Schema. The package imports core for types only.
 | `TranslationDependencies`, `StaticTranslationKey`                                                             | The services a message resolves, and the keys `t` can render alone     | [The runtime](/guide/i18n/runtime#di-inside-a-translation)             |
 | `TokenSchema`, `TokenSchemaInput`, `TokenSchemaOutput`, `TokenFactory`                                        | Declaring a parameter with a Standard Schema                           | [Tokens](/guide/i18n/tokens)                                          |
 | `bind`, `createReactiveTranslator`                                                                            | A translator that re-reads when the locale state changes               | [The runtime](/guide/i18n/runtime#reactive-translation)               |
-| `createI18nLoader`, `loadLocale`                                                                              | Lazy locales, cached by id, evicted on failure                         | [The runtime](/guide/i18n/runtime#lazy-locales)                       |
+| `createI18nLoader`, `loadLocale`                                                                              | Lazy locales, cached by id, evicted on failure                         | [The runtime](/guide/i18n/runtime#loading-catalogues)                       |
 | `validateCatalog`, `assertValidCatalog`, `validateLocaleParity`, `assertLocaleParity`                         | The checks behind `npm run i18n:check` (also `@craft-ts/i18n/testing`) | [The catalogue](/guide/i18n/catalog#checking-outside-the-typechecker) |
 | `serializeCatalog`, `serializeToken`                                                                          | JSON-safe delivery shape; refuses a token that resolves a service      | [The catalogue](/guide/i18n/catalog)                                  |
 | `I18nRuntimeError`                                                                                            | `LOCALE_NOT_LOADED`, `MISSING_PARAM`, `INVALID_PARAM`, `CRAFT_INJECTION_REQUIRED`, … | [The runtime](/guide/i18n/runtime)                      |
@@ -255,7 +255,7 @@ parameter with a Standard Schema. The package imports core for types only.
 | `npx craft route add`              | Scaffolds a typed route                                | [Automation](/guide/routing/automation)                                                                   |
 | `npx craft route split`            | Splits a flat collection                               | [Scaling routes](/guide/routing/scaling)                                                                  |
 | `npx craft route verify`           | Optional compiler-fixture suite for the type machinery | [Automation](/guide/routing/automation#compiler-fixture-suite-optional)                                   |
-| `craft-brand --root src`           | Generates and refreshes `GenDeps_*`                    | [Brand config](/guide/routing/setup#generated-dependencies)                                               |
+| `craft-brand --root src`           | Generates and refreshes `GenDeps_*`                    | [Brand config](/guide/routing/setup#_3-generate-dependency-metadata)                                               |
 | `@craft-ts/dev-tools/eslint-rules` | The ESLint rule set                                    | [ESLint rules](/guide/routing/eslint-rules) · [Accessibility](/guide/components/accessibility)            |
 | `npx craft-graph`                  | Writes the static Craft graph                          | [Architecture rules](/guide/testing/architecture) · [Craft graph vs Nx](/guide/testing/craft-graph-vs-nx) |
 | `npx nx architecture <app>`        | Runs the app's architecture Vitest suite               | [Architecture rules](/guide/testing/architecture) · [Craft graph vs Nx](/guide/testing/craft-graph-vs-nx) |

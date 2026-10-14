@@ -52,9 +52,9 @@ handle every rejection — forget a branch and it silently falls through.
 
 Split the two concerns:
 
-* **`craftGen`** authors a reusable, parameterised guard. It either returns a success value or a
+- **`craftGen`** authors a reusable, parameterised guard. It either returns a success value or a
   typed [`craftException`](#exceptions).
-* The route's **`canActivate` generator** composes guards with `yield*`; the route's exhaustive
+- The route's **`canActivate` generator** composes guards with `yield*`; the route's exhaustive
   [`handleExceptions`](/guide/concepts/exceptions) map must cover **exactly** the reachable exception codes.
 
 For a focused overview of `craftGen` itself and why it is useful, see
@@ -168,13 +168,13 @@ never re-runs `resolve` (no new pending). Opt out per route with `reactiveGuards
 
 `craftGen(factory)` returns a factory you invoke and delegate to with `yield*`:
 
-* The guard's **dependency yields** (`CraftAuth`, `CraftRouter`, …) flow up to the
+- The guard's **dependency yields** (`CraftAuth`, `CraftRouter`, …) flow up to the
   route exactly as in a plain generator guard, so [route DI tracking](/guide/routing/setup)
   still sees them.
-* As soon as a composed guard produces a `craftException`, the enclosing generator
+- As soon as a composed guard produces a `craftException`, the enclosing generator
   **short-circuits**: `yield* roleGuard(...)` interrupts the whole `function*`, and the exception is
   propagated to the route's guard boundary — no `if`/`return` plumbing in the composing guard.
-* The set of exceptions each guard can produce is tracked **at the type level**, so the route's
+- The set of exceptions each guard can produce is tracked **at the type level**, so the route's
   `handleExceptions` map knows precisely which codes it must handle.
 
 Order matters: guards run top-to-bottom and the first exception wins (fail-fast).
@@ -183,7 +183,7 @@ Order matters: guards run top-to-bottom and the first exception wins (fail-fast)
 
 Each route exception handler receives the typed exception and payload, the navigation phase, the
 typed `Router` helpers, and the five outcome constructors. See
-[Centralised Exception Handling](/guide/concepts/exceptions#handler-context) for the exhaustive list
+[Centralised Exception Handling](/guide/routing/exception-handling#handler-context) for the exhaustive list
 and examples.
 
 Use `redirectTo(...)` for typed internal routes:
@@ -327,7 +327,7 @@ craftRoute(
 ## Async guards {#async-guards}
 
 The guards above are **synchronous** — every `craftGen` resolves in one pass. To decide based on data
-that has to be *fetched first*, suspend the composing guard with `craftUntilSettled` (or `craftUntilDefined`).
+that has to be _fetched first_, suspend the composing guard with `craftUntilSettled` (or `craftUntilDefined`).
 The guard stays a normal generator: `yield* a(); const x = yield* craftUntilSettled(...); yield* b()`
 composes across the await, and the awaited operation's `craftException`s flow into the same
 exhaustive `handleExceptions` map — the compiler still forces you to handle every reachable code.
@@ -396,13 +396,13 @@ const user =
 
 **Settle semantics & exception routing:**
 
-* A resource settles when its `status` reaches `'resolved'` or `'error'`. A loader `craftException`
+- A resource settles when its `status` reaches `'resolved'` or `'error'`. A loader `craftException`
   **short-circuits** to `handleExceptions`; a thrown loader error is **rethrown**; otherwise the
   resolved value is returned.
-* An HTTP call's declared business `exceptions` short-circuit to `handleExceptions`. The generic
+- An HTTP call's declared business `exceptions` short-circuit to `handleExceptions`. The generic
   transport-level `HttpError` (`scope: 'HttpClient'`) is **rethrown** — a network failure is not a
   resolvable business case. (An opt-in `HttpError` handler may come later.)
-* The awaited HTTP endpoint is tracked as a route dependency automatically, exactly like one used in
+- The awaited HTTP endpoint is tracked as a route dependency automatically, exactly like one used in
   a component or loader.
 
 ### `craftUntilDefined` — await a readiness signal
@@ -416,9 +416,9 @@ const session = yield * craftUntilDefined(sessionService.current);
 
 ### Notes
 
-* A guard that never reaches an `craftUntilSettled` / `craftUntilDefined` await still resolves **synchronously**
+- A guard that never reaches an `craftUntilSettled` / `craftUntilDefined` await still resolves **synchronously**
   (no forced microtask) — existing synchronous guards are unchanged.
-* This works for both `canActivate` and `canMatch`; the outlet drives the guard to settlement after
+- This works for both `canActivate` and `canMatch`; the outlet drives the guard to settlement after
   the URL commits.
 
 ## Exceptions {#exceptions}
@@ -445,6 +445,6 @@ for. Guards stop at the first failure and hand off to a handler.
 
 ## See Also
 
-* [Route Providers](/guide/routing/route-providers) — consume guarded data in route providers
-* [Setup](/guide/routing/setup) — per-route DI checks
-* [craftService](/guide/app/craft-service) — services yielded inside guards
+- [Route Providers](/guide/routing/route-providers) — consume guarded data in route providers
+- [Setup](/guide/routing/setup) — per-route DI checks
+- [craftService](/guide/app/craft-service) — services yielded inside guards

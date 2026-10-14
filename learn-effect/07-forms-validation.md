@@ -79,9 +79,9 @@ Validation failures are parse exceptions. Domain failures stay in Effect's
 typed error channel and become `exceptions().loader` on the mutation. The form
 can therefore distinguish:
 
-* invalid input, before the Effect runs;
-* a business rejection returned by the server/domain;
-* an unexpected defect that should reach the technical error boundary.
+- invalid input, before the Effect runs;
+- a business rejection returned by the server/domain;
+- an unexpected defect that should reach the technical error boundary.
 
 Do not put navigation, toasts or state writes inside a computed exception list.
 Drive those actions after `submit()` or from an explicit process.
@@ -91,6 +91,8 @@ Drive those actions after `submit()` or from an explicit process.
 Craft owns the interaction model and Effect owns the domain validation or write;
 their error channels remain distinct and typed.
 
+
 [← 6. Provide Layers and route the app](/learn-effect/06-layers-routing)
 
 [8. Test the graph →](/learn-effect/08-testing)
+

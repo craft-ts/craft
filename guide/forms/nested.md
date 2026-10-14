@@ -106,5 +106,5 @@ console.log(appointmentFormState()); // '2026-05-11 09:30'
 
 ## See Also
 
-* [Forms overview](/guide/forms/)
-* [Validation](/guide/forms/validation)
+- [Forms overview](/guide/forms/)
+- [Validation](/guide/forms/validation)

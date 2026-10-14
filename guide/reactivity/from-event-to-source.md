@@ -13,11 +13,11 @@ a scroll, a key, a window resize.
 
 `fromEventToSource$` bridges DOM events with craft-ts's reactive system by combining:
 
-* Event conversion to `ReadonlySource$` emissions
-* Automatic event listener cleanup via `DestroyRef`
-* Optional event payload transformation
-* Signal-based reactive access to the last emitted value
-* Manual disposal capability for dynamic use cases
+- Event conversion to `ReadonlySource$` emissions
+- Automatic event listener cleanup via `DestroyRef`
+- Optional event payload transformation
+- Signal-based reactive access to the last emitted value
+- Manual disposal capability for dynamic use cases
 
 ## Import
 
@@ -55,19 +55,19 @@ function fromEventToSource$<T, ComputedValue>(
 
 ### Parameters
 
-* **`target`** - The DOM element or event target to listen to (HTMLElement, Window, Document, etc.)
-* **`eventName`** - The event name to listen for ('click', 'input', 'scroll', etc.)
-* **`options`** (optional)
-  * **`event`** - Event listener options (capture, passive, once, etc.)
-  * **`computedValue`** - Function to transform the event before emission
+- **`target`** - The DOM element or event target to listen to (HTMLElement, Window, Document, etc.)
+- **`eventName`** - The event name to listen for ('click', 'input', 'scroll', etc.)
+- **`options`** (optional)
+  - **`event`** - Event listener options (capture, passive, once, etc.)
+  - **`computedValue`** - Function to transform the event before emission
 
 ### Returns
 
 `FromEventToSource$<T>` - A readonly source with:
 
-* **`subscribe(callback: (value: T) => void)`** - Subscribe to event emissions
-* **`value: Signal<T | undefined>`** - Read-only signal containing the last emitted value
-* **`dispose()`** - Method to manually remove the event listener
+- **`subscribe(callback: (value: T) => void)`** - Subscribe to event emissions
+- **`value: Signal<T | undefined>`** - Read-only signal containing the last emitted value
+- **`dispose()`** - Method to manually remove the event listener
 
 The result is also a named yieldable primitive. The yielded source remains
 readonly and keeps `dispose()`:
@@ -143,6 +143,7 @@ export const Demo = craftComponent('Demo', {}, function* () {
   return p('Press any key');
 });
 ```
+
 
 ### Signal Integration
 
@@ -328,6 +329,7 @@ export const Shortcuts = craftComponent('Shortcuts', {}, function* () {
 });
 ```
 
+
 ### Dynamic Element Listening
 
 ```typescript
@@ -423,6 +425,7 @@ export const SubmitDemo = craftComponent('SubmitDemo', {}, function* () {
 });
 ```
 
+
 ## Comparison with sourceFromEvent
 
 | Feature       | `fromEventToSource$`                                        | `sourceFromEvent`                                |
@@ -501,7 +504,7 @@ const { searchResults } = state('searchResults', [], ({ set }) => ({
 
 ### Debounced Input
 
-craft-ts does not depend on RxJS; this example uses it as *your own* optional
+craft-ts does not depend on RxJS; this example uses it as _your own_ optional
 dependency, through the structural `Subscribable` contract.
 
 ```typescript
@@ -546,15 +549,15 @@ keydown$.subscribe((key) => {
 
 ## Notes
 
-* Must be called within an injection context
-* Event listeners are automatically removed on component destruction
-* Returns a **readonly** source - no `emit` method is exposed
-* The `value` signal is `undefined` until the first event is emitted
-* Use `dispose()` for manual cleanup when needed
+- Must be called within an injection context
+- Event listeners are automatically removed on component destruction
+- Returns a **readonly** source - no `emit` method is exposed
+- The `value` signal is `undefined` until the first event is emitted
+- Use `dispose()` for manual cleanup when needed
 
 ## See Also
 
-* [source$](/guide/reactivity/source) - Event emitter with signal tracking
-* [sourceFromEvent](/guide/reactivity/source-from-event) - Writable source from events
-* [on$](/guide/reactivity/on) - Subscribe to sources in state management
-* [state](/guide/state/local-state) - State primitive with source integration
+- [source$](/guide/reactivity/source) - Event emitter with signal tracking
+- [sourceFromEvent](/guide/reactivity/source-from-event) - Writable source from events
+- [on$](/guide/reactivity/on) - Subscribe to sources in state management
+- [state](/guide/state/local-state) - State primitive with source integration

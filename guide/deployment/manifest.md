@@ -73,7 +73,7 @@ server: {
 `healthPath` and `readyPath` are mandatory because an SSR deployment without a
 readiness signal cannot be rolled out safely.
 
-`source` is what makes `craft-ts check` useful *before* a build: the checker
+`source` is what makes `craft-ts check` useful _before_ a build: the checker
 reads the module graph of the source, not of an output that does not exist yet.
 
 ### `worker` — the `worker` runtime

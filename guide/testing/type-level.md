@@ -10,7 +10,7 @@ DOM, no fixture, no component instantiation.
 **Use them when** a regression would be silent: an element quietly stops
 rendering under a condition, a binding is repointed at another context member, a
 handler becomes imperative, a prop changes shape.
-**Not instead of** runtime tests — they prove the template's *contract*, not
+**Not instead of** runtime tests — they prove the template's _contract_, not
 what the user ends up seeing. Pair them with
 [template tests](/guide/testing/components#component-template).
 
@@ -148,6 +148,7 @@ const Counter = craftComponent('Counter', {}, function* () {
 });
 ```
 
+
 The type assertions inspect the template returned by `Counter`; they do not
 instantiate the component or render a DOM fixture:
 
@@ -212,6 +213,7 @@ const Counter = craftComponent('Counter', {}, function* () {
   );
 });
 ```
+
 
 Here, `counter` is declared by the component itself, and the branded
 `counter.disabled` read is the binding that the type assertion checks:
@@ -303,6 +305,8 @@ const Counter = craftComponent('Counter', {}, function* () {
   );
 });
 ```
+
+
 
 The local name is rendered as `data-craft-name`; `data-craft-root` remains an
 internal tracking attribute.
@@ -455,6 +459,8 @@ type RendersTranslatedLabel = Expect<
 >;
 ```
 
+
+
 ### Proving a property is used on a named element
 
 The same visibility paths verify that a state really feeds a rendered binding,
@@ -511,6 +517,8 @@ type CanIncrementWhenAuthenticated = Expect<
   >
 >;
 ```
+
+
 
 `TemplateRendersStateWhen` recognizes branded reads that contribute to visible
 text or other render bindings such as `class` and `style`. Both assertions
@@ -631,7 +639,7 @@ type Assert<T extends true> = Expect<T>;
 
 ## See Also
 
-* [Testing components](/guide/testing/components) — the runtime half
-* [Testing services](/guide/testing/services)
-* [Architecture rules](/guide/testing/architecture) — constraints on the whole app graph
-* [Learn: test what you wrote](/learn/10-testing)
+- [Testing components](/guide/testing/components) — the runtime half
+- [Testing services](/guide/testing/services)
+- [Architecture rules](/guide/testing/architecture) — constraints on the whole app graph
+- [Learn: test what you wrote](/learn/10-testing)

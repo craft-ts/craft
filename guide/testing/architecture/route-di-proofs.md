@@ -33,11 +33,11 @@ lazy `loadChildren` collection that was added later.
 
 The rule requires checks for:
 
-* routed components;
-* pending components;
-* route and global error components;
-* route-load error components;
-* `assertExhaustiveRouteExceptions` on route collections.
+- routed components;
+- pending components;
+- route and global error components;
+- route-load error components;
+- `assertExhaustiveRouteExceptions` on route collections.
 
 Without the error-screen checks, the happy route can be type-safe while the
 first missing provider renders an unverified fallback.
@@ -61,6 +61,6 @@ application actually invoked that judgement.
 
 ## See also
 
-* [Routing setup](/guide/routing/setup)
-* [Route providers](/guide/routing/route-providers)
-* [Route exception handling](/guide/routing/exception-handling)
+- [Routing setup](/guide/routing/setup)
+- [Route providers](/guide/routing/route-providers)
+- [Route exception handling](/guide/routing/exception-handling)

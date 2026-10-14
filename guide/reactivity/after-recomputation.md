@@ -14,10 +14,10 @@ scrolling to a freshly rendered row, measuring after a list changed.
 
 This function binds queries, mutations, and async methods to sources for automatic execution by:
 
-* Listening to source emissions and computing new values
-* Providing a readonly source suitable for method binding
-* Maintaining reactivity through the effect system
-* Enabling source-based triggering patterns
+- Listening to source emissions and computing new values
+- Providing a readonly source suitable for method binding
+- Maintaining reactivity through the effect system
+- Enabling source-based triggering patterns
 
 ## Signature
 
@@ -30,8 +30,8 @@ function afterRecomputation<State, SourceType>(
 
 ### Parameters
 
-* **`_source`** - The source to listen to. When this source emits, the callback is invoked.
-* **`callback`** - Function that transforms source values. Receives the emitted value and returns the transformed result.
+- **`_source`** - The source to listen to. When this source emits, the callback is invoked.
+- **`callback`** - Function that transforms source values. Receives the emitted value and returns the transformed result.
 
 ### Returns
 
@@ -56,16 +56,16 @@ This pattern makes queries/mutations execute automatically when the source emits
 
 ## Difference from computedSource
 
-* **`afterRecomputation`**: Designed for binding to method parameters
-* **`computedSource`**: General-purpose source transformation
-* Both transform source values, but `afterRecomputation` is optimized for method binding
+- **`afterRecomputation`**: Designed for binding to method parameters
+- **`computedSource`**: General-purpose source transformation
+- Both transform source values, but `afterRecomputation` is optimized for method binding
 
 ## Common Patterns
 
-* **Identity transformation**: `afterRecomputation(source, (x) => x)` - pass value through
-* **Field extraction**: `afterRecomputation(source, (data) => data.id)` - extract specific field
-* **Validation**: `afterRecomputation(source, (data) => validate(data))` - transform and validate
-* **Mapping**: `afterRecomputation(source, (data) => mapToDto(data))` - convert to different type
+- **Identity transformation**: `afterRecomputation(source, (x) => x)` - pass value through
+- **Field extraction**: `afterRecomputation(source, (data) => data.id)` - extract specific field
+- **Validation**: `afterRecomputation(source, (data) => validate(data))` - transform and validate
+- **Mapping**: `afterRecomputation(source, (data) => mapToDto(data))` - convert to different type
 
 ## Examples
 
@@ -295,5 +295,5 @@ dataUpdate.emit({ id: 'item-1', payload: { value: 123 } });
 
 ## See Also
 
-* [craftEffect](/guide/reactivity/craft-effect)
-* [source$](/guide/reactivity/source)
+- [craftEffect](/guide/reactivity/craft-effect)
+- [source$](/guide/reactivity/source)

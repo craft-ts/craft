@@ -107,7 +107,7 @@ export const size = defineStateAxis('size', ['sm', 'md', 'lg'] as const);
 
 Each point carries the driver that reaches it — here `data-tone='danger'` — so a
 scenario the matrix enumerates is a scenario a test can actually produce. The
-attribute-*value* form, rather than one attribute per state, is what makes the
+attribute-_value_ form, rather than one attribute per state, is what makes the
 states mutually exclusive by construction: an element cannot be two of them at
 once, so the matrix does not have to be told.
 
@@ -143,7 +143,7 @@ export const card = defineContainer(
 );
 ```
 
-A container axis answers "how wide is *my* box", which nobody above the container
+A container axis answers "how wide is _my_ box", which nobody above the container
 can change. So it is closed at the element that declares the container: the
 matrix prunes it there rather than letting every ancestor inherit scenarios it
 has no way to affect.
@@ -245,7 +245,7 @@ requirement — that is the whole point of letting obligations travel.
 
 ## Next
 
-* [Tokens and typed variables](./tokens.md) — spending what you just declared.
-* [Axes and the visual matrix](./variants.md) — `when`, and the matrix the axes
+- [Tokens and typed variables](./tokens.md) — spending what you just declared.
+- [Axes and the visual matrix](./variants.md) — `when`, and the matrix the axes
   above generate.
-* [Context obligations](./obligations.md) — `requires`, `provides`, and `seal`.
+- [Context obligations](./obligations.md) — `requires`, `provides`, and `seal`.

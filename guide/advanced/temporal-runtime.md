@@ -31,9 +31,9 @@ import {
 
 The runtime separates three responsibilities:
 
-* **clock** — reads monotonic time for durations and civil time for dates;
-* **task** — schedules one cancellable callback or sleep operation;
-* **schedule** — decides whether an operation continues and how long the next
+- **clock** — reads monotonic time for durations and civil time for dates;
+- **task** — schedules one cancellable callback or sleep operation;
+- **schedule** — decides whether an operation continues and how long the next
   wait should be.
 
 ```text
@@ -265,19 +265,19 @@ rule. The temporal runtime implementation itself is the explicit exception.
 
 ## Limitations
 
-* Browser background-tab throttling is not simulated by the virtual runtime.
-* Microtasks and macrotasks remain distinct; advancing virtual time flushes the
+- Browser background-tab throttling is not simulated by the virtual runtime.
+- Microtasks and macrotasks remain distinct; advancing virtual time flushes the
   microtasks caused by the tasks it executes.
-* RxJS schedulers are not replaced by the Craft runtime. The time operators of
+- RxJS schedulers are not replaced by the Craft runtime. The time operators of
   [`@craft-ts/stream`](/guide/reactivity/streams#time) (`debounce`, `throttle`, `delay`,
   `timeout`, `retry`, `repeat`, `bufferTime`) do use it, and follow the virtual clock.
-* A timeout does not cancel an external resource unless that resource accepts
+- A timeout does not cancel an external resource unless that resource accepts
   and observes an abort signal.
-* Timers created by third-party APIs remain outside Craft ownership.
+- Timers created by third-party APIs remain outside Craft ownership.
 
 ## See also
 
-* [`retry`](/guide/advanced/program-operators#retrypolicy)
-* [`asyncProcess`](/guide/state/async-process)
-* [Testing services](/guide/testing/services)
-* [Generators and `yield*`](/guide/concepts/generators)
+- [`retry`](/guide/advanced/program-operators#retry-policy)
+- [`asyncProcess`](/guide/state/async-process)
+- [Testing services](/guide/testing/services)
+- [Generators and `yield*`](/guide/concepts/generators)

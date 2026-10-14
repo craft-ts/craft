@@ -149,14 +149,14 @@ state('cells', initialCells, insertStatePipe(
 ::: details Working examples — pixel art
 Two demos built almost entirely on nested selects:
 
-* [Pixel Art (1D grid)](https://github.com/craft-ts/craft-ts/blob/main/apps/demo/src/app/examples/primitives/pixel-art/pixel-art.ts)
-* [Pixel Art Matrix (2D grid)](https://github.com/craft-ts/craft-ts/blob/main/apps/demo/src/app/examples/primitives/pixel-art-matrix/pixel-art-matrix.ts)
+- [Pixel Art (1D grid)](https://github.com/craft-ts/craft-ts/blob/main/apps/demo/src/app/examples/primitives/pixel-art/pixel-art.ts)
+- [Pixel Art Matrix (2D grid)](https://github.com/craft-ts/craft-ts/blob/main/apps/demo/src/app/examples/primitives/pixel-art-matrix/pixel-art-matrix.ts)
 
 :::
 
 ## See Also
 
-* [Insertions](/guide/concepts/insertions) — composing several on one primitive
-* [Local state](/guide/state/local-state)
-* [Collections](/guide/state/collections) — for entity lists specifically
-* [Architecture rules](/guide/testing/architecture) — `assertInsertSelectUnique` when two selects share a key on one host
+- [Insertions](/guide/concepts/insertions) — composing several on one primitive
+- [Local state](/guide/state/local-state)
+- [Collections](/guide/state/collections) — for entity lists specifically
+- [Architecture rules](/guide/testing/architecture) — `assertInsertSelectUnique` when two selects share a key on one host

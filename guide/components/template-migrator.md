@@ -11,6 +11,7 @@ needs from `@craft-ts/component`.
 existing template markup — into Craft's template syntax without transcribing it
 by hand.
 
+
 ## What it produces
 
 By default the result is a callback to paste as the third argument of
@@ -29,5 +30,5 @@ sections with `ifNode` or `forNode`.
 
 ## See Also
 
-* [Directives and `.pipe(...)`](/guide/components/directives)
-* [CLI automation](/guide/routing/automation) — codemods for the rest of a migration
+- [Directives and `.pipe(...)`](/guide/components/directives)
+- [CLI automation](/guide/routing/automation) — codemods for the rest of a migration

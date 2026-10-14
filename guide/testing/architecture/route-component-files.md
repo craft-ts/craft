@@ -1,6 +1,5 @@
 ---
-url: >-
-  https://craft-ts.github.io/craft/guide/testing/architecture/route-component-files.md
+url: https://craft-ts.github.io/craft/guide/testing/architecture/route-component-files.md
 ---
 # Route page components each live in their own file
 
@@ -75,6 +74,6 @@ the router and bundler can discover the lazy boundary.
 
 ## See also
 
-* [Routing setup](/guide/routing/setup)
-* [Scaling routes](/guide/routing/scaling)
-* [Route DI proofs](./route-di-proofs)
+- [Routing setup](/guide/routing/setup)
+- [Scaling routes](/guide/routing/scaling)
+- [Route DI proofs](./route-di-proofs)

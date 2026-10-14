@@ -104,9 +104,9 @@ craft-ts attest retire \
 
 The reasons are:
 
-* `superseded`: the product now fulfils the need another way;
-* `defect`: the former promise was wrong;
-* `derivation`: the extractor produced an obligation it should not have. Track
+- `superseded`: the product now fulfils the need another way;
+- `defect`: the former promise was wrong;
+- `derivation`: the extractor produced an obligation it should not have. Track
   this count as a quality signal for the extractor.
 
 The note is mandatory because absence is otherwise indistinguishable from an

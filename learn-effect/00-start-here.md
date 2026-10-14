@@ -145,7 +145,7 @@ export const start = () => bootstrapCraft({ config: appConfig });
 Run the application with your normal frontend command. The executable version
 of this example is also covered by the docs test suite.
 
-### 5. Verify the boundary — 2 minutes
+### 5. Verify the boundary — 2 minutes {#5-verify-the-boundary}
 
 ```shell
 npx nx test docs
@@ -184,7 +184,7 @@ crosses into the UI.
 
 ## Continue from here
 
-* Read the [full Effect learning path](/learn-effect/).
-* Check [compatibility and maturity](/resources/effect-compatibility).
-* Follow the [progressive adoption plan](/resources/effect-adoption).
-* For the detailed API contract, read [Using Effect with CraftTS](/guide/advanced/effect).
+- Read the [full Effect learning path](/learn-effect/).
+- Check [compatibility and maturity](/resources/effect-compatibility).
+- Follow the [progressive adoption plan](/resources/effect-adoption).
+- For the detailed API contract, read [Using Effect with CraftTS](/guide/advanced/effect).

@@ -1,6 +1,5 @@
 ---
-url: >-
-  https://craft-ts.github.io/craft/guide/testing/architecture/server-state-loader.md
+url: https://craft-ts.github.io/craft/guide/testing/architecture/server-state-loader.md
 ---
 # Queries and mutations must reach server state
 
@@ -53,6 +52,6 @@ server state. Do not disable the rule for every primitive.
 
 ## See also
 
-* [Which primitive should I use?](/guide/concepts/choose-primitive)
-* [Primitive loader requirements](./primitive-loader-requirements)
-* [Effect integration](/guide/advanced/effect)
+- [Which primitive should I use?](/guide/concepts/choose-primitive)
+- [Primitive loader requirements](./primitive-loader-requirements)
+- [Effect integration](/guide/advanced/effect)

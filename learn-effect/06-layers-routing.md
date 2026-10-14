@@ -176,6 +176,8 @@ loader reacts to the resulting typed params.
 Effect Layers now follow Craft's app and route scopes, their requirements are
 checked, and typed Effect failures cannot silently disappear at a route.
 
+
 [← 5. Write data with Effect](/learn-effect/05-write-data)
 
 [7. Build forms and validate boundaries →](/learn-effect/07-forms-validation)
+

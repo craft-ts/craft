@@ -12,7 +12,7 @@ run a one-off async action that isn't a fetch
 ([`asyncProcess`](/guide/state/async-process)).
 
 ::: warning One source of truth
-Don't copy a query's result into a `state`. The query *is* the state.
+Don't copy a query's result into a `state`. The query _is_ the state.
 Don't reload it from a `craftEffect` either — put the inputs in `params` so
 the loader re-runs when they change.
 :::
@@ -423,6 +423,6 @@ insertion callback. See
 
 ## See Also
 
-* [Mutations](/guide/state/mutations) — the write side
-* [Reacting to mutations](/guide/state/react-on-mutation)
-* [Anatomy of a primitive](/guide/concepts/primitive-anatomy)
+- [Mutations](/guide/state/mutations) — the write side
+- [Reacting to mutations](/guide/state/react-on-mutation)
+- [Anatomy of a primitive](/guide/concepts/primitive-anatomy)

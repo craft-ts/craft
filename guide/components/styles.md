@@ -95,11 +95,11 @@ const UploadCard = craftComponent('UploadCard', {}, function* () {
 });
 ```
 
-* `class` is always a sheet key (`card.root`), an array of them, or a typed
+- `class` is always a sheet key (`card.root`), an array of them, or a typed
   input carrying one. Never a string, a template literal or a conditional.
-* The variant is an **attribute**. `data-cardTone` is on the element, the sheet
+- The variant is an **attribute**. `data-cardTone` is on the element, the sheet
   reads it through `when(cardTone.danger, …)`, and a `null` removes it.
-* `style` accepts `assign(variable, value)` and nothing else — one call, several
+- `style` accepts `assign(variable, value)` and nothing else — one call, several
   spread into an object, or a function returning them.
 
 ## Where each thing goes
@@ -123,22 +123,22 @@ come from `@craft-ts/style` itself. An app has no `styles.css` to write.
 Per file, in `craftRules.configs.recommended`
 ([details](/guide/routing/eslint-rules)):
 
-* `no-raw-class` — a `class` that does not trace back to a sheet imported from a
+- `no-raw-class` — a `class` that does not trace back to a sheet imported from a
   `*.style` module;
-* `no-inline-style` — a `style` that is not `assign(...)`;
-* `no-component-css` — any `.css` import other than `virtual:craft-style.css`;
-* `style-file-boundary` — a sheet importing anything but style vocabulary;
-* `no-raw-css-value`, `no-free-has` — a raw value or a hand-written `:has()`
+- `no-inline-style` — a `style` that is not `assign(...)`;
+- `no-component-css` — any `.css` import other than `virtual:craft-style.css`;
+- `style-file-boundary` — a sheet importing anything but style vocabulary;
+- `no-raw-css-value`, `no-free-has` — a raw value or a hand-written `:has()`
   inside a sheet.
 
 Across the application, in the base architecture rules
 ([details](/guide/testing/architecture)):
 
-* `style-only-design-system` — an element whose class reaches no sheet the build
+- `style-only-design-system` — an element whose class reaches no sheet the build
   emits;
-* `no-global-stylesheet` — an entry file importing a `.css`, or `index.html`
+- `no-global-stylesheet` — an entry file importing a `.css`, or `index.html`
   linking a stylesheet;
-* `style-obligations-discharged`, `no-dangling-css-vars` — a `requires` nobody
+- `style-obligations-discharged`, `no-dangling-css-vars` — a `requires` nobody
   provides, a variable read and never declared.
 
 The meta carries no CSS: `styles`, `stylesUrl` and `cssVars` do not exist on it.
@@ -173,6 +173,6 @@ to be accepted or rejected like any other evidence.
 
 ## See Also
 
-* [`@craft-ts/style`](/guide/style/) — the design system, from tokens to the matrix
-* [Axes and the visual matrix](/guide/style/variants)
-* [Customization](/guide/components/customization) — host properties and caller overrides
+- [`@craft-ts/style`](/guide/style/) — the design system, from tokens to the matrix
+- [Axes and the visual matrix](/guide/style/variants)
+- [Customization](/guide/components/customization) — host properties and caller overrides

@@ -98,6 +98,8 @@ craftComponent(
 );
 ```
 
+
+
 The sources bubble up through the node tree exactly like unhandled exception
 codes do, and the check fires on the `craftComponent` template argument, naming
 the sources that have nowhere to show their loading state. Several suspending
@@ -140,9 +142,9 @@ status, so they re-run and release the boundary the moment the data arrives.
 
 Two escapes are reported rather than silently swallowed:
 
-* a settled read that suspends with no boundary above it throws
+- a settled read that suspends with no boundary above it throws
   `CraftUnhandledPendingError`;
-* a settled read whose source carries an exception with no `catchNode` above it
+- a settled read whose source carries an exception with no `catchNode` above it
   throws `CraftUnhandledExceptionError`.
 
 The first is the runtime backstop for what the types cannot see — typically a
@@ -183,11 +185,11 @@ payload itself.
 
 ## Current limits
 
-* The by-id forms (`select(...)` / `selectOrCreate(...)`) have no settled read
+- The by-id forms (`select(...)` / `selectOrCreate(...)`) have no settled read
   yet: a by-id ref holds one status per group member.
-* A component cannot yet delegate its boundaries to its caller: both checks are
+- A component cannot yet delegate its boundaries to its caller: both checks are
   enforced on each `craftComponent` template.
-* A settled read hidden inside a lambda loses its brand, and with it both
+- A settled read hidden inside a lambda loses its brand, and with it both
   compile-time obligations — the runtime backstops still fire.
 
 The pending fallback is announced to assistive tech (`aria-live`, `aria-busy`).

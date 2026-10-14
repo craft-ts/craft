@@ -235,6 +235,6 @@ craftUse(createdAt()); // Date
 
 ## See Also
 
-* [Anatomy of a primitive](/guide/concepts/primitive-anatomy)
-* [Persistence](/guide/state/persistence) — validating restored values
-* [Exceptions as values](/guide/concepts/exceptions)
+- [Anatomy of a primitive](/guide/concepts/primitive-anatomy)
+- [Persistence](/guide/state/persistence) — validating restored values
+- [Exceptions as values](/guide/concepts/exceptions)

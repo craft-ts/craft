@@ -101,6 +101,8 @@ Tests that mirror the real Craft and Effect graphs: real composition by default,
 narrow mocks at the boundary, and architecture rules for the invariants that
 types alone cannot keep armed.
 
+
 [← 7. Build forms and validate boundaries](/learn-effect/07-forms-validation)
 
 [9. Call server functions — POC →](/learn-effect/09-server-functions)
+

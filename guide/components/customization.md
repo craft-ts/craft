@@ -314,10 +314,10 @@ where each `X(inputs)` call should get a fresh context. See
 Craft exposes three complementary utilities. The important distinction is
 whether the exception is handled in logic or rendered in a template:
 
-* `catchTag.exhaustive` handles component initialization exceptions in logic;
-* `catchNode.exhaustive` creates a template boundary and can insert a fallback
+- `catchTag.exhaustive` handles component initialization exceptions in logic;
+- `catchNode.exhaustive` creates a template boundary and can insert a fallback
   before or after its source block;
-* `matchNode.exhaustive` renders a fallback from an exception value or signal.
+- `matchNode.exhaustive` renders a fallback from an exception value or signal.
 
 ### `catchTag.exhaustive`: logic only
 
@@ -403,20 +403,20 @@ matchNode.exhaustive(() => userQuery.exceptions().loader, '_tag', {
 Craft supports compositions that are not native properties of a standard
 the host component or directive:
 
-* a Craft directive can add its own classes to the root of the component using
+- a Craft directive can add its own classes to the root of the component using
   it, without a wrapper;
-* multiple directives can compose their service transforms, template and host
+- multiple directives can compose their service transforms, template and host
   classes through `.pipe(...)`;
-* the CSS itself is emitted once, at build time, by the `@craft-ts/style`
+- the CSS itself is emitted once, at build time, by the `@craft-ts/style`
   plugin: nothing is injected or reference-counted at runtime.
 
 ## Choosing the right level
 
-* `host`: identity, attributes, classes, or behavior of the root element;
-* a `*.style.ts` sheet: the component's appearance, its variants as axes, its
+- `host`: identity, attributes, classes, or behavior of the root element;
+- a `*.style.ts` sheet: the component's appearance, its variants as axes, its
   runtime values as typed variables;
-* `craftDirective`: behavior or customization reusable across components;
-* the component's own service: component-specific state and dependencies.
+- `craftDirective`: behavior or customization reusable across components;
+- the component's own service: component-specific state and dependencies.
 
 ### How a parent reaches a child
 
@@ -467,6 +467,6 @@ inconsistent names.
 
 ## See Also
 
-* [Styling a component](/guide/components/styles)
-* [Directives and `.pipe(...)`](/guide/components/directives)
-* [Content projection](/guide/components/content-projection)
+- [Styling a component](/guide/components/styles)
+- [Directives and `.pipe(...)`](/guide/components/directives)
+- [Content projection](/guide/components/content-projection)

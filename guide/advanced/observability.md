@@ -18,21 +18,21 @@ The same DI system that powers `craftService` also lets you cross-cut every craf
 
 `craft-ts` distinguishes two kinds of failures:
 
-* **Expected errors**: handled explicitly with [`craftException`](/guide/app/craft-service) in your business code.
-* **Unexpected errors**: bugs. They should never happen — and if they do, they should never happen *again*.
+- **Expected errors**: handled explicitly with [`craftException`](/guide/app/craft-service) in your business code.
+- **Unexpected errors**: bugs. They should never happen — and if they do, they should never happen _again_.
 
 Unexpected errors are exactly where observability shines. Since they are supposed to be impossible, you want to capture the maximum amount of context the moment one is thrown: stack, app state, correlation chain, etc. That context can then be shipped to a log server, an alerting pipeline, or directly to an AI webhook for triage.
 
 The three pillars `craft-ts` exposes for that are:
 
-* [`provideFnWrapper`](#providefnwrapper) — wrap every crafted function with cross-cutting behavior
-* [`provideTemplateTrace`](#providetemplatetrace) — observe effective component and template renders
-* [`provideCraftRouterTrace`](#providecraftroutertrace) — observe navigation events and Craft route stages
-* [`provideCraftHttpTrace`](#providecrafthttptrace) — wrap every `CraftHttpClient` request
-* [`provideStreamTrace`](/guide/reactivity/streams#observability) — observe every typed stream subscription; stream handlers also go through `provideFnWrapper`
-* [`provideTakeAppSnapshot`](#providetakeappsnapshot) — capture all active state when something goes wrong
-* [`provideCraftDomEventHook`](#craft-dom-event-hooks) — observe or wrap every DOM action declared in a Craft template
-* [`provideCorrelationIdTracking`](#providecorrelationidtracking) — link a user gesture to every async operation it triggered
+- [`provideFnWrapper`](#providefnwrapper) — wrap every crafted function with cross-cutting behavior
+- [`provideTemplateTrace`](#providetemplatetrace) — observe effective component and template renders
+- [`provideCraftRouterTrace`](#providecraftroutertrace) — observe navigation events and Craft route stages
+- [`provideCraftHttpTrace`](#providecrafthttptrace) — wrap every `CraftHttpClient` request
+- [`provideStreamTrace`](/guide/reactivity/streams#observability) — observe every typed stream subscription; stream handlers also go through `provideFnWrapper`
+- [`provideTakeAppSnapshot`](#providetakeappsnapshot) — capture all active state when something goes wrong
+- [`provideCraftDomEventHook`](#craft-dom-event-hooks) — observe or wrap every DOM action declared in a Craft template
+- [`provideCorrelationIdTracking`](#providecorrelationidtracking) — link a user gesture to every async operation it triggered
 
 ## `provideFnWrapper`
 
@@ -143,8 +143,8 @@ The wrapper body runs in **the injection context where the error was raised**, n
 
 But it has two consequences:
 
-* injections inside the wrapper are **not type-safe** — `craft-ts` cannot prove statically that the dependency you ask for is actually provided where the wrapper runs
-* the wrapper is therefore a **risky** place to do business work
+- injections inside the wrapper are **not type-safe** — `craft-ts` cannot prove statically that the dependency you ask for is actually provided where the wrapper runs
+- the wrapper is therefore a **risky** place to do business work
 
 ::: tip
 Use `provideFnWrapper` mostly for **side effects** — logging, metrics, snapshots, correlation propagation. Avoid pulling business state through it.
@@ -204,9 +204,9 @@ export const appConfig = craftAppConfig({
 
 Each `SnapshotReport` contains:
 
-* `source` — the source tag of the state
-* `from` — the ancestry chain that produced it
-* `state` — the actual current value
+- `source` — the source tag of the state
+- `from` — the ancestry chain that produced it
+- `state` — the actual current value
 
 Under the hood, `provideTakeAppSnapshot` registers its own `provideFnWrapper` that triggers the snapshot collection whenever an unexpected error bubbles up. CraftTS control-flow throws such as `CraftGenShortCircuit` and `CraftNotSettled` are deliberately excluded: they are consumed by `catchNode` and `pendingNode` boundaries during normal rendering. An unhandled boundary error remains observable and still triggers a snapshot. You do not need to call it manually.
 
@@ -237,6 +237,7 @@ export const SavePanel = craftComponent(
 );
 ```
 
+
 The hook receives the native event, its normalized name, the element, the
 component name, and a descriptive `interactionName` such as
 `SavePanel:button:save:click`. This is the extension point for analytics,
@@ -264,17 +265,17 @@ export const appConfig = craftAppConfig({
 
 Once enabled, the correlation id is attached to the metadata of browser boundaries like `Console`, so a single `yield* Console.error(...)` carries:
 
-* `startCorrelationId` — the id captured when the current generator was invoked
-* `lastCorrelationId` — the most recent id observed in the app
-* `mayCorrelatedIds` — the chain of ids the operation can be linked to
+- `startCorrelationId` — the id captured when the current generator was invoked
+- `lastCorrelationId` — the most recent id observed in the app
+- `mayCorrelatedIds` — the chain of ids the operation can be linked to
 
-This lets you reconstruct, from logs alone, the full causal chain between *"user clicked Save"* and *"the third sub-request returned 500 four seconds later"*.
+This lets you reconstruct, from logs alone, the full causal chain between _"user clicked Save"_ and _"the third sub-request returned 500 four seconds later"_.
 
 Combined with `provideTakeAppSnapshot`, you get on every unexpected error:
 
-* the stack
-* the snapshot of all active states
-* the correlation id chain back to the originating user gesture
+- the stack
+- the snapshot of all active states
+- the correlation id chain back to the originating user gesture
 
 ## Putting It All Together
 
@@ -316,5 +317,5 @@ You now have, on any unexpected error: a console error in dev, a full app snapsh
 
 ## See Also
 
-* [`craftService`](/guide/app/craft-service)
-* [`Browser Boundaries`](/guide/testing/browser-boundaries) — `Console`, `LocalStorage`, etc., used inside wrappers
+- [`craftService`](/guide/app/craft-service)
+- [`Browser Boundaries`](/guide/testing/browser-boundaries) — `Console`, `LocalStorage`, etc., used inside wrappers

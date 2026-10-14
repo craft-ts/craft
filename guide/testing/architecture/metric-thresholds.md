@@ -1,6 +1,5 @@
 ---
-url: >-
-  https://craft-ts.github.io/craft/guide/testing/architecture/metric-thresholds.md
+url: https://craft-ts.github.io/craft/guide/testing/architecture/metric-thresholds.md
 ---
 # Metric thresholds
 
@@ -100,9 +99,9 @@ assertMetricThresholds(graph.graph, {
 
 ## What the rule checks
 
-* `cyclomaticOwn`: decision points attributed to the node itself.
-* `cyclomaticTotal`: the node plus everything it contains.
-* `lines`, `fanIn` and `fanOut`: optional limits for size and coupling.
+- `cyclomaticOwn`: decision points attributed to the node itself.
+- `cyclomaticTotal`: the node plus everything it contains.
+- `lines`, `fanIn` and `fanOut`: optional limits for size and coupling.
 
 Use `kinds` to scope the rule and `allow` for an id, label or repository-
 relative path glob such as `src/legacy/**`. Unknown metrics are skipped and
@@ -114,5 +113,5 @@ threshold failure should lead to a focused refactor or an explicit exception.
 
 ## See also
 
-* [Graph insights](/guide/testing/graph-insights)
-* [Architecture rules](/guide/testing/architecture)
+- [Graph insights](/guide/testing/graph-insights)
+- [Architecture rules](/guide/testing/architecture)

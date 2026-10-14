@@ -61,12 +61,12 @@ required: 4.5:1
 
 Every line is there because a report missing it sends you to the wrong file:
 
-* **scenario** — the exact combination. Not "the warning button": the warning
+- **scenario** — the exact combination. Not "the warning button": the warning
   button *under the pointer*, which is often the only failing one.
-* **foreground / background** — the token name first, then the value, then the
+- **foreground / background** — the token name first, then the value, then the
   chain that produced it. `ui.accent.warning.dark` tells you which token to
   change; `dsButton-root → --dsButton-bg` tells you which rule put it there.
-* **font** — with the threshold it earned. See
+- **font** — with the threshold it earned. See
   [large text](#which-threshold-applies).
 
 Rows that resolve to the same answer are folded together and list the
@@ -94,15 +94,15 @@ analysis looked and found nowhere" are different answers.
 
 ## Which threshold applies
 
-* large if `font-size >= 24px`;
-* large if `font-size >= 18.5px` **and** the weight is at least `700`;
-* normal otherwise.
+- large if `font-size >= 24px`;
+- large if `font-size >= 18.5px` **and** the weight is at least `700`;
+- normal otherwise.
 
 Two consequences worth knowing before you argue with a report:
 
-* `text.lg` is `1.125rem` — **18px** — so a bold title at that size is *normal*
+- `text.lg` is `1.125rem` — **18px** — so a bold title at that size is *normal*
   text and needs `4.5:1`. It misses the large threshold by half a pixel.
-* `600` is not bold. WCAG says "bold" without a number and CSS says bold is
+- `600` is not bold. WCAG says "bold" without a number and CSS says bold is
   700; reading `600` as bold would lower a threshold on an ambiguity, which is
   the wrong side to err on.
 
@@ -124,9 +124,9 @@ its card, or from the theme wrapper above it.
 
 Starting at the element and walking outwards:
 
-* an element that paints nothing is transparent, and the search continues;
-* the first opaque colour wins;
-* an element that paints something the model cannot read — an image, a
+- an element that paints nothing is transparent, and the search continues;
+- the first opaque colour wins;
+- an element that paints something the model cannot read — an image, a
   semi-transparent fill, anything behind an `opacity` — **stops** the search
   and produces `indeterminate`, because whatever is behind it is no longer
   what the text is composited against.
@@ -137,9 +137,9 @@ other.
 
 ### Variables resolve the way `@property` says they do
 
-* a registered variable nobody wrote resolves to its **registered initial
+- a registered variable nobody wrote resolves to its **registered initial
   value**, not to the `var()` fallback;
-* `inherits: false` really does not cross into a child — a theme variable set
+- `inherits: false` really does not cross into a child — a theme variable set
   on a wrapper reaches the button, a component variable does not.
 
 That last one is the trap the design system is full of, and getting it wrong
@@ -210,28 +210,28 @@ is where the contrast question gets settled once instead of per component.
 
 ### Covered in v1
 
-* opaque colours in hexadecimal or `rgb()`/`rgba()`;
-* inherited `color`;
-* `background-color`, local or seen through transparent ancestors;
-* CraftTS variables declared with `cssVars()`, their initial values, their
+- opaque colours in hexadecimal or `rgb()`/`rgba()`;
+- inherited `color`;
+- `background-color`, local or seen through transparent ancestors;
+- CraftTS variables declared with `cssVars()`, their initial values, their
   conditional writes and their `var()` fallbacks;
-* constant classes from `craftStyles()`;
-* light and dark themes;
-* every finite state and size axis, `interaction.hover` included;
-* static and dynamic text, wherever the element can be proven to hold text;
-* a component evaluated once per surface it is rendered on.
+- constant classes from `craftStyles()`;
+- light and dark themes;
+- every finite state and size axis, `interaction.hover` included;
+- static and dynamic text, wherever the element can be proven to hold text;
+- a component evaluated once per surface it is rendered on.
 
 ### Seen but not solvable in v1
 
 When one of these constructs reaches the graph, it produces `indeterminate`
 with its reason — never a pass:
 
-* images and gradients recorded as `background-image`;
-* an `opacity` below 1 on the text or an element behind it;
-* semi-transparent colours, which would need compositing;
-* a dynamic class the template graph cannot resolve;
-* an unknown foreground, background or font size;
-* a scenario or render context that exceeds the configured analysis limit.
+- images and gradients recorded as `background-image`;
+- an `opacity` below 1 on the text or an element behind it;
+- semi-transparent colours, which would need compositing;
+- a dynamic class the template graph cannot resolve;
+- an unknown foreground, background or font size;
+- a scenario or render context that exceeds the configured analysis limit.
 
 ### Outside the observable boundary
 
@@ -292,9 +292,9 @@ result to review or waive.
 
 You have two honest moves, and inventing a colour is not one of them.
 
-* **Bring the surface into the model.** A `background-color` set in raw CSS is
+- **Bring the surface into the model.** A `background-color` set in raw CSS is
   the common case.
-* **Give the text a surface it can be measured against.** Text over a hero
+- **Give the text a surface it can be measured against.** Text over a hero
   image has no ratio because it has no single background — put it on a panel,
   or accept that it cannot be proven.
 
@@ -310,16 +310,12 @@ is provided by `@craft-ts/dev-tools`, while `@craft-ts/style-testing` is only
 needed for visual scenarios and attestation.
 
 1. Name each palette: `definePalette('ui', spec)`. Nothing else changes.
-
 2. Turn hand-written `:hover` rules into `when(interaction.hover, …)` and add
    `interaction` to those sheets' budgets. `prefer-hover-axis` finds them.
-
 3. Enable `craftRules.configs.typedCss.rules` in ESLint. It refuses the raw hover
    that the analysis would otherwise not see.
-
 4. Add `dumpPath: '.craft/style-graph.json'` to `craftStyle()` in
    `vite.config.ts` and keep `virtual:craft-style.css` imported at app entry.
-
 5. Make `style:check` build the app, then run the strict analysis:
 
    ```bash

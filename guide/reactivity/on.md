@@ -17,12 +17,12 @@ ref. That is intentional: the source is the trigger, not the caller.
 
 `on$` enables reactive side effects by:
 
-* Listening to source emissions and executing callbacks
-* Automatically unsubscribing when the injection context is destroyed
-* Working with `source$`, `EventEmitter`, and any Observable
-* Accepting a source-returning `craftService` helper directly
-* Returning `SourceBranded` to prevent method exposure in state insertions
-* Providing a clean way to coordinate state updates with source events
+- Listening to source emissions and executing callbacks
+- Automatically unsubscribing when the injection context is destroyed
+- Working with `source$`, `EventEmitter`, and any Observable
+- Accepting a source-returning `craftService` helper directly
+- Returning `SourceBranded` to prevent method exposure in state insertions
+- Providing a clean way to coordinate state updates with source events
 
 ## Signature
 
@@ -42,8 +42,8 @@ function on$<State, SourceService>(
 
 ### Parameters
 
-* **`_source`** - A source, EventEmitter, or Observable to listen to
-* **`callback`** - Function executed when the source emits. Receives the emitted value and can perform side effects
+- **`_source`** - A source, EventEmitter, or Observable to listen to
+- **`callback`** - Function executed when the source emits. Receives the emitted value and can perform side effects
 
 ### Returns
 
@@ -93,10 +93,10 @@ destroyed, preventing memory leaks.
 
 ## Common Patterns
 
-* **State reset**: `on$(resetSource, () => set(initialValue))` - reset state on source emission
-* **State synchronization**: `on$(source, (value) => set(value))` - sync state with source
-* **Multi-state coordination**: Multiple states can use `on$` with the same source
-* **Conditional updates**: `on$(source, (value) => { if(condition) set(value) })` - conditional state changes
+- **State reset**: `on$(resetSource, () => set(initialValue))` - reset state on source emission
+- **State synchronization**: `on$(source, (value) => set(value))` - sync state with source
+- **Multi-state coordination**: Multiple states can use `on$` with the same source
+- **Conditional updates**: `on$(source, (value) => { if(condition) set(value) })` - conditional state changes
 
 ## Examples
 
@@ -243,6 +243,8 @@ console.log(filters.search()); // ''
 console.log(filters.category()); // 'all'
 ```
 
+
+
 ### Conditional state updates
 
 ```typescript
@@ -373,13 +375,13 @@ console.log(lastClick()); // { x: 150, y: 250 }
 
 ## Related
 
-* [`source$`](/guide/reactivity/source) - Create reactive sources
-* [`afterRecomputation`](/guide/reactivity/after-recomputation) - Transform sources for method parameters
-* [`state`](/guide/state/local-state) - Create reactive state with insertions
-* [`craftService`](/guide/app/craft-service) - Organize coordinated states inside reusable services
+- [`source$`](/guide/reactivity/source) - Create reactive sources
+- [`afterRecomputation`](/guide/reactivity/after-recomputation) - Transform sources for method parameters
+- [`state`](/guide/state/local-state) - Create reactive state with insertions
+- [`craftService`](/guide/app/craft-service) - Organize coordinated states inside reusable services
 
 ## See Also
 
-* [source$](/guide/reactivity/source) — what `on$` listens to
-* [fromEventToSource$](/guide/reactivity/from-event-to-source)
-* [Local state](/guide/state/local-state) — event-driven methods
+- [source$](/guide/reactivity/source) — what `on$` listens to
+- [fromEventToSource$](/guide/reactivity/from-event-to-source)
+- [Local state](/guide/state/local-state) — event-driven methods

@@ -165,7 +165,7 @@ current project" is not something a schema can know. See
 [Schema validation](/guide/state/schema-validation).
 
 ::: tip Exceptions as values
-A craft *exception* is a value you declared and expect to handle. An *error* is
+A craft _exception_ is a value you declared and expect to handle. An _error_ is
 the unexpected kind. Keeping the two apart is what makes the exhaustiveness
 checks later possible — see [Exceptions](/guide/concepts/exceptions).
 :::
@@ -175,6 +175,8 @@ checks later possible — see [Exceptions](/guide/concepts/exceptions).
 A write path that owns its loading and failure state, and a declarative link
 between writes and reads.
 
+
 [← 5. Load server data](/learn/05-load-data)
 
 [7. Put state in the URL →](/learn/07-url-state)
+

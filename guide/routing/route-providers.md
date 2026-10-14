@@ -129,7 +129,7 @@ declares a contract; each route provides a concrete implementation derived from 
 
 Abstract services now expose a `provideX(factory)` helper that takes a **generator factory**, tracks
 everything it yields, and binds the result to the requirement token. See
-[craftService → Abstract Providers](/guide/app/craft-service#abstract-providers).
+[Abstract services](/guide/app/abstract-services).
 
 ```ts
 const { User, provideUser } = craftService(
@@ -153,17 +153,16 @@ const user = yield* User(); // User
 Everything yielded inside a `withProviders` factory is tracked at the type level and folded into the
 route's dependency graph used by [`RouteCheckedDI`](/guide/routing/setup):
 
-* The route's **auto-provisioned** tokens (guarded data, params, query params, data) are recognized
+- The route's **auto-provisioned** tokens (guarded data, params, query params, data) are recognized
   as provided by the route itself — yielding them is always valid.
-
-* Any **other** service yielded inside the factory that is not provided by the route or the app
+- Any **other** service yielded inside the factory that is not provided by the route or the app
   surfaces as a missing-provider error, e.g.:
 
   ```
   The SomeService service is not provided in path: "query/:userId"
   ```
 
-* The provider's own name (`User` above) is registered as **self-provided**, so a component on that
+- The provider's own name (`User` above) is registered as **self-provided**, so a component on that
   route can depend on it without a separate provider declaration.
 
 This means the pattern is safe by construction: you cannot wire a route provider against data the
@@ -190,5 +189,5 @@ the route's `providers` array.
 
 ## See Also
 
-* [Setup](/guide/routing/setup) — per-route DI checks
-* [craftService](/guide/app/craft-service) — `abstract` scope, `provideX`, requirements
+- [Setup](/guide/routing/setup) — per-route DI checks
+- [craftService](/guide/app/craft-service) — `abstract` scope, `provideX`, requirements

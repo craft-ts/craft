@@ -25,9 +25,9 @@ The plugin is exposed from `@craft-ts/dev-tools/eslint-rules`.
 recommended and Effect presets, including generated apps. It checks that a
 service factory does not take inputs that its scope cannot own:
 
-* `global` factories have no inputs;
-* `toProvide` and `manuallyProvidedAtRoot` factories use only `$provided`;
-* `function` factories use call-site inputs only; they have no provider for
+- `global` factories have no inputs;
+- `toProvide` and `manuallyProvidedAtRoot` factories use only `$provided`;
+- `function` factories use call-site inputs only; they have no provider for
   `$provided` configuration.
 
 Before — a singleton's value depends on whichever consumer supplies it first:
@@ -213,17 +213,17 @@ export default [
 
 What each rule does:
 
-* `craft-ts/prefer-craft-template-blocks`: keeps `craftComponent(...)` templates declarative by rejecting ternaries, boolean logical expressions, negations, and imperative control flow; nullish value fallbacks remain valid. Use `ifNode(...)`, `matchNode.exhaustive(...)`, `forNode(...)`, or `deferNode(...)` for render control flow
-* `craft-ts/require-craft-computed-for-dynamic-template-lookup`: rejects dynamic object or array lookups in a Craft template when the lookup key comes from a reactive member; move the lookup to a named `craftComputed()` in the component's service and bind that value directly
-* `craft-ts/no-render-writes`: rejects detectable `set()`, `update()`, and `mutate()` calls in component templates and render bindings while allowing DOM event and `onXxx` output callbacks
-* `craft-ts/no-external-state-transition`: rejects generic `replace`, `set`, `update`, or `patch` calls on a value returned by Craft `state(...)` outside its state insertion. Put the transition behind a named state method that accepts intent and computes the next value internally.
-* `craft-ts/require-reactive-template-bindings`: requires signals, named Craft values, and component inputs to be read inside granular binding callbacks instead of during VNode construction; static values and message-catalog interpolation helpers remain valid
-* `craft-ts/no-craft-use`: forbids the synchronous `craftUse(...)` escape hatch in Craft TypeScript files. Declare primitive dependencies with `yield*` in a service, method, or effect body; component templates are synchronous and consume the resulting view API directly.
-* `craft-ts/no-craft-service-return`: forbids returning a value from a `craftService` factory. Its API is assembled from the named values yielded by its generator; use `yield* craftPrivate(...)` for primitives that should stay internal, and `craftExpose(name, value)` for standalone values that belong in the API. The rule autofixes simple returned objects whose properties already match yielded primitive names.
-* `craft-ts/require-craft-service-input-scope`: keeps global services input-free, limits provider-scoped services to `$provided`, and checks function-scoped inputs. TypeScript also rejects invalid service-helper bindings at call sites.
-* `craft-ts/prefer-direct-craft-service-exposure`: reports `craftExpose(...)` wrappers that repeat a yielded service's name, a named primitive result, or a member already returned by a primitive such as `state`, including when the member is renamed; keep the existing nested path (for example, `View.searchInput.setSearchInput`). It also reports service property shortcuts that can be yielded directly and forbids `craftExpose` inside supported primitive declarations or callbacks. Keep `craftExpose` for standalone or computed values.
-* `craft-ts/prefer-craft-computed-for-reactive-generator`: reports a zero-argument generator exposed as a service value when its only statement returns a value derived from a `yield*` read. Declare that value with `yield* craftComputed(name, function* () { ... })`; parameterized generators and multi-step workflows are unaffected.
-* `craft-ts/require-craft-component-for-exported-node-factory`: requires an exported function that directly returns a Craft node, such as `button(...)`, to be declared with `craftComponent(...)` so Craft directives and composition remain available
+- `craft-ts/prefer-craft-template-blocks`: keeps `craftComponent(...)` templates declarative by rejecting ternaries, boolean logical expressions, negations, and imperative control flow; nullish value fallbacks remain valid. Use `ifNode(...)`, `matchNode.exhaustive(...)`, `forNode(...)`, or `deferNode(...)` for render control flow
+- `craft-ts/require-craft-computed-for-dynamic-template-lookup`: rejects dynamic object or array lookups in a Craft template when the lookup key comes from a reactive member; move the lookup to a named `craftComputed()` in the component's service and bind that value directly
+- `craft-ts/no-render-writes`: rejects detectable `set()`, `update()`, and `mutate()` calls in component templates and render bindings while allowing DOM event and `onXxx` output callbacks
+- `craft-ts/no-external-state-transition`: rejects generic `replace`, `set`, `update`, or `patch` calls on a value returned by Craft `state(...)` outside its state insertion. Put the transition behind a named state method that accepts intent and computes the next value internally.
+- `craft-ts/require-reactive-template-bindings`: requires signals, named Craft values, and component inputs to be read inside granular binding callbacks instead of during VNode construction; static values and message-catalog interpolation helpers remain valid
+- `craft-ts/no-craft-use`: forbids the synchronous `craftUse(...)` escape hatch in Craft TypeScript files. Declare primitive dependencies with `yield*` in a service, method, or effect body; component templates are synchronous and consume the resulting view API directly.
+- `craft-ts/no-craft-service-return`: forbids returning a value from a `craftService` factory. Its API is assembled from the named values yielded by its generator; use `yield* craftPrivate(...)` for primitives that should stay internal, and `craftExpose(name, value)` for standalone values that belong in the API. The rule autofixes simple returned objects whose properties already match yielded primitive names.
+- `craft-ts/require-craft-service-input-scope`: keeps global services input-free, limits provider-scoped services to `$provided`, and checks function-scoped inputs. TypeScript also rejects invalid service-helper bindings at call sites.
+- `craft-ts/prefer-direct-craft-service-exposure`: reports `craftExpose(...)` wrappers that repeat a yielded service's name, a named primitive result, or a member already returned by a primitive such as `state`, including when the member is renamed; keep the existing nested path (for example, `View.searchInput.setSearchInput`). It also reports service property shortcuts that can be yielded directly and forbids `craftExpose` inside supported primitive declarations or callbacks. Keep `craftExpose` for standalone or computed values.
+- `craft-ts/prefer-craft-computed-for-reactive-generator`: reports a zero-argument generator exposed as a service value when its only statement returns a value derived from a `yield*` read. Declare that value with `yield* craftComputed(name, function* () { ... })`; parameterized generators and multi-step workflows are unaffected.
+- `craft-ts/require-craft-component-for-exported-node-factory`: requires an exported function that directly returns a Craft node, such as `button(...)`, to be declared with `craftComponent(...)` so Craft directives and composition remain available
 
 ### Avoid flattening primitive members with `craftExpose`
 
@@ -293,9 +293,8 @@ export const FilterButton = craftComponent(
 The rule also follows named exports such as `export { filterButton }` and
 checks exported arrow functions.
 
-* `craft-ts/no-type-assertions-in-template`: forbids `as ...` and angle-bracket type assertions in Craft templates; fix the type in the component's service or expose a correctly typed derived value
-
-* `craft-ts/no-explicit-craft-template-return-type`: forbids explicit return annotations on render callbacks inside `craftComponent(...)`. A broad annotation such as `(): CraftNodeChildren` widens the concrete node type, breaks dependency and type-safe DI inference, and can surface as a runtime error. Let the callback return type be inferred:
+- `craft-ts/no-type-assertions-in-template`: forbids `as ...` and angle-bracket type assertions in Craft templates; fix the type in the component's service or expose a correctly typed derived value
+- `craft-ts/no-explicit-craft-template-return-type`: forbids explicit return annotations on render callbacks inside `craftComponent(...)`. A broad annotation such as `(): CraftNodeChildren` widens the concrete node type, breaks dependency and type-safe DI inference, and can surface as a runtime error. Let the callback return type be inferred:
 
   ```ts
   const pendingStatusMessage = (message: string) => p(message);
@@ -317,7 +316,7 @@ checks exported arrow functions.
   and output callbacks remain allowed because those callbacks do not produce
   rendered children.
 
-* `craft-ts/no-extracted-craft-component-parts`: requires the function passed to
+- `craft-ts/no-extracted-craft-component-parts`: requires the function passed to
   `craftComponent(...)` to stay inline. Keeping it at the component boundary
   preserves contextual type inference and makes the component's behaviour
   readable in one place.
@@ -348,7 +347,7 @@ checks exported arrow functions.
   returned node expression inline so `craftComponent(...)` can contextually
   type it.
 
-* `craft-ts/require-direct-craft-component-template`: requires the third
+- `craft-ts/require-direct-craft-component-template`: requires the third
   argument to `craftComponent(...)` to be a concise arrow function whose body
   directly constructs a template node or node array. Keep service setup,
   destructuring, aliases, and other statements outside the component template;
@@ -393,33 +392,20 @@ checks exported arrow functions.
   );
   ```
 
-* `craft-ts/no-ephemeral-template-form-state`: forbids `let` / `const` / `var` in a `craftComponent(...)` or `craftDirective(...)` template. Component templates now return their node tree directly, so state and derived values belong in a view service; directive generator templates must also avoid render-local state because they can rerun.
-
-* `craft-ts/require-form-for-input-action`: rejects a button's direct `mutate(...)` or `method(...)` call when it consumes an input-bound value, including through a local record or variable; use `insertForm`, `insertFormAttributes`, and `insertFormSubmit` for mutation-backed forms, then submit a native `form(...)` with a `type: 'submit'` button
-
-* `craft-ts/template-element-name-unique`: requires named HTML helpers to use a static, unique local name within a component; use the object-first helper form for unnamed elements such as `p({ id: 'hint' }, ...)`
-
-* `craft-ts/no-craft-computed-side-effects`: forbids writes and asynchronous work inside `craftComputed`; only reactive reads and `settled(...)` are allowed. The graph-wide counterpart is [`assertCraftComputedPure`](/guide/testing/architecture#assertcraftcomputedpure).
-
-* `craft-ts/no-effect-outside-loaders`: keeps `params`, methods, `craftComputed(...)`, and `craftEffect(...)` synchronous by allowing Effect values and Effect service reads only in Effect loaders; `no-effect-in-params` remains as a compatibility alias
-
-* `craft-ts/sync-effect-body`: keeps a body declared synchronous (`SyncOp` in its requirements) free of anything that may suspend — async constructors such as `Effect.sleep`/`Effect.promise`, and members nothing declares synchronous. Type-aware: the ESLint parser must use `projectService: true` or a TypeScript `project`
-
-* `craft-ts/no-explicit-effect-type`: lets `Effect.gen` infer its complete type instead of repeating an explicit Effect annotation; contracts declared in interfaces and type aliases remain allowed
-
-* `craft-ts/prefer-inline-effect-insertion`: keeps the `queryEffect` insertion factory inline so its resource and exception types are inferred without a separate `InsertionParams` context alias
-
-* `craft-ts/prefer-inline-route-providers`: inlines a route provider tuple used only once by `loadCraftComponent(...)`, preserving the route-level type proof
-
-* `craft-ts/prefer-craft-reactivity`: rejects authored signal/computed/effect/resource APIs, explicit `.subscribe()` calls, and RxJS `Subject`/`BehaviorSubject`/`ReplaySubject`; use `state`, `craftComputed`, `craftEffect`, `query`, and named `source$`/`on$` flows
-
-* `craft-ts/prefer-craft-service`: keeps services in the `craftService(...)` model
-
-* `craft-ts/no-craft-service-component-same-file`: forbids declaring `craftService(...)` and `craftComponent(...)` in the same file; a route-level service provider combined with a lazy-loaded component can break lazy loading, so keep them in separate files
-
-* `craft-ts/max-craft-declarations-per-file`: reports the third and subsequent `craftComponent(...)`, `craftService(...)`, or `craftDirective(...)` declaration of the same kind in a file; keep Craft entities split across focused files
-
-* `craft-ts/max-craft-component-lines`: reports a file that declares a `craftComponent(...)` once it exceeds **700 non-import lines** (`import` statements and blank lines are not counted, so a component with many dependencies is not penalized for its import block). A file this long usually mixes business logic, view logic, and markup that could live in separate, independently testable units:
+- `craft-ts/no-ephemeral-template-form-state`: forbids `let` / `const` / `var` in a `craftComponent(...)` or `craftDirective(...)` template. Component templates now return their node tree directly, so state and derived values belong in a view service; directive generator templates must also avoid render-local state because they can rerun.
+- `craft-ts/require-form-for-input-action`: rejects a button's direct `mutate(...)` or `method(...)` call when it consumes an input-bound value, including through a local record or variable; use `insertForm`, `insertFormAttributes`, and `insertFormSubmit` for mutation-backed forms, then submit a native `form(...)` with a `type: 'submit'` button
+- `craft-ts/template-element-name-unique`: requires named HTML helpers to use a static, unique local name within a component; use the object-first helper form for unnamed elements such as `p({ id: 'hint' }, ...)`
+- `craft-ts/no-craft-computed-side-effects`: forbids writes and asynchronous work inside `craftComputed`; only reactive reads and `settled(...)` are allowed. The graph-wide counterpart is [`assertCraftComputedPure`](/guide/testing/architecture#assertcraftcomputedpure).
+- `craft-ts/no-effect-outside-loaders`: keeps `params`, methods, `craftComputed(...)`, and `craftEffect(...)` synchronous by allowing Effect values and Effect service reads only in Effect loaders; `no-effect-in-params` remains as a compatibility alias
+- `craft-ts/sync-effect-body`: keeps a body declared synchronous (`SyncOp` in its requirements) free of anything that may suspend — async constructors such as `Effect.sleep`/`Effect.promise`, and members nothing declares synchronous. Type-aware: the ESLint parser must use `projectService: true` or a TypeScript `project`
+- `craft-ts/no-explicit-effect-type`: lets `Effect.gen` infer its complete type instead of repeating an explicit Effect annotation; contracts declared in interfaces and type aliases remain allowed
+- `craft-ts/prefer-inline-effect-insertion`: keeps the `queryEffect` insertion factory inline so its resource and exception types are inferred without a separate `InsertionParams` context alias
+- `craft-ts/prefer-inline-route-providers`: inlines a route provider tuple used only once by `loadCraftComponent(...)`, preserving the route-level type proof
+- `craft-ts/prefer-craft-reactivity`: rejects authored signal/computed/effect/resource APIs, explicit `.subscribe()` calls, and RxJS `Subject`/`BehaviorSubject`/`ReplaySubject`; use `state`, `craftComputed`, `craftEffect`, `query`, and named `source$`/`on$` flows
+- `craft-ts/prefer-craft-service`: keeps services in the `craftService(...)` model
+- `craft-ts/no-craft-service-component-same-file`: forbids declaring `craftService(...)` and `craftComponent(...)` in the same file; a route-level service provider combined with a lazy-loaded component can break lazy loading, so keep them in separate files
+- `craft-ts/max-craft-declarations-per-file`: reports the third and subsequent `craftComponent(...)`, `craftService(...)`, or `craftDirective(...)` declaration of the same kind in a file; keep Craft entities split across focused files
+- `craft-ts/max-craft-component-lines`: reports a file that declares a `craftComponent(...)` once it exceeds **700 non-import lines** (`import` statements and blank lines are not counted, so a component with many dependencies is not penalized for its import block). A file this long usually mixes business logic, view logic, and markup that could live in separate, independently testable units:
 
   ```ts
   // ❌ craft-ts/max-craft-component-lines
@@ -483,105 +469,56 @@ checks exported arrow functions.
   Set a project-specific threshold with `['warn', { max: 600 }]` if 700 lines is
   still too generous for your team.
 
-* `craft-ts/no-injection-token`: forbids authored `InjectionToken` contracts; declare them with `craftService({ name, providedIn: 'abstract' }, abstract<Contract>())`
-
-* `craft-ts/prefer-craft-http-client`: forbids direct transport usage in favor of `CraftHttpClient`
-
-* `craft-ts/prefer-craft-http-transport`: forbids direct `fetch()` and `XMLHttpRequest` because they bypass typed responses and exceptions, tracing, cancellation, and the architecture graph; use `query()` for reads or `mutation()` for writes with `CraftHttpClient`, or `CraftBinaryHttpClient` for raw binary bodies
-
-* `craft-ts/prefer-craft-input-output`: keeps component inputs and outputs in the `Input`/`Output` model used by `craftComponent(...)`
-
-* `craft-ts/require-primitive-derived-property`: requires a `computed` or `craftComputed` that only depends on one primitive in the same component/service to be exposed by that primitive's insertion; simple cases are autofixed
-
-* `craft-ts/no-reused-primitive-method`: requires an exposed primitive insertion method to have one call site per file, including unchanged aliases; naming an alias is not a call site, binding it is. Create a context-specific insertion method for each distinct use
-
-* `craft-ts/no-async-await`: forbids `async` functions, `await`, and `for await...of` because native Promise suspension hides Craft dependencies and can lose cancellation or exception tracking; use generator-based Craft primitives, `craftSleep`, and `CraftHttpClient` instead
-
-* `craft-ts/require-generator-resource-loader`: requires `query`, `mutation`, and `asyncProcess` loaders to be generator functions because a plain or async return hides remote dependencies from the resource lifecycle; use `yield*` to keep each suspension tracked
-
-* `craft-ts/no-throw`: forbids `throw` in Craft code because it bypasses the typed resource exception channel, and offers a Quick Fix that returns `craftException({ _tag: 'UNEXPECTED_ERROR' }, { error: ... })`; keep technical boundaries and tests outside this rule when their contracts require thrown errors
-
-* `craft-ts/no-imperative-craft-resource-trigger`: forbids `query.call(...)`, `mutation.mutate(...)`, and `asyncProcess.method(...)` in a `craftEffect` dependency graph, including through `craftGen(...)`. The graph-wide counterpart, including `state` / `source$` writes, is [`assertCraftEffectNoImperativeSync`](/guide/testing/architecture#assertcrafteffectnoimperativesync).
-
-* `craft-ts/no-imperative-craft-method-actions`: forbids composing multiple imperative actions in a `craftMethod`; emit a `source$` event and let the affected query react with `insertReactOnMutation(...)` instead. A handler such as `event.preventDefault()` followed by one `mutation.mutate(...)` remains valid.
-
-* `craft-ts/no-event-only-craft-method`: errors by default when a `craftMethod` only calls `preventDefault()`, `stopPropagation()`, or `stopImmediatePropagation()` and then delegates to one action. Bind the action with [`eventAction(...)`](/guide/components/directives#event-actions-and-dom-modifiers) on the element. The default architecture check enforces the same rule across files.
-
-* `craft-ts/no-remote-work-in-craft-method`: forbids `CraftHttpClient.*(...)` inside `craftMethod` because that action boundary does not own request loading, cancellation, exceptions, or graph dependencies; define the request directly in the `query` or `mutation` loader.
-
-* `craft-ts/no-type-assertions-in-resource-loader`: forbids `as ...` and angle-bracket assertions inside `query`, `mutation`, and `asyncProcess` loaders because assertions only silence TypeScript and can hide Promise, response, or transport mismatches; repair the request or adapter typing instead.
-
-* `craft-ts/no-type-assertions-in-craft-code`: forbids TypeScript type assertions in authored Craft code, including `as const` and angle-bracket assertions; the narrow `undefined as T | undefined` seed is allowed for intentionally optional state values. Use correct API typing or `satisfies` for shape validation. Low-level technical adapters may disable this rule locally when an explicit runtime boundary cast is unavoidable.
-
-* `craft-ts/no-explicit-resource-loader-type`: forbids explicit parameter and return annotations on `query`, `mutation`, and `asyncProcess` loaders; let the resource infer its contract from `params`, `method`, and the yielded operations instead of writing `Generator<...>` or `{ params: string }`
-
-* `craft-ts/no-explicit-craft-insertion-type`: forbids explicit parameter and return annotations on callbacks passed to `insert*Pipe`; let the primitive infer the insertion context and derived output
-
-* `craft-ts/no-craft-primitive-type-assertion`: forbids chained assertions such as `as unknown as Generator<...>` around Craft primitive generators, which can hide the inferred output and dependency contract
-
-* `craft-ts/prefer-insert-deep-yieldable`: rejects adapting a property of a primitive result with `deepYieldable(...)`; add `insertDeepYieldable()` to the primitive and read the property directly
-
-* `craft-ts/no-imperative-template-action-chain`: forbids chaining multiple Craft actions in one template event callback, or in a generator passed as a component prop (`trigger: function* () { … }`); emit one `source$` event and let the query, mutation, and state react through `on$`. With type information, any `yield*` of a service method counts as an action (`yield* View.label.recordConfirm()`), whatever its name; `yield*` of a reactive reader does not (`const user = yield* View.user()`), so a handler can read as many values as it needs around a single action
-
-* `craft-ts/prefer-route-query-params-for-filter-state`: warns when a local `state()` is used directly or through a local derivation as `params` for `query`, `queryEffect`, `asyncProcess`, or `asyncProcessEffect`; use `queryParams()` for values that should survive reloads and be represented in the URL. The graph-wide counterpart, which also sees cross-file dependencies, is [`assertResourceParamsPreferQueryParams`](/guide/testing/architecture/resource-params-query-state).
-
-* `craft-ts/no-imperative-storage-in-craft-method`: forbids direct storage access and imperative location changes in a `craftMethod`; use `insertReactOnMutation(...)` with `optimisticUpdate: () => undefined` to clear the affected query and let its persistence follow the query state.
-
-* `craft-ts/no-transition-actions`: forbids `query.call(...)`, `mutation.mutate(...)`, and `asyncProcess.method(...)` inside `transitionStep(...)`; validate the event and emit a source, then let the resource react to that source.
-
-* `craft-ts/require-craft-resource-trigger-yield`: requires those triggers to use `yield*` inside generator functions, while ordinary UI callbacks may keep imperative calls
-
-* `craft-ts/require-craft-method-for-yieldable-callback`: requires callbacks returned by a `craftComponent` factory to wrap yieldable Craft method calls in `craftMethod(...)`
-
-* `craft-ts/prefer-direct-yieldable-callback`: replaces a template generator or generator method that only delegates `yield* callback()` with the callback reference itself (`callback` or `object.method`)
-
-* `craft-ts/prefer-deep-yieldable-for-item`: warns when a `forNode` item is read repeatedly through `yield* item()` property accesses; expose a named `insertDeepYieldable('property')` collection and use direct item property readers
-
-* `craft-ts/require-yieldable-reactive-read`: requires Craft reactive readers to be delegated with `yield*` inside generator functions; a named `ifNode` condition callback may return one reader invocation directly
-
-* `craft-ts/require-yieldable-template-method`: requires yieldable Craft method calls in a `craftComponent` template to be delegated with `yield*`, or passed as a reference (`click: counter.increment`)
-
-* `craft-ts/require-yieldable-insertion-write`: requires `set(...)`, `patch(...)`, and `update(...)` to be delegated with `yield*` when they are used inside a generator method
-
-* `craft-ts/require-assert-exhaustive-route-exceptions`: adds the collection-level `assertExhaustiveRouteExceptions(...)` safety net
-
-* `craft-ts/require-craft-exception-handler`: enforces `craftExceptionHandler(function* (...) {})`; simple handlers are autofixed and ambiguous raw redirects are reported for manual migration
-
-* `craft-ts/require-catch-tag-exhaustive-reaction`: rejects empty `catchTag.exhaustive` handlers and bare `return;` statements so each caught exception triggers a real reaction
-
-* `craft-ts/require-exception-component-di-check`: generates O(1) `RouteExceptionComponentCheckedDI` checks for `renderComponent`, route-level `errorComponent`, `withErrorComponent`, `withRouteLoadError`, and route-local `provideRouteLoadErrorComponent`
-
-* `craft-ts/require-pending-component-di-check`: generates the independent `RouteCheckedDI` check for each `pendingComponent`
-
-* `craft-ts/no-raw-class`: requires every `class:` binding — on an element, in `attrs`, on a component `host` — to trace back to a sheet imported from a `*.style` module: `sheet.key`, a `const` bound to one, an array of them, a typed input (a parameter or a member of one), or a function that only returns one. A string, a template literal, a conditional or an object of booleans is refused. A class assembled at render time is a visual state nothing recorded, so the [visual matrix](/guide/style/testing) would enumerate what the sheets declare while the DOM shows something else; and a sheet declared outside a `*.style.ts` is never evaluated by the build, so its class has no CSS. Make the variation an axis and set a `data-*` attribute
-
-* `craft-ts/no-inline-style`: restricts `style:` to `assign(...)` from `@craft-ts/style` — or an array of them, an object spreading only them, a conditional whose branches are all of them, or a function that only returns them. What varies at runtime is a typed variable (`cssVars` + `assign`), read by a sheet; `attrs.style` is always refused
-
-* `craft-ts/no-component-css`: forbids every `.css` import except `virtual:craft-style.css`. Global rules go in [`craftGlobalStyles`](/guide/style/foundation), fonts in `defineFont`
-
-* `craft-ts/no-forbidden-eslint-disable`: requires a reason on every directive that disables a design-system rule — `// eslint-disable-next-line craft-ts/no-raw-class -- markdown output carries its own classes`. The reason is what the reviewer decides on in Review Attest. It also forbids disabling the rules listed in `.craft/eslint-disable-policy.json`. A blanket `eslint-disable` silences this rule too, so it cannot be reported here; Review Attest lists it
-
-* `craft-ts/no-raw-css-value`: forbids a string or number literal as an argument to a `@craft-ts/style` helper — `p('12px')`, `bg('red')`. If the scale is missing the step, add it to the scale; if the value genuinely cannot be proven, `unsafeLength('13px', reason)` compiles and makes the debt countable in the [graph](/guide/style/testing#what-the-graph-adds)
-
-* `craft-ts/no-free-has`: forbids a hand-written `:has()` in styles. It reaches across the component boundary, so what a component looks like depends on markup it does not own — a state the matrix cannot enumerate. Use the `descendant` axis, which is a closed set and carries its own test driver
-
-* `craft-ts/style-file-boundary`: restricts a `*.style.ts` to style-vocabulary imports. The [build plugin](/guide/style/setup) imports the file in Node to read what it registered, so an application import would run application code at build time
-
-* `craft-ts/require-effect-adapters`: requires the Effect-aware adapters — `queryEffect`, `mutationEffect`, `asyncProcessEffect`, and `transitionGuardEffect` — instead of the plain primitives and `transitionGuard` in an Effect application. See [Choose the right adapter](/guide/advanced/effect#choose-the-right-adapter)
-
-* `craft-ts/craft-signal-source-name-match`: requires `signalSource(name, ...)` to take a string literal matching the variable, class property or object property it is assigned to, so the name in a trace is the name in the source. A computed name defeats the [architecture graph](/guide/testing/architecture), which reads these names statically
-
-* `craft-ts/require-child-route-mount-check`: adds the missing `assertChildRouteMounts(...)` call + import (Quick Fix) for any `craftRoutes(...)` collection that mounts lazy `loadChildren`, so a `.withParent`-pinned child mounted under the wrong path is a compile error
-
-* `craft-ts/require-lazy-load-with-retry`: wraps route `loadComponent` and `loadChildren` imports with the generated `withRetry(...)` loader helper while preserving a statically analyzable import specifier
-
-* `craft-ts/global-exception-registry-match`: keeps `CraftGlobalExceptionRegistry` synchronized with handlers delegating to `globalError()`
-
-* `craft-ts/prefer-craft-router-link`: requires `CraftRouterLink` for internal `a(..., { href: ... })` navigation; external URLs, fragment links, downloads, `_blank`, and links marked with `data-navigation: 'external'` remain native
-
-* `craft-ts/no-raw-craft-router-url`: rejects reading `CraftRouter.url`; use the typed route parameter helper generated by `craftRoutes(...)` instead of parsing the URL
-
-* `craft-ts/no-craft-component-return-type`: rejects explicit annotations on `craftComponent(...)` results so dependency and template inference remains intact
+- `craft-ts/no-injection-token`: forbids authored `InjectionToken` contracts; declare them with `craftService({ name, providedIn: 'abstract' }, abstract<Contract>())`
+- `craft-ts/prefer-craft-http-client`: forbids direct transport usage in favor of `CraftHttpClient`
+- `craft-ts/prefer-craft-http-transport`: forbids direct `fetch()` and `XMLHttpRequest` because they bypass typed responses and exceptions, tracing, cancellation, and the architecture graph; use `query()` for reads or `mutation()` for writes with `CraftHttpClient`, or `CraftBinaryHttpClient` for raw binary bodies
+- `craft-ts/prefer-craft-input-output`: keeps component inputs and outputs in the `Input`/`Output` model used by `craftComponent(...)`
+- `craft-ts/require-primitive-derived-property`: requires a `computed` or `craftComputed` that only depends on one primitive in the same component/service to be exposed by that primitive's insertion; simple cases are autofixed
+- `craft-ts/no-reused-primitive-method`: requires an exposed primitive insertion method to have one call site per file, including unchanged aliases; naming an alias is not a call site, binding it is. Create a context-specific insertion method for each distinct use
+- `craft-ts/no-async-await`: forbids `async` functions, `await`, and `for await...of` because native Promise suspension hides Craft dependencies and can lose cancellation or exception tracking; use generator-based Craft primitives, `craftSleep`, and `CraftHttpClient` instead
+- `craft-ts/require-generator-resource-loader`: requires `query`, `mutation`, and `asyncProcess` loaders to be generator functions because a plain or async return hides remote dependencies from the resource lifecycle; use `yield*` to keep each suspension tracked
+- `craft-ts/no-throw`: forbids `throw` in Craft code because it bypasses the typed resource exception channel, and offers a Quick Fix that returns `craftException({ _tag: 'UNEXPECTED_ERROR' }, { error: ... })`; keep technical boundaries and tests outside this rule when their contracts require thrown errors
+- `craft-ts/no-imperative-craft-resource-trigger`: forbids `query.call(...)`, `mutation.mutate(...)`, and `asyncProcess.method(...)` in a `craftEffect` dependency graph, including through `craftGen(...)`. The graph-wide counterpart, including `state` / `source$` writes, is [`assertCraftEffectNoImperativeSync`](/guide/testing/architecture#assertcrafteffectnoimperativesync).
+- `craft-ts/no-imperative-craft-method-actions`: forbids composing multiple imperative actions in a `craftMethod`; emit a `source$` event and let the affected query react with `insertReactOnMutation(...)` instead. A handler such as `event.preventDefault()` followed by one `mutation.mutate(...)` remains valid.
+- `craft-ts/no-event-only-craft-method`: errors by default when a `craftMethod` only calls `preventDefault()`, `stopPropagation()`, or `stopImmediatePropagation()` and then delegates to one action. Bind the action with [`eventAction(...)`](/guide/components/directives#event-actions-and-dom-modifiers) on the element. The default architecture check enforces the same rule across files.
+- `craft-ts/no-remote-work-in-craft-method`: forbids `CraftHttpClient.*(...)` inside `craftMethod` because that action boundary does not own request loading, cancellation, exceptions, or graph dependencies; define the request directly in the `query` or `mutation` loader.
+- `craft-ts/no-type-assertions-in-resource-loader`: forbids `as ...` and angle-bracket assertions inside `query`, `mutation`, and `asyncProcess` loaders because assertions only silence TypeScript and can hide Promise, response, or transport mismatches; repair the request or adapter typing instead.
+- `craft-ts/no-type-assertions-in-craft-code`: forbids TypeScript type assertions in authored Craft code, including `as const` and angle-bracket assertions; the narrow `undefined as T | undefined` seed is allowed for intentionally optional state values. Use correct API typing or `satisfies` for shape validation. Low-level technical adapters may disable this rule locally when an explicit runtime boundary cast is unavoidable.
+- `craft-ts/no-explicit-resource-loader-type`: forbids explicit parameter and return annotations on `query`, `mutation`, and `asyncProcess` loaders; let the resource infer its contract from `params`, `method`, and the yielded operations instead of writing `Generator<...>` or `{ params: string }`
+- `craft-ts/no-explicit-craft-insertion-type`: forbids explicit parameter and return annotations on callbacks passed to `insert*Pipe`; let the primitive infer the insertion context and derived output
+- `craft-ts/no-craft-primitive-type-assertion`: forbids chained assertions such as `as unknown as Generator<...>` around Craft primitive generators, which can hide the inferred output and dependency contract
+- `craft-ts/prefer-insert-deep-yieldable`: rejects adapting a property of a primitive result with `deepYieldable(...)`; add `insertDeepYieldable()` to the primitive and read the property directly
+- `craft-ts/no-imperative-template-action-chain`: forbids chaining multiple Craft actions in one template event callback, or in a generator passed as a component prop (`trigger: function* () { … }`); emit one `source$` event and let the query, mutation, and state react through `on$`. With type information, any `yield*` of a service method counts as an action (`yield* View.label.recordConfirm()`), whatever its name; `yield*` of a reactive reader does not (`const user = yield* View.user()`), so a handler can read as many values as it needs around a single action
+- `craft-ts/prefer-route-query-params-for-filter-state`: warns when a local `state()` is used directly or through a local derivation as `params` for `query`, `queryEffect`, `asyncProcess`, or `asyncProcessEffect`; use `queryParams()` for values that should survive reloads and be represented in the URL. The graph-wide counterpart, which also sees cross-file dependencies, is [`assertResourceParamsPreferQueryParams`](/guide/testing/architecture/resource-params-query-state).
+- `craft-ts/no-imperative-storage-in-craft-method`: forbids direct storage access and imperative location changes in a `craftMethod`; use `insertReactOnMutation(...)` with `optimisticUpdate: () => undefined` to clear the affected query and let its persistence follow the query state.
+- `craft-ts/no-transition-actions`: forbids `query.call(...)`, `mutation.mutate(...)`, and `asyncProcess.method(...)` inside `transitionStep(...)`; validate the event and emit a source, then let the resource react to that source.
+- `craft-ts/require-craft-resource-trigger-yield`: requires those triggers to use `yield*` inside generator functions, while ordinary UI callbacks may keep imperative calls
+- `craft-ts/require-craft-method-for-yieldable-callback`: requires callbacks returned by a `craftComponent` factory to wrap yieldable Craft method calls in `craftMethod(...)`
+- `craft-ts/prefer-direct-yieldable-callback`: replaces a template generator or generator method that only delegates `yield* callback()` with the callback reference itself (`callback` or `object.method`)
+- `craft-ts/prefer-deep-yieldable-for-item`: warns when a `forNode` item is read repeatedly through `yield* item()` property accesses; expose a named `insertDeepYieldable('property')` collection and use direct item property readers
+- `craft-ts/require-yieldable-reactive-read`: requires Craft reactive readers to be delegated with `yield*` inside generator functions; a named `ifNode` condition callback may return one reader invocation directly
+- `craft-ts/require-yieldable-template-method`: requires yieldable Craft method calls in a `craftComponent` template to be delegated with `yield*`, or passed as a reference (`click: counter.increment`)
+- `craft-ts/require-yieldable-insertion-write`: requires `set(...)`, `patch(...)`, and `update(...)` to be delegated with `yield*` when they are used inside a generator method
+- `craft-ts/require-assert-exhaustive-route-exceptions`: adds the collection-level `assertExhaustiveRouteExceptions(...)` safety net
+- `craft-ts/require-craft-exception-handler`: enforces `craftExceptionHandler(function* (...) {})`; simple handlers are autofixed and ambiguous raw redirects are reported for manual migration
+- `craft-ts/require-catch-tag-exhaustive-reaction`: rejects empty `catchTag.exhaustive` handlers and bare `return;` statements so each caught exception triggers a real reaction
+- `craft-ts/require-exception-component-di-check`: generates O(1) `RouteExceptionComponentCheckedDI` checks for `renderComponent`, route-level `errorComponent`, `withErrorComponent`, `withRouteLoadError`, and route-local `provideRouteLoadErrorComponent`
+- `craft-ts/require-pending-component-di-check`: generates the independent `RouteCheckedDI` check for each `pendingComponent`
+- `craft-ts/no-raw-class`: requires every `class:` binding — on an element, in `attrs`, on a component `host` — to trace back to a sheet imported from a `*.style` module: `sheet.key`, a `const` bound to one, an array of them, a typed input (a parameter or a member of one), or a function that only returns one. A string, a template literal, a conditional or an object of booleans is refused. A class assembled at render time is a visual state nothing recorded, so the [visual matrix](/guide/style/testing) would enumerate what the sheets declare while the DOM shows something else; and a sheet declared outside a `*.style.ts` is never evaluated by the build, so its class has no CSS. Make the variation an axis and set a `data-*` attribute
+- `craft-ts/no-inline-style`: restricts `style:` to `assign(...)` from `@craft-ts/style` — or an array of them, an object spreading only them, a conditional whose branches are all of them, or a function that only returns them. What varies at runtime is a typed variable (`cssVars` + `assign`), read by a sheet; `attrs.style` is always refused
+- `craft-ts/no-component-css`: forbids every `.css` import except `virtual:craft-style.css`. Global rules go in [`craftGlobalStyles`](/guide/style/foundation), fonts in `defineFont`
+- `craft-ts/no-forbidden-eslint-disable`: requires a reason on every directive that disables a design-system rule — `// eslint-disable-next-line craft-ts/no-raw-class -- markdown output carries its own classes`. The reason is what the reviewer decides on in Review Attest. It also forbids disabling the rules listed in `.craft/eslint-disable-policy.json`. A blanket `eslint-disable` silences this rule too, so it cannot be reported here; Review Attest lists it
+- `craft-ts/no-raw-css-value`: forbids a string or number literal as an argument to a `@craft-ts/style` helper — `p('12px')`, `bg('red')`. If the scale is missing the step, add it to the scale; if the value genuinely cannot be proven, `unsafeLength('13px', reason)` compiles and makes the debt countable in the [graph](/guide/style/testing#what-the-graph-adds)
+- `craft-ts/no-free-has`: forbids a hand-written `:has()` in styles. It reaches across the component boundary, so what a component looks like depends on markup it does not own — a state the matrix cannot enumerate. Use the `descendant` axis, which is a closed set and carries its own test driver
+- `craft-ts/style-file-boundary`: restricts a `*.style.ts` to style-vocabulary imports. The [build plugin](/guide/style/setup) imports the file in Node to read what it registered, so an application import would run application code at build time
+- `craft-ts/require-effect-adapters`: requires the Effect-aware adapters — `queryEffect`, `mutationEffect`, `asyncProcessEffect`, and `transitionGuardEffect` — instead of the plain primitives and `transitionGuard` in an Effect application. See [Choose the right adapter](/guide/advanced/effect#choose-the-right-adapter)
+- `craft-ts/craft-signal-source-name-match`: requires `signalSource(name, ...)` to take a string literal matching the variable, class property or object property it is assigned to, so the name in a trace is the name in the source. A computed name defeats the [architecture graph](/guide/testing/architecture), which reads these names statically
+- `craft-ts/require-child-route-mount-check`: adds the missing `assertChildRouteMounts(...)` call + import (Quick Fix) for any `craftRoutes(...)` collection that mounts lazy `loadChildren`, so a `.withParent`-pinned child mounted under the wrong path is a compile error
+- `craft-ts/require-lazy-load-with-retry`: wraps route `loadComponent` and `loadChildren` imports with the generated `withRetry(...)` loader helper while preserving a statically analyzable import specifier
+- `craft-ts/global-exception-registry-match`: keeps `CraftGlobalExceptionRegistry` synchronized with handlers delegating to `globalError()`
+- `craft-ts/prefer-craft-router-link`: requires `CraftRouterLink` for internal `a(..., { href: ... })` navigation; external URLs, fragment links, downloads, `_blank`, and links marked with `data-navigation: 'external'` remain native
+- `craft-ts/no-raw-craft-router-url`: rejects reading `CraftRouter.url`; use the typed route parameter helper generated by `craftRoutes(...)` instead of parsing the URL
+- `craft-ts/no-craft-component-return-type`: rejects explicit annotations on `craftComponent(...)` results so dependency and template inference remains intact
 
 ## Promise and transport boundaries
 
@@ -715,13 +652,13 @@ Spread `craftRules.configs.a11y.rules` to enable the WCAG 2.2 AA preset as
 `error`. The rules walk **all** hyperscript in the file (`craftTemplate`,
 extracted factories, `h('tag')`), not only `craftComponent` argument 3.
 
-* `prefer-named-html-helpers`: forbids `h('img')` / `h('button')` when a named helper exists
-* `require-interactive-local-name`: requires a string-literal first argument on interactive helpers; the local name is the third segment of `data-craft-name="${component}:${tag}:${localName}"`
-* `img-has-alt`, `iframe-has-title`, `button-has-type`, `anchor-has-href`
-* `control-has-accessible-name`, `label-has-associated-control`, `heading-has-content`
-* `no-noninteractive-element-interactions`, `no-positive-tabindex`
-* `valid-aria`, `role-has-required-aria`, `target-blank-noopener`
-* `prefer-relative-heading`, `require-route-heading-outline`,
+- `prefer-named-html-helpers`: forbids `h('img')` / `h('button')` when a named helper exists
+- `require-interactive-local-name`: requires a string-literal first argument on interactive helpers; the local name is the third segment of `data-craft-name="${component}:${tag}:${localName}"`
+- `img-has-alt`, `iframe-has-title`, `button-has-type`, `anchor-has-href`
+- `control-has-accessible-name`, `label-has-associated-control`, `heading-has-content`
+- `no-noninteractive-element-interactions`, `no-positive-tabindex`
+- `valid-aria`, `role-has-required-aria`, `target-blank-noopener`
+- `prefer-relative-heading`, `require-route-heading-outline`,
   `require-outlet-heading-section`, `no-heading-level-skip`
 
 See [Accessibility](/guide/components/accessibility).
@@ -827,10 +764,10 @@ state and templates should use `yield*`.
 
 The accessibility preset also checks the static structure of hyperscript:
 
-* give every `label` an `htmlFor` matching the control `id`, or wrap the control;
-* give named controls and helpers a unique string local name;
-* use `button` or `a` for interactions instead of adding `click` to a `div`;
-* add a `prefers-reduced-motion` branch whenever component CSS defines an
+- give every `label` an `htmlFor` matching the control `id`, or wrap the control;
+- give named controls and helpers a unique string local name;
+- use `button` or `a` for interactions instead of adding `click` to a `div`;
+- add a `prefers-reduced-motion` branch whenever component CSS defines an
   animation or transition.
 
 These checks run on Craft TypeScript templates and extracted helper factories,
@@ -1014,7 +951,7 @@ file before doing the full refactor.
 
 ## See Also
 
-* [Routing setup](/guide/routing/setup) — where these rules are installed
-* [CLI automation](/guide/routing/automation) — the codemods they complement
-* [Architecture rules](/guide/testing/architecture) — graph-wide constraints ESLint cannot see
-* [Activating the style system](/guide/style/setup) — what the four style rules are guarding
+- [Routing setup](/guide/routing/setup) — where these rules are installed
+- [CLI automation](/guide/routing/automation) — the codemods they complement
+- [Architecture rules](/guide/testing/architecture) — graph-wide constraints ESLint cannot see
+- [Activating the style system](/guide/style/setup) — what the four style rules are guarding

@@ -40,11 +40,11 @@ share sheet, a delay, a Web API call.
 
 ## Things that are *not* a primitive
 
-* **Derived values** — use `craftComputed` inside an insertion. Craft keeps the
+- **Derived values** — use `craftComputed` inside an insertion. Craft keeps the
   reader dependency visible in the graph.
-* **Reusable logic across primitives** — that's an
+- **Reusable logic across primitives** — that's an
   [insertion](/guide/concepts/insertions), not a primitive.
-* **A group of primitives with a name and a scope** — that's a
+- **A group of primitives with a name and a scope** — that's a
   [`craftService`](/guide/app/craft-service).
 
 ## What they have in common
@@ -62,6 +62,6 @@ context](/guide/concepts/primitive-anatomy#injectable-runtime-context).
 
 ## See Also
 
-* [Anatomy of a primitive](/guide/concepts/primitive-anatomy)
-* [Learn: your first state](/learn/01-first-state)
-* [Insertions](/guide/concepts/insertions)
+- [Anatomy of a primitive](/guide/concepts/primitive-anatomy)
+- [Learn: your first state](/learn/01-first-state)
+- [Insertions](/guide/concepts/insertions)

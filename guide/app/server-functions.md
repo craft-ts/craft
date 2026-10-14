@@ -99,11 +99,11 @@ non-admin session to a 403 response.
 
 ## Find the pieces
 
-* [`serverFunction`](/learn-effect/09-server-functions)
-* [`craftMiddleware`](/learn-effect/09-server-functions#middleware-and-security)
-* [`clientContext`](/learn-effect/09-server-functions#middleware-and-security)
-* [`craftHandshake`](/learn-effect/09-server-functions#middleware-and-security)
-* [Effect Layers and requirements](/learn-effect/06-layers-routing)
+- [`serverFunction`](/learn-effect/09-server-functions)
+- [`craftMiddleware`](/learn-effect/09-server-functions#middleware-and-security)
+- [`clientContext`](/learn-effect/09-server-functions#middleware-and-security)
+- [`craftHandshake`](/learn-effect/09-server-functions#middleware-and-security)
+- [Effect Layers and requirements](/learn-effect/06-layers-routing)
 
 Useful search terms are `auth`, `authentication`, `authorization`, `session`,
 `role`, `access policy` and `middleware`.

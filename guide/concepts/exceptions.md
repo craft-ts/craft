@@ -9,9 +9,9 @@ follow it, and tell you when nobody handled it.
 
 That is the whole idea, and it rests on a line most codebases leave blurry:
 
-* an **exception** is a failure you declared, expect, and intend to handle —
+- an **exception** is a failure you declared, expect, and intend to handle —
   "this email is taken", "the session expired", "that id is malformed";
-* an **error** is everything else — the unexpected kind, which should surface
+- an **error** is everything else — the unexpected kind, which should surface
   loudly rather than be silently absorbed.
 
 A `try/catch` tells you nothing about what it might catch. A returned
@@ -316,7 +316,7 @@ detail.
 
 ## See Also
 
-* [Route exception handling](/guide/routing/exception-handling)
-* [Architecture rules](/guide/testing/architecture) — `assertRouteDiProofs` keeps the exhaustiveness assert in place
-* [query](/guide/state/server-state) — typed HTTP exception matchers
-* [Form exception handling](/guide/forms/exceptions)
+- [Route exception handling](/guide/routing/exception-handling)
+- [Architecture rules](/guide/testing/architecture) — `assertRouteDiProofs` keeps the exhaustiveness assert in place
+- [query](/guide/state/server-state) — typed HTTP exception matchers
+- [Form exception handling](/guide/forms/exceptions)

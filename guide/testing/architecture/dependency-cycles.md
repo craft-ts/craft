@@ -1,6 +1,5 @@
 ---
-url: >-
-  https://craft-ts.github.io/craft/guide/testing/architecture/dependency-cycles.md
+url: https://craft-ts.github.io/craft/guide/testing/architecture/dependency-cycles.md
 ---
 # No dependency cycles
 
@@ -44,15 +43,15 @@ edges and are not treated as dependency cycles.
 
 Usually one side should depend on a smaller contract:
 
-* extract a read-only service from the two large services;
-* move shared policy into a third service;
-* pass a value as an input instead of resolving the owning service;
-* move a derived value into the consumer instead of publishing it back.
+- extract a read-only service from the two large services;
+- move shared policy into a third service;
+- pass a value as an input instead of resolving the owning service;
+- move a derived value into the consumer instead of publishing it back.
 
 Do not silence a cycle by adding an `allow` list: this assertion has no such
 escape hatch because a cycle changes construction semantics.
 
 ## See also
 
-* [Service scopes](/guide/app/service-scopes)
-* [Composing services](/learn/04-compose)
+- [Service scopes](/guide/app/service-scopes)
+- [Composing services](/learn/04-compose)

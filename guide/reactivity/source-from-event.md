@@ -201,7 +201,7 @@ const { windowSize } = state<WindowSize>(
 
 ## With Operators
 
-craft-ts does not depend on RxJS; this example uses it as *your own* optional
+craft-ts does not depend on RxJS; this example uses it as _your own_ optional
 dependency.
 
 ```typescript
@@ -230,4 +230,4 @@ const { searchQuery } = state('searchQuery', '', {
 
 ## See Also
 
-* [`source$`](/guide/reactivity/source) - Create reactive sources
+- [`source$`](/guide/reactivity/source) - Create reactive sources

@@ -123,15 +123,15 @@ loadChildren-mounted under the route with path 'view-transitions', not 'admin'
 
 Notes:
 
-* A collection without `.withParent` is unpinned and can be mounted anywhere.
-* `assertChildRouteMounts` reads only the parent's own routes; it does not
+- A collection without `.withParent` is unpinned and can be mounted anywhere.
+- `assertChildRouteMounts` reads only the parent's own routes; it does not
   re-validate the child.
-* `.withParent<…>()` is type-only and creates no runtime coupling.
-* `craft-ts/require-child-route-mount-check` adds the missing
+- `.withParent<…>()` is type-only and creates no runtime coupling.
+- `craft-ts/require-child-route-mount-check` adds the missing
   `assertChildRouteMounts(...)` call and import on `--fix`.
 
 ## See Also
 
-* [Setup](/guide/routing/setup)
-* [Architecture rules](/guide/testing/architecture) — `assertRouteDiProofs` catches a routed component with no check
-* [Route providers](/guide/routing/route-providers)
+- [Setup](/guide/routing/setup)
+- [Architecture rules](/guide/testing/architecture) — `assertRouteDiProofs` catches a routed component with no check
+- [Route providers](/guide/routing/route-providers)

@@ -48,12 +48,12 @@ const { TodoStore } = craftService(
 // const { todos } = yield* TodoStore();
 ```
 
-* `craftPrivate(generator)` keeps its yielded values internal. It works for a
+- `craftPrivate(generator)` keeps its yielded values internal. It works for a
   primitive, a service dependency, or a `craftGen` helper creating several
   primitives.
-* `craftExpose(name, value)` exposes a standalone value or gives a value a
+- `craftExpose(name, value)` exposes a standalone value or gives a value a
   deliberate public name.
-* Yield a service directly to expose it under its lower-camel-case name. Yield
+- Yield a service directly to expose it under its lower-camel-case name. Yield
   one of its members with the property shortcut to expose only that member:
 
   ```typescript
@@ -67,7 +67,7 @@ const { TodoStore } = craftService(
   This exposes `translate`, `language`, and `clientCurrency`. Dependencies
   consumed inside nested callbacks are tracked without becoming service API
   members.
-* Two exposed primitives cannot share a name: the service throws when it is
+- Two exposed primitives cannot share a name: the service throws when it is
   created.
 
 A `return` is a type error, and an error at runtime. The
@@ -169,12 +169,12 @@ service during app initialization.
 Declaring a service gives you a set of generated helpers. For one named
 `Counter`:
 
-* `Counter(...)` — consume or compose it inside a craft generator
-* `Counter.someProperty(...)` — derive one public property directly
-* `provideCounter(...)` — for provider-capable scopes
-* `COUNTER_META_DATA` — for metadata-driven tooling
-* `CounterRequirement` — for `abstract` services
-* `provideCounter(factory)` — on `abstract` services, to implement the contract
+- `Counter(...)` — consume or compose it inside a craft generator
+- `Counter.someProperty(...)` — derive one public property directly
+- `provideCounter(...)` — for provider-capable scopes
+- `COUNTER_META_DATA` — for metadata-driven tooling
+- `CounterRequirement` — for `abstract` services
+- `provideCounter(factory)` — on `abstract` services, to implement the contract
   inline
 
 Which of those exist depends on the scope.
@@ -386,6 +386,6 @@ operations and workflows.
 
 ## See Also
 
-* [Service scopes](/guide/app/service-scopes) — the one decision to make
-* [Shaping the public API](/guide/app/expose-api)
-* [Testing services](/guide/testing/services)
+- [Service scopes](/guide/app/service-scopes) — the one decision to make
+- [Shaping the public API](/guide/app/expose-api)
+- [Testing services](/guide/testing/services)

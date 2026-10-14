@@ -110,13 +110,13 @@ from the request.
 
 ## The rule of thumb
 
-* If a query or mutation needs an API operation, yield it in that query or
+- If a query or mutation needs an API operation, yield it in that query or
   mutation.
-* If a service needs another service, yield the dependency in that service's
+- If a service needs another service, yield the dependency in that service's
   factory.
-* If a component needs a dependency directly, yield it in the component's
+- If a component needs a dependency directly, yield it in the component's
   factory.
-* Create a dedicated service when it owns reusable behaviour or a meaningful
+- Create a dedicated service when it owns reusable behaviour or a meaningful
   boundary — not merely to forward one method call.
 
 Direct does not mean unstructured. The dependency is still named, tracked,
@@ -125,9 +125,9 @@ close to the code that uses it.
 
 ## See also
 
-* [The mental model](/guide/concepts/mental-model) — declare, yield, derive
-* [`craftService`](/guide/app/craft-service) — define and compose services
-* [Shaping a service's public API](/guide/app/expose-api) — expose only what a
+- [The mental model](/guide/concepts/mental-model) — declare, yield, derive
+- [`craftService`](/guide/app/craft-service) — define and compose services
+- [Shaping a service's public API](/guide/app/expose-api) — expose only what a
   consumer needs
-* [Testing services](/guide/testing/services) — test the same dependency graph
-* [Architecture rules](/guide/testing/architecture) — constraints across that graph
+- [Testing services](/guide/testing/services) — test the same dependency graph
+- [Architecture rules](/guide/testing/architecture) — constraints across that graph

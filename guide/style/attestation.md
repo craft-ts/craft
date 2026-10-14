@@ -3,7 +3,7 @@ url: https://craft-ts.github.io/craft/guide/style/attestation.md
 ---
 # Attestation: a judgement that survives a refactor
 
-A snapshot suite records *what the output was*. Renaming a local variable
+A snapshot suite records _what the output was_. Renaming a local variable
 changes no pixel, and yet the whole suite asks to be looked at again — so people
 run `--update-snapshots`, and the file that was supposed to record a human
 decision records nothing at all.
@@ -26,7 +26,7 @@ From which the rule the whole design rests on: **when the code changes and the
 evidence does not, the attestation carries itself forward**, marked `renewed`,
 with a note saying "code changed, output unchanged".
 
-That is also why the code fingerprint is allowed to be *cautious*. A slice that
+That is also why the code fingerprint is allowed to be _cautious_. A slice that
 is too wide only costs a re-run. Only a slice that is too narrow is dangerous —
 it misses a regression in silence, and nobody is ever asked about it again.
 
@@ -45,13 +45,13 @@ line counts, column counts, what wraps, what clips, what scrolls, what overlaps.
 
 Three things follow, and each is why the digest exists rather than a screenshot:
 
-* it is **diffable**. `.card padding 8→12` is a sentence a reviewer reads in a
+- it is **diffable**. `.card padding 8→12` is a sentence a reviewer reads in a
   second; two images are not, and a reviewer who cannot see what changed
   approves everything.
-* it is **assertable**. Overflow, truncation, overlap and contrast are
+- it is **assertable**. Overflow, truncation, overlap and contrast are
   comparisons of numbers, so they are **failures**, not queue items — nobody is
   asked, and the message names the node and the pixel count.
-* it is **stable**. Anti-aliasing and font hinting move pixels without moving
+- it is **stable**. Anti-aliasing and font hinting move pixels without moving
   layout; under an image comparison every one of those is a review item.
 
 The PNG is still kept, in the content-addressed store, for the human. It is a
@@ -101,7 +101,7 @@ it has are **thresholds**. `findTransitions` samples a coarse grid — word
 boundaries, digit-count changes — and bisects only inside the intervals where
 the discrete signature actually moved.
 
-Then the report that arrives *before* the bug:
+Then the report that arrives _before_ the bug:
 
 ```
 userCard/title: 1 → 2 lines at 34 characters.
@@ -130,14 +130,14 @@ rather than quietly becoming a lie.
 
 The catalogue is a TypeScript value, which makes two of these exact:
 
-* **the longest locale** for a screen is a computation over the keys that screen
+- **the longest locale** for a screen is a computation over the keys that screen
   uses. One axis point, and the right one — where "test it in German" is only an
   approximation.
-* **the plural categories** are already declared and already checked exhaustive
+- **the plural categories** are already declared and already checked exhaustive
   per locale. They are axis points by construction.
 
 The **pseudo-locale** is the approximation, and it is the one that finds the
-*future* case: 40% longer, `[[bracketed]]` so truncation is visible, every letter
+_future_ case: 40% longer, `[[bracketed]]` so truncation is visible, every letter
 accented so an un-externalised string stands out.
 
 ```ts
@@ -332,7 +332,7 @@ a person last actually looked at it. A review that cannot answer "why am I being
 asked this?" is a review that gets stamped.
 
 **`unwatched`** lists the nodes that moved and belong to no attested subject —
-*what changed while nobody was looking*. It falls out of the machinery for free.
+_what changed while nobody was looking_. It falls out of the machinery for free.
 
 `renew --all` is allowed and is **marked** as a bulk renewal in every
 attestation it writes, and `status` counts them. A bulk renewal that left no
@@ -351,7 +351,7 @@ element and name it instead of clicking a pixel and hoping.
 Freezing means more than serialising the DOM. Craft injects its styles through
 `adoptedStyleSheets`, which `outerHTML` cannot see at all. And keeping the
 stylesheets verbatim would leave every `@media` to be re-evaluated against the
-*reviewer's* window: on the demo's route the two conditions in play are
+_reviewer's_ window: on the demo's route the two conditions in play are
 `(min-width: 48rem)` and `(prefers-color-scheme: dark)` — exactly the two axes of
 the matrix — so four scenarios would collapse into whatever that laptop said.
 Media and supports are therefore evaluated at capture time and their winning
@@ -423,7 +423,7 @@ interface: translating it, or repainting its ground, would make it something
 other than what was measured. Enforcing that turned up a fidelity bug the tool
 had been hiding by being permanently dark — a page paints its own colours, but
 not the canvas underneath, and that comes from `color-scheme`, which was the
-*reviewer's* preference. A component captured on white came back on black for
+_reviewer's_ preference. A component captured on white came back on black for
 anyone whose machine asks for dark. The replay now declares the scheme its
 capture was taken in.
 
@@ -459,7 +459,7 @@ since the one before it — so the second complaint is filed against the second
 group and not, as a single note against every node would have it, against all
 seven.
 
-Selecting *is* referencing: there is no second gesture. Pointing at part of the
+Selecting _is_ referencing: there is no second gesture. Pointing at part of the
 page drops the reference straight into the reason, and refining the selection
 edits that same reference rather than adding another — a click followed by a
 ctrl-click leaves one saying "2 nodes", not a stale "1 node" beside it. Typing
@@ -486,7 +486,7 @@ cut" pressed `a`, Accept, and filed a verdict the reviewer never reached.
 
 Position settles that, not punctuation. The first rule tried was "the sentence
 the token stands in", and it was wrong for the way people write: the complaint
-is typed, ended, and *then* the group is pointed at, so the caret is past the
+is typed, ended, and _then_ the group is pointed at, so the caret is past the
 full stop and the token opens the next sentence rather than closing its own.
 Referencing first and explaining after reads the other way round, so a group
 with nothing before it takes what follows.
@@ -511,7 +511,7 @@ attestation that stayed quiet about that would claim a coverage it does not
 have, so the card states it and the screenshot draws the line where the viewport
 ended.
 
-The verdict buttons carry what they *do*. Three of the five are accepted by the
+The verdict buttons carry what they _do_. Three of the five are accepted by the
 ledger and two are not, and nothing in the words says which — a reviewer
 choosing between "Known issue" and "Block" is choosing between "stops asking"
 and "asks every run", which is the only difference that matters and the one they
@@ -537,7 +537,7 @@ already been replaced.
 The control names what it will lift — `Hide button.clear-cache-btn` — and is
 offered only when something is actually covering the component. It used to read
 "Hide 1 overlay", which asked the reviewer what an overlay is and counted the
-wrong thing: covered *nodes*, when one button sitting on five of them is one
+wrong thing: covered _nodes_, when one button sitting on five of them is one
 thing to lift. Worse, it marked every fixed element on the page whether or not
 it covered anything, and marked nothing that covered without being fixed — so on
 most cards it lifted something irrelevant, and on the cards that mattered it

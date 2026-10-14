@@ -88,6 +88,6 @@ card. `page` waits until the tab is `ready` again (up to `timeoutMs`, default
 
 ## See also
 
-* [Coding agents](/resources/ai-agents) — which MCP to use for docs vs the live tab
-* [Architecture rules](/guide/testing/architecture) — unique interactive names
-* [Observability](/guide/advanced/observability) — primitive traces, not DOM
+- [Coding agents](/resources/ai-agents) — which MCP to use for docs vs the live tab
+- [Architecture rules](/guide/testing/architecture) — unique interactive names
+- [Observability](/guide/advanced/observability) — primitive traces, not DOM

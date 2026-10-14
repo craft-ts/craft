@@ -1,6 +1,5 @@
 ---
-url: >-
-  https://craft-ts.github.io/craft/guide/testing/architecture/primitive-loader-requirements.md
+url: https://craft-ts.github.io/craft/guide/testing/architecture/primitive-loader-requirements.md
 ---
 # Primitive loader requirements
 
@@ -73,5 +72,5 @@ loader-boundary rule.
 
 ## See also
 
-* [Server-state loader rule](./server-state-loader)
-* [Effect integration](/guide/advanced/effect)
+- [Server-state loader rule](./server-state-loader)
+- [Effect integration](/guide/advanced/effect)

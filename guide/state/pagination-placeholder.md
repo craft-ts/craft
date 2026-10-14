@@ -213,6 +213,6 @@ change needs a reload.
 
 ## See Also
 
-* [query](/guide/state/server-state) — the base primitive
-* [Reacting to mutations](/guide/state/react-on-mutation)
-* [Insertions](/guide/concepts/insertions)
+- [query](/guide/state/server-state) — the base primitive
+- [Reacting to mutations](/guide/state/react-on-mutation)
+- [Insertions](/guide/concepts/insertions)

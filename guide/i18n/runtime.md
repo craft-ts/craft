@@ -159,7 +159,7 @@ catalogue is in; only then does `setLocale` accept it.
 ::: warning A locale must be listed to be named
 `setLocale` and `loadLocale` are keyed on the ids in `locales`, so today a
 locale that is **not** in that array cannot be named without a cast — while a
-locale that *is* in it counts as already loaded and never reaches the loader.
+locale that _is_ in it counts as already loaded and never reaches the loader.
 In practice that means the fully lazy catalogue is not expressible in the types
 yet. List every locale, and treat `loader` as the retry-safe cache in front of
 whatever your own loading code does.
@@ -171,4 +171,4 @@ which reads the files rather than the runtime.
 
 ## Next
 
-* [With Effect](./effect.md) — the same keys, as an `Effect`.
+- [With Effect](./effect.md) — the same keys, as an `Effect`.

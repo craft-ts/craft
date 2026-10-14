@@ -35,10 +35,10 @@ const doubled = yield* counter.doubled();
 
 Two modes exist:
 
-* generator factory: `craftComputed(name, function* () { ...; return value; })`
+- generator factory: `craftComputed(name, function* () { ...; return value; })`
   — the default for Craft values. The generator is replayed on every
   recomputation.
-* plain computation: `craftComputed(name, () => value)` — for a computation that
+- plain computation: `craftComputed(name, () => value)` — for a computation that
   only reads values already held by the surrounding scope.
 
 Inside an insertion the name may be omitted: Craft uses the insertion key.
@@ -102,9 +102,9 @@ const tripled = craftUse(craftComputed('tripled', function* () {
 
 ## Caveats
 
-* `craftComputed(...)` must be created inside an injection context.
-* Unknown yielded values are rejected with a `craftComputed`-specific error.
-* `onAppStart(...)` is not supported inside `craftComputed(...)`.
+- `craftComputed(...)` must be created inside an injection context.
+- Unknown yielded values are rejected with a `craftComputed`-specific error.
+- `onAppStart(...)` is not supported inside `craftComputed(...)`.
 
 ## Typing
 
@@ -115,9 +115,9 @@ When using a generator, yielded dependencies are tracked and can be extracted wi
 
 ## See Also
 
-* [`craftMethod`](/guide/reactivity/craft-method)
-* [`craftEffect`](/guide/reactivity/craft-effect)
-* [`craftService`](/guide/app/craft-service)
-* [`onAppStart`](/guide/app/app-start)
-* [Architecture rules](/guide/testing/architecture) — `assertCraftComputedPure`
+- [`craftMethod`](/guide/reactivity/craft-method)
+- [`craftEffect`](/guide/reactivity/craft-effect)
+- [`craftService`](/guide/app/craft-service)
+- [`onAppStart`](/guide/app/app-start)
+- [Architecture rules](/guide/testing/architecture) — `assertCraftComputedPure`
   forbids methods and `source$` writes inside a computed

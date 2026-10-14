@@ -1,6 +1,5 @@
 ---
-url: >-
-  https://craft-ts.github.io/craft/guide/testing/architecture/declarative-baseline.md
+url: https://craft-ts.github.io/craft/guide/testing/architecture/declarative-baseline.md
 ---
 # Declarative architecture baseline
 
@@ -298,13 +297,13 @@ it('protects the baseline graph invariants', () => {
 
 It does **not** cover every architecture policy. Add focused assertions for:
 
-* route DI and error-screen proofs: [`assertRouteDiProofs`](./route-di-proofs);
-* route/page file boundaries: [`assertRouteComponentsInSeparateFiles`](./route-component-files);
-* folder ownership: [`assertPathBoundaries`](./path-boundaries);
-* Effect loader boundaries: [`assertPrimitiveLoaderRequirements`](./primitive-loader-requirements);
-* interactive control names: [`assertInteractiveElementNamed`](./interactive-element-names);
-* `craftEffect` network and imperative-sync constraints: [Effect rules](./craft-effect-network).
-* input-driven mutations and async processes: `assertInputActionForms` (this page).
+- route DI and error-screen proofs: [`assertRouteDiProofs`](./route-di-proofs);
+- route/page file boundaries: [`assertRouteComponentsInSeparateFiles`](./route-component-files);
+- folder ownership: [`assertPathBoundaries`](./path-boundaries);
+- Effect loader boundaries: [`assertPrimitiveLoaderRequirements`](./primitive-loader-requirements);
+- interactive control names: [`assertInteractiveElementNamed`](./interactive-element-names);
+- `craftEffect` network and imperative-sync constraints: [Effect rules](./craft-effect-network).
+- input-driven mutations and async processes: `assertInputActionForms` (this page).
 
 Keep the aggregate assertion for the common baseline, and keep focused rules for
 policies whose failure message should explain a product or team boundary.
@@ -325,5 +324,5 @@ orphan mutation cannot hide inside it.
 
 ## See also
 
-* [Architecture rules](/guide/testing/architecture)
-* [Craft graph vs Nx](/guide/testing/craft-graph-vs-nx)
+- [Architecture rules](/guide/testing/architecture)
+- [Craft graph vs Nx](/guide/testing/craft-graph-vs-nx)

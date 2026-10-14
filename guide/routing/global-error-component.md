@@ -112,7 +112,7 @@ fallback UI.
 
 ## See Also
 
-* [Route exception handling](/guide/routing/exception-handling) — where `globalError()` is returned
-* [Route load errors](/guide/routing/route-load-errors)
-* [Non-blocking navigation](/guide/routing/pending-ui)
-* [Architecture rules](/guide/testing/architecture) — `assertRouteDiProofs` keeps the error-screen proof armed
+- [Route exception handling](/guide/routing/exception-handling) — where `globalError()` is returned
+- [Route load errors](/guide/routing/route-load-errors)
+- [Non-blocking navigation](/guide/routing/pending-ui)
+- [Architecture rules](/guide/testing/architecture) — `assertRouteDiProofs` keeps the error-screen proof armed

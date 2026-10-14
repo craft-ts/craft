@@ -36,6 +36,7 @@ const { UserUpdater } = craftService(
 );
 ```
 
+
 For method properties on services without public inputs, the shortcut can call
 the method directly:
 
@@ -81,6 +82,8 @@ const { CurrentUser } = craftService(
 );
 ```
 
+
+
 The result carries the same dependency tracking as `yield* UsersApi()`, so
 testing utilities see exactly which property was accessed.
 
@@ -118,6 +121,8 @@ const { SearchFacade } = craftService(
   },
 );
 ```
+
+
 
 A shortcut hands back the member it designates, and a reactive member (a
 `state`, a `craftComputed`, a query's `status`…) is **read**: `yield*
@@ -214,6 +219,7 @@ void CounterExtended;
 void provideCounterExtended;
 ```
 
+
 This keeps the dependency graph precise, which is important for both type inference and testing.
 
 When a service factory wants one member as part of its own API, yield the
@@ -233,5 +239,5 @@ name or when exposing a value that is not a service dependency. The
 
 ## See Also
 
-* [craftService](/guide/app/craft-service)
-* [Testing services](/guide/testing/services)
+- [craftService](/guide/app/craft-service)
+- [Testing services](/guide/testing/services)

@@ -87,10 +87,10 @@ short-circuit through typed `craftException` values.
 `craftGen(factory)` wraps a generator factory and returns an invoker you delegate
 to with `yield*`. It keeps the inner generator model intact:
 
-* dependency yields still flow to the outer driver;
-* the success value is returned through `yield*`;
-* `craftException(...)` results are converted into a `CraftGenShortCircuit`;
-* the reachable exception codes remain visible at the type level.
+- dependency yields still flow to the outer driver;
+- the success value is returned through `yield*`;
+- `craftException(...)` results are converted into a `CraftGenShortCircuit`;
+- the reachable exception codes remain visible at the type level.
 
 That makes it the right tool for reusable route logic — role checks, feature
 flags, onboarding gates.
@@ -137,10 +137,10 @@ canActivate: function* () {
 Without it, reusable guards turn into copy-pasted generator blocks with repeated
 branching and ad hoc exception handling. `craftGen` lets you:
 
-* parameterise one guard and reuse it across routes;
-* keep the route logic readable by composing with `yield*`;
-* preserve exhaustiveness, because every reachable exception code stays typed;
-* keep route dependency tracking intact, because the yielded dependencies still
+- parameterise one guard and reuse it across routes;
+- keep the route logic readable by composing with `yield*`;
+- preserve exhaustiveness, because every reachable exception code stays typed;
+- keep route dependency tracking intact, because the yielded dependencies still
   surface to the surrounding route.
 
 In practice this is the difference between "a guard that works" and "a guard you
@@ -148,10 +148,10 @@ can safely reuse and evolve".
 
 ### How it behaves
 
-* A normal return value comes back from `yield*` unchanged.
-* A returned `craftException` makes the wrapper throw `CraftGenShortCircuit`.
-* Yielded dependencies are relayed unchanged to the caller.
-* When you compose several guards, the first exception wins.
+- A normal return value comes back from `yield*` unchanged.
+- A returned `craftException` makes the wrapper throw `CraftGenShortCircuit`.
+- Yielded dependencies are relayed unchanged to the caller.
+- When you compose several guards, the first exception wins.
 
 ## Pitfalls
 
@@ -160,7 +160,7 @@ consumed exactly once — don't store one and `yield*` it twice.
 
 ## See Also
 
-* [Route guards](/guide/routing/guards)
-* [ESLint rules](/guide/routing/eslint-rules) — `require-yieldable-reactive-read` and siblings
-* [Program operators](/guide/advanced/program-operators) — `catchTag` and `retry`
-* [Exceptions as values](/guide/concepts/exceptions)
+- [Route guards](/guide/routing/guards)
+- [ESLint rules](/guide/routing/eslint-rules) — `require-yieldable-reactive-read` and siblings
+- [Program operators](/guide/advanced/program-operators) — `catchTag` and `retry`
+- [Exceptions as values](/guide/concepts/exceptions)

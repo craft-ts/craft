@@ -190,13 +190,13 @@ method must yield every reader it does not own — including this primitive's
 
 Piping is strictly equivalent to attaching members one by one:
 
-* members run **left to right**;
-* each member sees the previous members' outputs on `context.insertions`;
-* the outputs are the **intersection** of all members' — on a key conflict, the
+- members run **left to right**;
+- each member sees the previous members' outputs on `context.insertions`;
+- the outputs are the **intersection** of all members' — on a key conflict, the
   rightmost wins at runtime;
-* tracked dependencies are the **union** of all members', so `ExtractDeps` sees
+- tracked dependencies are the **union** of all members', so `ExtractDeps` sees
   every one;
-* each member is **wrapped individually**, so correlation-id tracking and app
+- each member is **wrapped individually**, so correlation-id tracking and app
   snapshots observe them separately.
 
 ## Nesting
@@ -252,8 +252,8 @@ inference is never degraded.
 
 ## See Also
 
-* [Anatomy of a primitive](/guide/concepts/primitive-anatomy)
-* [Injectable runtime context](/guide/concepts/primitive-anatomy#injectable-runtime-context) —
+- [Anatomy of a primitive](/guide/concepts/primitive-anatomy)
+- [Injectable runtime context](/guide/concepts/primitive-anatomy#injectable-runtime-context) —
   recovering `set` / `update` / `patch` from DI, including for WebMCP
-* [Selecting](/guide/state/select) — `insertSelect` and nested insertions
-* [Reacting to mutations](/guide/state/react-on-mutation)
+- [Selecting](/guide/state/select) — `insertSelect` and nested insertions
+- [Reacting to mutations](/guide/state/react-on-mutation)

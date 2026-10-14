@@ -264,6 +264,6 @@ and other advanced patterns. See
 
 ## See Also
 
-* [Local state](/guide/state/local-state) — for non-URL state
-* [query](/guide/state/server-state) — consuming URL state from a loader
-* [Anatomy of a primitive](/guide/concepts/primitive-anatomy)
+- [Local state](/guide/state/local-state) — for non-URL state
+- [query](/guide/state/server-state) — consuming URL state from a loader
+- [Anatomy of a primitive](/guide/concepts/primitive-anatomy)

@@ -18,13 +18,13 @@ own, derive the rest.** Everything below is a variation on it.
 
 ## Concepts worth a dedicated read
 
-* [The mental model](/guide/concepts/mental-model) — the design principles behind
+- [The mental model](/guide/concepts/mental-model) — the design principles behind
   the API you just used
-* [Exceptions as values](/guide/concepts/exceptions) — declared failures,
+- [Exceptions as values](/guide/concepts/exceptions) — declared failures,
   exhaustively handled
-* [Insertions](/guide/concepts/insertions) — writing your own and composing them
-* [Typed insertion pipes](/guide/concepts/insertion-pipes) — readable composition for each primitive
-* [Generators](/guide/concepts/generators) — `craftGen` outside a service
+- [Insertions](/guide/concepts/insertions) — writing your own and composing them
+- [Typed insertion pipes](/guide/concepts/insertion-pipes) — readable composition for each primitive
+- [Generators](/guide/concepts/generators) — `craftGen` outside a service
 
 ## Teach the app its boundaries
 
@@ -44,11 +44,11 @@ npx nx architecture demo
 
 ## When your app grows
 
-* [Service scopes](/guide/app/service-scopes) — choosing component, per-call, and app-wide lifetimes
-* [Scaling routes](/guide/routing/scaling) — splitting collections before
+- [Service scopes](/guide/app/service-scopes) — choosing component, per-call, and app-wide lifetimes
+- [Scaling routes](/guide/routing/scaling) — splitting collections before
   TypeScript's instantiation ceiling bites
-* [Lazy services](/guide/app/lazy-services) and [App start](/guide/app/app-start)
-* [Observability](/guide/advanced/observability) — logging and tracing that
+- [Lazy services](/guide/app/lazy-services) and [App start](/guide/app/app-start)
+- [Observability](/guide/advanced/observability) — logging and tracing that
   follow the dependency graph
 
 ## Reference
@@ -65,4 +65,6 @@ Importing Craft into an app that an agent will edit? Point it at
 [coding agents](/resources/ai-agents) — `llms.txt`, the `@craft-ts/mcp` server,
 and the Agent Skills.
 
+
 [← 10. Test what you wrote](/learn/10-testing)
+

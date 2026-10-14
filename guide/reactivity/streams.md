@@ -31,8 +31,8 @@ interface CraftStream<A, Y = never> extends Subscribable<A> {
 }
 ```
 
-* `A` is the type of the values.
-* `Y` is the same `Yielded` union a `craftGen` program carries: the
+- `A` is the type of the values.
+- `Y` is the same `Yielded` union a `craftGen` program carries: the
   service-dependency requests the stream's handlers `yield*`, and a marker per
   typed exception the stream may terminate with.
 
@@ -213,14 +213,14 @@ request$.pipe(retry({ times: 3, backoff: 'exponential', delayMs: 200 }));
 poll$.pipe(repeat({ delayMs: 10_000 }));
 ```
 
-* `timeout` raises a **typed** `StreamTimeout` exception (`{ ms }` payload) — catch it with
+- `timeout` raises a **typed** `StreamTimeout` exception (`{ ms }` payload) — catch it with
   `catchTag('StreamTimeout', …)` — rather than throwing a defect.
-* `retry` re-runs the stream on a typed exception, with the same policy as the program
+- `retry` re-runs the stream on a typed exception, with the same policy as the program
   `retry` (`times`, `while` on exception tags, `backoff`, `delayMs`, `schedule`). A defect is
   never retried.
-* `repeat` re-runs on completion. A synchronous source repeated forever never yields
+- `repeat` re-runs on completion. A synchronous source repeated forever never yields
   control: bound it (`times`, `take`, `takeUntil`) or wait between runs.
-* These operators add a `RuntimeTemporalAwaitRequest` to the stream's type: it is
+- These operators add a `RuntimeTemporalAwaitRequest` to the stream's type: it is
   asynchronous, so a synchronous host cannot consume it in place.
 
 ### Grouping and sampling
@@ -357,11 +357,11 @@ subscribe(
 );
 ```
 
-* When the stream may end with typed exceptions, `exception` is **required**: a
+- When the stream may end with typed exceptions, `exception` is **required**: a
   function receiving the union, or a `{ [tag]: handler }` map covering every tag.
-* When the stream depends on services, `{ injector }` is required; the compile
+- When the stream depends on services, `{ injector }` is required; the compile
   error names the missing services.
-* `error` receives defects only.
+- `error` receives defects only.
 
 ### As a craft program
 
@@ -406,7 +406,7 @@ query loader. Correlation tracking, `provideTakeAppSnapshot` and your own
 wrappers therefore see stream work. With no wrapper installed the handler runs
 as is, and a synchronous pipeline stays synchronous.
 
-**`provideStreamTrace` observes root subscriptions.** A *root* is where a stream
+**`provideStreamTrace` observes root subscriptions.** A _root_ is where a stream
 is consumed: `subscribe`, a program terminal, `streamSignal`, an adapter. Inner
 streams (`mergeMap`, `switchMap`, …) are part of their root, not roots
 themselves.
@@ -421,18 +421,18 @@ provideStreamTrace((event, context) => {
 });
 ```
 
-* `traceStage('label')` marks a point inside a pipeline: every notification that
+- `traceStage('label')` marks a point inside a pipeline: every notification that
   passes it is reported as a `stage` event (`stage`, `notification`, `value`), so
   a long pipeline shows where a value, an exception or a defect went through. It
   never alters the stream and is a plain pass-through when nothing traces.
-* `name` comes from the `{ name }` option of `subscribe` / `captureStreamContext`;
+- `name` comes from the `{ name }` option of `subscribe` / `captureStreamContext`;
   `streamSignal` passes its own.
-* `startCorrelationId` is the user gesture that was current when the stream
+- `startCorrelationId` is the user gesture that was current when the stream
   started — the link between "the user clicked Save" and "this feed emitted
   four seconds later".
-* `unsubscribe` is reported only when the consumer leaves before any terminal
+- `unsubscribe` is reported only when the consumer leaves before any terminal
   notification.
-* Observers are passive: they run in the stream's injector, cannot alter the
+- Observers are passive: they run in the stream's injector, cannot alter the
   stream, and one that throws is ignored.
 
 ```ts
@@ -459,7 +459,7 @@ Every timer in `@craft-ts/stream` — `interval`, `timer`, `debounce`, `throttle
 through the **temporal runtime** of the stream's context, the same one `craftSleep`,
 `asyncProcess` and `query` use. There is no raw `setTimeout` in the library. Two consequences:
 
-* **One clock to drive.** A test activates a `VirtualCraftTemporalRuntime` once and every
+- **One clock to drive.** A test activates a `VirtualCraftTemporalRuntime` once and every
   stream timer — and every other craft timer — follows it:
 
   ```ts
@@ -474,7 +474,7 @@ through the **temporal runtime** of the stream's context, the same one `craftSle
   restore();
   ```
 
-* **Cleanup comes with the subscription.** A timer is a task on the runtime, cancelled when the
+- **Cleanup comes with the subscription.** A timer is a task on the runtime, cancelled when the
   subscription ends or the owner's `DestroyRef` is destroyed; `clock.pendingTasks()` shows what is
   still waiting, which is how a test proves nothing leaked.
 
@@ -534,16 +534,16 @@ const prices$ = fromStream(priceStream); // Stream -> CraftStream
 const effectStream = toStream(prices$); // CraftStream -> Stream
 ```
 
-* A typed Effect failure becomes a craft **exception** tagged with the error's `_tag`
+- A typed Effect failure becomes a craft **exception** tagged with the error's `_tag`
   (so `catchTag` works on it); a defect (`die`) stays a defect; an interruption is neither.
-* `fromStream` resolves the Effect injector level (`provideLayer`) **at subscription**,
+- `fromStream` resolves the Effect injector level (`provideLayer`) **at subscription**,
   flattens chunks, and interrupts the fiber when unsubscribed or when the owner is
   destroyed. A stream with requirements the type cannot see provided does not compile.
-* `toStream` has a **bounded** buffer (64, sliding by default): a craft stream pushes and
+- `toStream` has a **bounded** buffer (64, sliding by default): a craft stream pushes and
   cannot be told to wait, so back-pressure is lost at this boundary by nature.
-* `fromQueue`, `fromPubSub` and `fromSubscriptionRef` read Effect's primitives. There is
+- `fromQueue`, `fromPubSub` and `fromSubscriptionRef` read Effect's primitives. There is
   deliberately no automatic two-way bridge between a subject and a queue: it would echo.
-* `toEffectSchedule(craftSchedule)` and `fromEffectSchedule(effectSchedule)` convert
+- `toEffectSchedule(craftSchedule)` and `fromEffectSchedule(effectSchedule)` convert
   schedules; the latter only accepts **pure** ones (it steps them synchronously) and
   raises `CraftScheduleNotPure` otherwise.
 

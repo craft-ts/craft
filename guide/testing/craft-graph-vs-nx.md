@@ -134,8 +134,8 @@ Vitest on the Craft graph. Copy that layout from
 
 ## See Also
 
-* [Architecture rules](/guide/testing/architecture) — helpers, catalog, Nx
+- [Architecture rules](/guide/testing/architecture) — helpers, catalog, Nx
   target
-* [ESLint rules](/guide/routing/eslint-rules) — local slips the graph cannot
+- [ESLint rules](/guide/routing/eslint-rules) — local slips the graph cannot
   autofix
-* [Learn: test what you wrote](/learn/10-testing)
+- [Learn: test what you wrote](/learn/10-testing)

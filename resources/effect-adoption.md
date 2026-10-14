@@ -40,12 +40,12 @@ duplicate the domain state in a Craft `state`.
 
 Start with a page that has:
 
-* one query;
-* one application or route Layer;
-* one loading state;
-* one typed business error;
-* one technical error path;
-* one executable test.
+- one query;
+- one application or route Layer;
+- one loading state;
+- one typed business error;
+- one technical error path;
+- one executable test.
 
 This exposes the real cost of the Craft UI model without mixing in forms,
 optimistic updates or server-function transport.
@@ -55,10 +55,10 @@ optimistic updates or server-function transport.
 Once the read path is stable, add `mutationEffect`, then connect it to Craft
 forms and `insertReactOnMutation`. Keep validation responsibilities explicit:
 
-* Effect Schema or `methodSchema` validates a boundary payload;
-* Craft owns field state, validity and interaction;
-* Effect typed errors represent business rejection;
-* defects remain technical failures.
+- Effect Schema or `methodSchema` validates a boundary payload;
+- Craft owns field state, validity and interaction;
+- Effect typed errors represent business rejection;
+- defects remain technical failures.
 
 ### 5. Introduce route and feature scopes
 
@@ -97,8 +97,8 @@ and tests that distinguish business errors from defects.
 
 Pause and resolve the issue before expanding when:
 
-* the project is still on Effect 3 without an isolation plan;
-* SSR is mandatory but no SSR host has been selected;
-* the team cannot explain which side owns a piece of state;
-* every feature requires a custom bridge or manual subscription;
-* typecheck time or type errors make the feedback loop unacceptable.
+- the project is still on Effect 3 without an isolation plan;
+- SSR is mandatory but no SSR host has been selected;
+- the team cannot explain which side owns a piece of state;
+- every feature requires a custom bridge or manual subscription;
+- typecheck time or type errors make the feedback loop unacceptable.

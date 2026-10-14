@@ -1,6 +1,5 @@
 ---
-url: >-
-  https://craft-ts.github.io/craft/guide/testing/architecture/primitive-method-usage.md
+url: https://craft-ts.github.io/craft/guide/testing/architecture/primitive-method-usage.md
 ---
 # Primitive method usage
 
@@ -44,6 +43,6 @@ line so the method can be split into context-specific insertion methods.
 
 ## See also
 
-* [`craft-ts/no-reused-primitive-method`](/guide/routing/eslint-rules)
-* [Insertions](/guide/concepts/insertions)
-* [The architecture graph](/guide/testing/architecture)
+- [`craft-ts/no-reused-primitive-method`](/guide/routing/eslint-rules)
+- [Insertions](/guide/concepts/insertions)
+- [The architecture graph](/guide/testing/architecture)

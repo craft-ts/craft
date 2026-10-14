@@ -1,6 +1,5 @@
 ---
-url: >-
-  https://craft-ts.github.io/craft/guide/testing/architecture/unused-primitive-method.md
+url: https://craft-ts.github.io/craft/guide/testing/architecture/unused-primitive-method.md
 ---
 # Unused primitive methods
 
@@ -29,5 +28,5 @@ Methods bound internally with `on$` are not exposed and are not checked.
 
 ## See also
 
-* [`assertPrimitiveMethodsUsedOnce`](/guide/testing/architecture/primitive-method-usage)
-* [The architecture graph](/guide/testing/architecture)
+- [`assertPrimitiveMethodsUsedOnce`](/guide/testing/architecture/primitive-method-usage)
+- [The architecture graph](/guide/testing/architecture)

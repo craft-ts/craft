@@ -6,7 +6,7 @@ url: https://craft-ts.github.io/craft/guide/deployment/alchemy.md
 ::: warning Experimental — validate in a non-production account first
 This provider is the least validated part of the deployment tooling. The
 presets, the plan, the credential checks and the refusal paths are covered by
-tests through a runtime port, so what CraftTS *decides* is verified.
+tests through a runtime port, so what CraftTS _decides_ is verified.
 
 What is **not** verified is the last hop: the adapter that invokes Alchemy's
 current CLI has never run against a real Cloudflare or AWS account from this
@@ -143,11 +143,11 @@ Roll a stateful change back through the data, not through the deployment.
 ## What stays in CraftTS, what is delegated
 
 CraftTS owns the manifest, the checks, the resolved artefact and the plan
-shape. It decides *what* has to exist, and it refuses to deploy a manifest that
+shape. It decides _what_ has to exist, and it refuses to deploy a manifest that
 does not pass `craft-ts check`.
 
 Alchemy owns the resources, the state, the credentials handling and the
-reconciliation. It decides *how* what CraftTS declared comes to exist.
+reconciliation. It decides _how_ what CraftTS declared comes to exist.
 
 The adapter generates a temporary Alchemy 2 stack and invokes the installed
 Alchemy CLI. `ALCHEMY_RESOURCE_EXPORTS` maps each planned resource type to the
@@ -155,9 +155,9 @@ current module and nested export used in that generated stack.
 
 ## Limits
 
-* The adapter over the Alchemy API has never run against a live account, as
+- The adapter over the Alchemy API has never run against a live account, as
   stated at the top of this page.
-* The Fargate fallback runs the artefact as a container: the image build stays
+- The Fargate fallback runs the artefact as a container: the image build stays
   outside CraftTS.
-* Alchemy has no preset here for the platforms a publication provider already
+- Alchemy has no preset here for the platforms a publication provider already
   covers (`vercel`, `netlify`, `firebase`, `github-pages`).

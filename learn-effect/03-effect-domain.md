@@ -140,7 +140,7 @@ not say whether running it will suspend.
 
 It is worse than it looks for a service member. A `Layer` closes over the
 member's dependencies when it builds the service, so a member that calls the
-network and a member that adds two numbers *both* surface as `R = never`:
+network and a member that adds two numbers _both_ surface as `R = never`:
 
 ```ts
 import { Context, Effect, Layer } from 'effect';
@@ -353,6 +353,8 @@ returned function in `afterEach`.
 An Effect domain with typed failures, explicit service requirements and swappable
 Layers. The next step puts that program behind a reactive `queryEffect`.
 
+
 [← 2. Derive UI state](/learn-effect/02-derive)
 
 [4. Load data with Effect →](/learn-effect/04-load-data)
+

@@ -13,10 +13,10 @@ only covers what is specific to it.
 primitive(name, config, insertion?);
 ```
 
-* **`name`** — always first, always a string literal.
-* **`config`** — what the primitive needs to do its job (an initial value, a
+- **`name`** — always first, always a string literal.
+- **`config`** — what the primitive needs to do its job (an initial value, a
   loader, a codec map…). This is the part that differs between primitives.
-* **`insertion`** — optional, adds methods and computed values to the result.
+- **`insertion`** — optional, adds methods and computed values to the result.
 
 ## Naming is not decoration
 
@@ -208,7 +208,7 @@ helpers; do not look up the token yourself.
 
 The async primitives (`query`, `mutation`, `asyncProcess`) expose one value reader:
 
-* `value()` — never throws, returns `undefined` when no value is available.
+- `value()` — never throws, returns `undefined` when no value is available.
 
 ::: tip
 Pass `query.value` to a template binding. Inside a generator, `yield* query.value()`.
@@ -235,8 +235,8 @@ other advanced patterns.
 
 ## See Also
 
-* [Which primitive should I use?](/guide/concepts/choose-primitive)
-* [Insertions](/guide/concepts/insertions)
-* [Generators and `yield*`](/guide/concepts/generators)
-* [Observability](/guide/advanced/observability) — `provideFnWrapper` as a
+- [Which primitive should I use?](/guide/concepts/choose-primitive)
+- [Insertions](/guide/concepts/insertions)
+- [Generators and `yield*`](/guide/concepts/generators)
+- [Observability](/guide/advanced/observability) — `provideFnWrapper` as a
   consumer of the runtime context

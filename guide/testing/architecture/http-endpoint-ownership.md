@@ -1,6 +1,5 @@
 ---
-url: >-
-  https://craft-ts.github.io/craft/guide/testing/architecture/http-endpoint-ownership.md
+url: https://craft-ts.github.io/craft/guide/testing/architecture/http-endpoint-ownership.md
 ---
 # Unique HTTP endpoint ownership
 
@@ -53,5 +52,5 @@ call site in one assertion.
 
 ## See also
 
-* [Browser boundaries](/guide/testing/browser-boundaries)
-* [Architecture rules](/guide/testing/architecture)
+- [Browser boundaries](/guide/testing/browser-boundaries)
+- [Architecture rules](/guide/testing/architecture)

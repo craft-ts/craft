@@ -304,23 +304,23 @@ input({ type: 'email' }).pipe(
 
 ## Composition rules
 
-* Create a configurable directive with `craftDirective(...)`, then pass it to
+- Create a configurable directive with `craftDirective(...)`, then pass it to
   `.pipe(...)`.
-* A **template** transform can add public inputs; they appear in the final
+- A **template** transform can add public inputs; they appear in the final
   component props. A **service** transform cannot: it changes what the template
   reads, never what the caller passes.
-* `.pipe(...)` on a component installs the transformation in the component's
+- `.pipe(...)` on a component installs the transformation in the component's
   scope; `.pipe(...)` on a node limits it to that subtree.
-* A directive placed after another sees the already transformed service and
+- A directive placed after another sees the already transformed service and
   template, so it can consume what the previous one added.
-* `withProviders(...)` and the exception handlers travel through the same
+- `withProviders(...)` and the exception handlers travel through the same
   `.pipe(...)`, as environment operators rather than service transforms.
-* Generator functions continue to be executed by the Craft runtime.
+- Generator functions continue to be executed by the Craft runtime.
   Dependencies from the component and from its directives remain part of the
   component dependency contract.
 
 ## See Also
 
-* [Customization](/guide/components/customization)
-* [Styling a component](/guide/components/styles)
-* [Testing components](/guide/testing/components)
+- [Customization](/guide/components/customization)
+- [Styling a component](/guide/components/styles)
+- [Testing components](/guide/testing/components)

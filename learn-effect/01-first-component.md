@@ -86,6 +86,8 @@ without managing subscriptions or fibers.
 A selectorless, typed component with fine-grained rendering. The next step adds
 derived UI state without duplicating data.
 
+
 [← Overview](/learn-effect/)
 
 [2. Derive UI state →](/learn-effect/02-derive)
+

@@ -46,7 +46,8 @@ export const { TaskForm } = craftService(
 
   },
 );
-```*the form is this shape, and here is what each field requires.* The
+```
+Read it as: *the form is this shape, and here is what each field requires.* The
 field tree, the validity, and the exception types are all derived from the state
 type — you never restate them.
 
@@ -169,6 +170,8 @@ Sub-forms with `insertSubFormField`, several independent forms over the same
 state, and the full validator reference are on [Forms](/guide/forms/).
 :::
 
+
 [← 7. Put state in the URL](/learn/07-url-state)
 
 [9. Wire up routing →](/learn/09-routing)
+

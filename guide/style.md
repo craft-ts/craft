@@ -59,11 +59,11 @@ step, and none of the pages below produce a single byte of CSS until the Vite
 plugin is wired. Then [Define your design system](./define.md), which is where
 `bp`, `palette` and the theme variables the other pages spend come from.
 
-* [Tokens and typed variables](./tokens.md) — level 1.
-* [Axes and the visual matrix](./variants.md) — level 2.
-* [Context obligations](./obligations.md) — level 3.
-* [Testing what you built](./testing.md) — drivers, baselines, exhaustiveness.
-* [Text contrast](./contrast.md) — WCAG AA proven from the sheets and the
+- [Tokens and typed variables](./tokens.md) — level 1.
+- [Axes and the visual matrix](./variants.md) — level 2.
+- [Context obligations](./obligations.md) — level 3.
+- [Testing what you built](./testing.md) — drivers, baselines, exhaustiveness.
+- [Text contrast](./contrast.md) — WCAG AA proven from the sheets and the
   templates, with no browser, and an explicit list of what it does not cover.
 
 A working example lives in the demo, at

@@ -38,25 +38,25 @@ It depends on one thing, `TaskList`, and exposes one thing, `done`. The test
 mirrors that exactly:
 
 ```ts
-const { sut, mocks } = await setupCraftServiceTestingByRegister(TaskStats, {
-  // the SUT itself, mounted through its own provider
-  TaskStats: provideTaskStats(),
+    const { sut, mocks } = await setupCraftServiceTestingByRegister(TaskStats, {
+      // the SUT itself, mounted through its own provider
+      TaskStats: provideTaskStats(),
 
-  // its only dependency, replaced by a mock
-  TaskList: {
-    // a reactive member is mocked by a reactive value, like the real one
-    tasks: createYieldableReactiveValue(
-      craftSignal<Task[]>([
-        { id: '1', title: 'a', done: true },
-        { id: '2', title: 'b', done: false },
-      ]),
-      'tasks',
-    ),
-  },
-});
+      // its only dependency, replaced by a mock
+      TaskList: {
+        // a reactive member is mocked by a reactive value, like the real one
+        tasks: createYieldableReactiveValue(
+          craftSignal<Task[]>([
+            { id: '1', title: 'a', done: true },
+            { id: '2', title: 'b', done: false },
+          ]),
+          'tasks',
+        ),
+      },
+    });
 
-expect(craftUse(sut.done())).toBe(1);
-expect(mocks.TaskList).toBeDefined();
+    expect(craftUse(sut.done())).toBe(1);
+    expect(mocks.TaskList).toBeDefined();
 ```
 
 `sut` is the service under test; `mocks` gives you back the mocks you supplied,
@@ -112,37 +112,37 @@ The seam is the **service**. Behaviour is tested there, with plain values and no
 DOM:
 
 ```ts
-const { sut } = await setupCraftServiceTestingByRegister(TaskList, {
-  TaskList: provideTaskList(),
-});
+    const { sut } = await setupCraftServiceTestingByRegister(TaskList, {
+      TaskList: provideTaskList(),
+    });
 
-expect(craftUse(sut.tasks.remaining())).toBe(0);
+    expect(craftUse(sut.tasks.remaining())).toBe(0);
 ```
 
 The template test does the opposite — it renders the component with that service
 mocked through the register:
 
 ```ts
-const test = await setupCraftComponentTemplateTest.byRegister(Tasks, {
-  inputs: {},
-  register: {
-    TaskList: {
-      // The exposed `tasks` state: its call shape and the members read.
-      // A state method hands back an invocation, so the fake does too.
-      tasks: Object.assign(
-        () => [{ id: '1', title: 'Write tests', done: false }],
-        {
-          remaining: function* () {
-            return 1;
-          },
+    const test = await setupCraftComponentTemplateTest.byRegister(Tasks, {
+      inputs: {},
+      register: {
+        TaskList: {
+          // The exposed `tasks` state: its call shape and the members read.
+          // A state method hands back an invocation, so the fake does too.
+          tasks: Object.assign(
+            () => [{ id: '1', title: 'Write tests', done: false }],
+            {
+              remaining: function* () {
+                return 1;
+              },
+            },
+          ),
         },
-      ),
-    },
-  },
-});
+      },
+    });
 
-expect(test.nativeElement.textContent).toContain('Tasks — 1 left');
-test.destroy();
+    expect(test.nativeElement.textContent).toContain('Tasks — 1 left');
+    test.destroy();
 ```
 
 That separation is why component tests stay fast: you only pay for the DOM when
@@ -244,6 +244,8 @@ Tests whose setup is derived from the real dependency graph, so "I forgot to
 mock that" becomes a compile error — and architecture rules on that same graph,
 so the app can be taught its boundaries.
 
+
 [← 9. Wire up routing](/learn/09-routing)
 
 [Where to go next →](/learn/next)
+

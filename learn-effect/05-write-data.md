@@ -107,6 +107,8 @@ Typed Effect writes with Craft's loading, cancellation, cache invalidation and
 optimistic-update machinery. Next, provide the services that those programs
 require at app and route scope.
 
+
 [← 4. Load data with Effect](/learn-effect/04-load-data)
 
 [6. Provide Layers and route the app →](/learn-effect/06-layers-routing)
+

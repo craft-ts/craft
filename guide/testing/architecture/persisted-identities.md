@@ -1,6 +1,5 @@
 ---
-url: >-
-  https://craft-ts.github.io/craft/guide/testing/architecture/persisted-identities.md
+url: https://craft-ts.github.io/craft/guide/testing/architecture/persisted-identities.md
 ---
 # Persisted primitives need a unique identity
 
@@ -52,5 +51,5 @@ another identity-indexed integration needs one.
 
 ## See also
 
-* [Persistence](/guide/state/persistence)
-* [Unique identities](./unique-identities)
+- [Persistence](/guide/state/persistence)
+- [Unique identities](./unique-identities)

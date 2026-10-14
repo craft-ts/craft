@@ -23,11 +23,11 @@ runtime behaviour.
 
 Use an architecture rule when the requirement sounds like one of these:
 
-* **must not depend on** — a feature must not reach into another feature;
-* **must be owned once** — an HTTP endpoint or persisted identity has one owner;
-* **must declare a relationship** — a mutation must refresh a query;
-* **must model input-driven work as a form** — a button must not send input state directly into a mutation or async process;
-* **must remain pure** — reading a computed value must not perform work.
+- **must not depend on** — a feature must not reach into another feature;
+- **must be owned once** — an HTTP endpoint or persisted identity has one owner;
+- **must declare a relationship** — a mutation must refresh a query;
+- **must model input-driven work as a form** — a button must not send input state directly into a mutation or async process;
+- **must remain pure** — reading a computed value must not perform work.
 
 A green architecture suite does not prove that a button works. It proves that
 the app still respects the boundaries that make that button maintainable.
@@ -167,13 +167,13 @@ edge in the graph.
 The analyzer works from the TypeScript program selected by the analysis
 `tsconfig`:
 
-* **AST evidence** records syntax that is visible in the source: a route
+- **AST evidence** records syntax that is visible in the source: a route
   loading a component, a component rendering an element, or a service calling
   an HTTP client.
-* **Type evidence** records relationships resolved through TypeScript: an
+- **Type evidence** records relationships resolved through TypeScript: an
   injected/yielded service, a provider, or a route proof connected to its
   target.
-* **Source proofs** keep the file, line, symbol and pattern that explain an
+- **Source proofs** keep the file, line, symbol and pattern that explain an
   edge when the analyzer has one. `graph.proofs(edge)` exposes them, so a
   failing rule can point back to the declaration that created the fact.
 
@@ -656,10 +656,10 @@ It **warns** instead of failing: it flags what is probably dead, not what is
 wrong. `assertDeclarativeArchitecture` prints the warnings and still passes, and
 `architectureReport(...).warnings` returns them. Three ways to settle one:
 
-* **use or remove the service**, which is the point of the rule;
-* **waive one service** with a reason, `target: 'service:toolbarActionView'`,
+- **use or remove the service**, which is the point of the rule;
+- **waive one service** with a reason, `target: 'service:toolbarActionView'`,
   see [Waivers](#waivers);
-* **change the rule's severity** for the whole app:
+- **change the rule's severity** for the whole app:
 
 ```typescript
 assertDeclarativeArchitecture(graph.graph, {
@@ -769,7 +769,7 @@ it('requires a query to react to each mutation', () => {
 ### `assertPersistedPrimitiveHasUnique`
 
 `assertCraftUnique` says an identity appears once. This helper says a persisted
-primitive *has* an identity: `insertStoragePersister` / `insertLocalStoragePersister`
+primitive _has_ an identity: `insertStoragePersister` / `insertLocalStoragePersister`
 must take `craftUnique(...)`. A raw `{ key, storeName }` indexes the primitive
 as persisted and fails here.
 
@@ -1023,13 +1023,13 @@ tests for behaviour, and with ESLint for local architecture.
 
 ## See Also
 
-* [Craft graph vs Nx](/guide/testing/craft-graph-vs-nx) — what each graph can
+- [Craft graph vs Nx](/guide/testing/craft-graph-vs-nx) — what each graph can
   and cannot see
-* [Testing services](/guide/testing/services) — the runtime graph of one service
-* [Browser boundaries](/guide/testing/browser-boundaries) — the nodes
+- [Testing services](/guide/testing/services) — the runtime graph of one service
+- [Browser boundaries](/guide/testing/browser-boundaries) — the nodes
   `browserBoundary: true` refers to
-* [Persistence](/guide/state/persistence) — why `craftUnique` identities must be
+- [Persistence](/guide/state/persistence) — why `craftUnique` identities must be
   unique
-* [ESLint rules](/guide/routing/eslint-rules) — local architecture, autofixed
-* [Routing setup](/guide/routing/setup) — the proofs this helper keeps armed
-* [Learn: test what you wrote](/learn/10-testing)
+- [ESLint rules](/guide/routing/eslint-rules) — local architecture, autofixed
+- [Routing setup](/guide/routing/setup) — the proofs this helper keeps armed
+- [Learn: test what you wrote](/learn/10-testing)

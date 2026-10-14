@@ -249,6 +249,8 @@ from here on. Step 2 is entirely about it.
 A component and a reactive value, both declared as functions, both named, both
 visible to the tooling — with no class, no constructor and no subscription.
 
+
 [← Overview](/learn/)
 
 [2. Derive instead of duplicate →](/learn/02-derive)
+

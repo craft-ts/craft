@@ -34,9 +34,9 @@ The method runs inside the injection context captured when `craftMethod(...)` is
 
 That makes it useful when a component method needs to:
 
-* call Browser Boundaries with `yield*`
-* compose crafted services through `yield* SomeService()`
-* keep the handler colocated with component-local signals
+- call Browser Boundaries with `yield*`
+- compose crafted services through `yield* SomeService()`
+- keep the handler colocated with component-local signals
 
 **All dependencies are cached, which helps to detect missing providers at compile time.**
 
@@ -166,14 +166,14 @@ export class Counter {
 
 ## Caveats
 
-* `craftMethod(...)` must be created inside an injection context, typically during component instantiation.
-* The first argument is a required name; it must match the property or variable name. The `craft-ts/craft-method-name-match` ESLint rule enforces this and provides a quick fix.
-* `craftMethod(name, fn)` depends on the receiver used at call time. If you extract the callback, `this` is no longer guaranteed unless you bind it yourself.
-* `craftMethod(name, this, fn)` is the recommended form whenever the generator reads or writes `this`.
-* `onAppStart(...)` is not supported inside `craftMethod`.
+- `craftMethod(...)` must be created inside an injection context, typically during component instantiation.
+- The first argument is a required name; it must match the property or variable name. The `craft-ts/craft-method-name-match` ESLint rule enforces this and provides a quick fix.
+- `craftMethod(name, fn)` depends on the receiver used at call time. If you extract the callback, `this` is no longer guaranteed unless you bind it yourself.
+- `craftMethod(name, this, fn)` is the recommended form whenever the generator reads or writes `this`.
+- `onAppStart(...)` is not supported inside `craftMethod`.
 
 ## See Also
 
-* [`Browser Boundaries`](/guide/testing/browser-boundaries)
-* [`craftService`](/guide/app/craft-service)
-* [`onAppStart`](/guide/app/app-start)
+- [`Browser Boundaries`](/guide/testing/browser-boundaries)
+- [`craftService`](/guide/app/craft-service)
+- [`onAppStart`](/guide/app/app-start)

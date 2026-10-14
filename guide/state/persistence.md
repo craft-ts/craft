@@ -198,7 +198,7 @@ sessionStorage backends clear their own persisted entries.
 
 ## See Also
 
-* [GlobalPersisterHandler](/guide/state/persistence-handler)
-* [query](/guide/state/server-state)
-* [Insertions](/guide/concepts/insertions) — composing with other insertions
-* [Architecture rules](/guide/testing/architecture) — `assertCraftUnique` on storage identities, `assertPersistedPrimitiveHasUnique` when a persister has no identity
+- [GlobalPersisterHandler](/guide/state/persistence-handler)
+- [query](/guide/state/server-state)
+- [Insertions](/guide/concepts/insertions) — composing with other insertions
+- [Architecture rules](/guide/testing/architecture) — `assertCraftUnique` on storage identities, `assertPersistedPrimitiveHasUnique` when a persister has no identity

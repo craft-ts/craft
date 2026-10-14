@@ -54,9 +54,9 @@ function* (context, transit) {
 
 Reading this declaration tells you immediately:
 
-* `reading` is entered during initialisation, after `commit`, or after
+- `reading` is entered during initialisation, after `commit`, or after
   `cancel`;
-* `editing` is entered after `edit`.
+- `editing` is entered after `edit`.
 
 There is no `currentStep = ...`, no imperative transition table, and no string
 such as `transit('editing')`. The destination is the step whose block declared
@@ -316,11 +316,11 @@ remains focused on declaring steps and the events that enter them.
 
 Use `craftStateMachine` when:
 
-* the feature has a finite set of named workflow steps;
-* different steps expose different actions or view data;
-* events, recomputations, or initialisation determine when a step is entered;
-* exhaustive handling of steps is valuable;
-* guards or reusable workflow extensions belong on the state-machine boundary.
+- the feature has a finite set of named workflow steps;
+- different steps expose different actions or view data;
+- events, recomputations, or initialisation determine when a step is entered;
+- exhaustive handling of steps is valuable;
+- guards or reusable workflow extensions belong on the state-machine boundary.
 
 For a single independent value, use [`state`](/guide/state/local-state). For a
 server read or write, use [`query`](/guide/state/server-state) or
@@ -343,7 +343,7 @@ primitives in its context when the workflow needs them.
 
 ## See also
 
-* [Local state](/guide/state/local-state)
-* [Typed insertion pipes](/guide/concepts/insertion-pipes)
-* [Fine-grained reactivity](/guide/components/fine-grained-reactivity)
-* [The text editor example on GitHub](https://github.com/craft-ts/craft-ts/blob/main/apps/demo/src/app/examples/primitives/state-machine/text-editor.ts)
+- [Local state](/guide/state/local-state)
+- [Typed insertion pipes](/guide/concepts/insertion-pipes)
+- [Fine-grained reactivity](/guide/components/fine-grained-reactivity)
+- [The text editor example on GitHub](https://github.com/craft-ts/craft-ts/blob/main/apps/demo/src/app/examples/primitives/state-machine/text-editor.ts)

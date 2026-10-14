@@ -101,10 +101,10 @@ and the submit exceptions are inferred from it as usual. The form carries the
 service as a dependency of its own, so the service does not have to be yielded
 first for the dependency graph and the test registers to see it.
 
-* **Service with public inputs** — the bare shortcut is not callable without
+- **Service with public inputs** — the bare shortcut is not callable without
   bindings (see [OmitInputs](/guide/app/expose-api#omitinputs)). Give them as
   you would anywhere else: `insertFormSubmit(Lists.add({ listId }))`.
-* **Mutation by identifier** — works the same way, one resolution shared by
+- **Mutation by identifier** — works the same way, one resolution shared by
   every form: `insertForm({ identifier }, insertFormSubmit(Store.save))`.
 
 ::: warning What `success` is for
@@ -154,5 +154,5 @@ const aggregatedSubmitExceptions = userFormState.form.exceptions().submit;
 
 ## See Also
 
-* [Forms overview](/guide/forms/)
-* [Form exceptions](/guide/forms/exceptions)
+- [Forms overview](/guide/forms/)
+- [Form exceptions](/guide/forms/exceptions)

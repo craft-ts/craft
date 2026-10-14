@@ -33,10 +33,10 @@ import {
 
 Instead of providing only the overrides you care about, you provide a full typed register where each service is marked as:
 
-* real
-* provided by its raw `provideX(...)`
-* mocked with a raw object
-* or pruned with `'notReached'`
+- real
+- provided by its raw `provideX(...)`
+- mocked with a raw object
+- or pruned with `'notReached'`
 
 This is useful when you want explicit control over every node in the service graph.
 
@@ -103,6 +103,8 @@ craftUse(sut.increment());
 expect(mocks.Counter.counter.increment).toHaveBeenCalledTimes(1);
 ```
 
+
+
 ## Register Semantics
 
 ### `'real'`
@@ -160,8 +162,8 @@ await setupCraftServiceTestingByRegister(RootCounter, {
 
 The function resolves to:
 
-* `sut`: the resolved service under test
-* `mocks`: only the services that were actually mocked in the register
+- `sut`: the resolved service under test
+- `mocks`: only the services that were actually mocked in the register
 
 Entries marked as `'real'`, `'notReached'`, or provided through raw providers are not exposed in `mocks`.
 
@@ -214,10 +216,10 @@ const { sut, mocks } = await setupCraftServiceTestingByRegister.boundaryOnly(
 );
 ```
 
-* `toProvideRegister` contains real providers required by reachable services.
-* `boundaryRegister` contains the explicit decision for each reachable browser boundary.
-* non-boundary services cannot be mocked in this mode.
-* descendants of a mocked boundary are pruned and do not need entries.
+- `toProvideRegister` contains real providers required by reachable services.
+- `boundaryRegister` contains the explicit decision for each reachable browser boundary.
+- non-boundary services cannot be mocked in this mode.
+- descendants of a mocked boundary are pruned and do not need entries.
 
 The helper never decides automatically from the test environment. Use `'real'`
 when the real boundary is appropriate, and provide a mock when the test needs
@@ -229,5 +231,5 @@ deterministic platform behavior.
 
 ## See Also
 
-* [craftService](/guide/app/craft-service)
-* [Architecture rules](/guide/testing/architecture) — constraints on the whole app graph
+- [craftService](/guide/app/craft-service)
+- [Architecture rules](/guide/testing/architecture) — constraints on the whole app graph

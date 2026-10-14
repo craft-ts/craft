@@ -22,7 +22,7 @@ p(palette.text.strong); // ❌ a colour is not a length
 ```
 
 The shape matters more than it looks. With `string & { __length?: true }` —
-an *optional* phantom on a primitive base — `'blabla'` stays assignable, every
+an _optional_ phantom on a primitive base — `'blabla'` stays assignable, every
 test stays green, and the guarantee written on this page is false.
 
 ## The scales are closed
@@ -57,23 +57,23 @@ position('sticky'); // ❌ a keyword is not something you pass in
 
 Two consequences worth knowing:
 
-* **`overflow` is not in the table.** The only road to `overflow-block: auto` is
+- **`overflow` is not in the table.** The only road to `overflow-block: auto` is
   `provides(scrollPort.block)` — see [obligations](./obligations.md). The wrong
   fix is not discouraged, it cannot be written.
-* **124 helpers are narrower than CSS.** A grammar alternative the generator
+- **124 helpers are narrower than CSS.** A grammar alternative the generator
   cannot close is dropped rather than approximated, so a helper may refuse a
   form CSS would accept. It can never produce CSS a browser rejects. The list is
   exported as `NARROWED_PROPERTIES`.
 
 A few values the table cannot type on its own have constructors:
 
-* `gradient.linear`, `.radial`, `.repeatingLinear`, `.repeatingConic`, written
+- `gradient.linear`, `.radial`, `.repeatingLinear`, `.repeatingConic`, written
   with `bgImage(...)` — several images make several layers, and `bgSize` /
   `bgPosition` take one inline and one block value;
-* `uaScheme.light` / `.dark` for `color-scheme`, so native controls follow the
+- `uaScheme.light` / `.dark` for `color-scheme`, so native controls follow the
   theme;
-* `spanAllColumns` for `grid-column: 1 / -1`;
-* `pseudo.content.attr(ident('data-x'))` for a `::before` / `::after` whose text
+- `spanAllColumns` for `grid-column: 1 / -1`;
+- `pseudo.content.attr(ident('data-x'))` for a `::before` / `::after` whose text
   is an attribute the template writes.
 
 ## Typed custom properties
@@ -95,7 +95,7 @@ Two rules the browser enforces and the types cannot:
 
 **A registered `initial-value` must be computationally independent.**
 `initial-value: 1rem` makes the whole `@property` rule invalid and the browser
-drops it *silently* — the variable stops being registered, `var(--x)` resolves to
+drops it _silently_ — the variable stops being registered, `var(--x)` resolves to
 nothing, and whatever reads it computes to zero. `cssVars` refuses a relative
 unit there and names the fix.
 

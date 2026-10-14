@@ -103,10 +103,10 @@ the app does not invalidate every baseline in the suite.
 
 Two reductions are applied, and both are exactly true rather than probably true:
 
-* **A branch adds, it does not multiply.** The two sides of an `ifNode` are
+- **A branch adds, it does not multiply.** The two sides of an `ifNode` are
   never on screen together, so declare it — `branch('footer', footerSheet)` —
   and the absent side stops carrying the footer's axes.
-* **A container axis stops at its owner.** An ancestor cannot change how wide
+- **A container axis stops at its owner.** An ancestor cannot change how wide
   that box is, so only the component naming the container keeps the axis.
 
 Nothing else is reduced. A coverage that claims to be complete without being

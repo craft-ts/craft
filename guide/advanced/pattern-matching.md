@@ -146,13 +146,13 @@ const title = (tab: Tab) =>
 
 ## Scope & limits
 
-* **Bare literal unions only.** `craftMatch` matches on the value itself, not on a discriminant
+- **Bare literal unions only.** `craftMatch` matches on the value itself, not on a discriminant
   field — it does not (yet) take a union of objects keyed by a `type` / `kind` field. Map the
   discriminant to a literal first if you need that: `craftMatch.exhaustive(shape.kind, { … })`.
-* **Pure and synchronous.** Unlike [`catchTag`](/guide/advanced/program-operators), `craftMatch` is not a craft
+- **Pure and synchronous.** Unlike [`catchTag`](/guide/advanced/program-operators), `craftMatch` is not a craft
   program: it does not `yield*` and does not track dependencies. To run a different craft program per
   branch, `yield*` inside the handler bodies of a normal generator instead.
-* **No catch-all.** There is the exhaustive form (compile wall) or the single-case form (optional
+- **No catch-all.** There is the exhaustive form (compile wall) or the single-case form (optional
   `undefined`) — there is no `.otherwise(fallback)`.
 
 ## API
@@ -165,5 +165,5 @@ const title = (tab: Tab) =>
 
 ## See Also
 
-* [Program operators](/guide/advanced/program-operators) — the exception-level counterpart
-* [Exceptions as values](/guide/concepts/exceptions)
+- [Program operators](/guide/advanced/program-operators) — the exception-level counterpart
+- [Exceptions as values](/guide/concepts/exceptions)

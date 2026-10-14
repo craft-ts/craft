@@ -70,13 +70,13 @@ compiler can check. See [Generators and `yield*`](/guide/concepts/generators).
 The third principle is the one that removes the most code: **if a value is a
 function of another value, don't store it — derive it.**
 
-* Derived values are `craftComputed`, inside an insertion, and they `yield*`
+- Derived values are `craftComputed`, inside an insertion, and they `yield*`
   the readers they depend on.
-* Loading and error state is derived by the async primitives, not tracked by
+- Loading and error state is derived by the async primitives, not tracked by
   hand.
-* A form's field tree, validity and error types are derived from its state and
+- A form's field tree, validity and error types are derived from its state and
   its mutation ([Forms](/guide/forms/)).
-* Route exceptions are derived into a union the compiler forces you to handle
+- Route exceptions are derived into a union the compiler forces you to handle
   exhaustively ([Exceptions](/guide/concepts/exceptions)).
 
 The payoff is that derived things cannot drift out of sync with their source.
@@ -233,6 +233,6 @@ if nobody does. See [Exceptions as values](/guide/concepts/exceptions).
 
 ## See Also
 
-* [Which primitive should I use?](/guide/concepts/choose-primitive)
-* [Anatomy of a primitive](/guide/concepts/primitive-anatomy)
-* [Learn: the guided path](/learn/)
+- [Which primitive should I use?](/guide/concepts/choose-primitive)
+- [Anatomy of a primitive](/guide/concepts/primitive-anatomy)
+- [Learn: the guided path](/learn/)

@@ -103,22 +103,22 @@ uses the same converter.
 Search the generated report and source code for migration diagnostics. Complete
 the following before considering the migration done:
 
-* Consume every primitive invocation inside a generator with `yield*`, or use
+- Consume every primitive invocation inside a generator with `yield*`, or use
   `craftUse(...)` at a synchronous boundary.
-* Map synchronous validators to `cRequired`, `cMaxLength`, and the other Craft
+- Map synchronous validators to `cRequired`, `cMaxLength`, and the other Craft
   validators.
-* Replace asynchronous validation with `query` and `cAsyncValidate`.
-* Replace form submission workflows with `mutation` and `insertFormSubmit`.
-* Resolve every `CRAFT_IMPLEMENTATION_REQUIRED` companion service.
-* Review service scopes and move `provideX(...)` close to the route or feature
+- Replace asynchronous validation with `query` and `cAsyncValidate`.
+- Replace form submission workflows with `mutation` and `insertFormSubmit`.
+- Resolve every `CRAFT_IMPLEMENTATION_REQUIRED` companion service.
+- Review service scopes and move `provideX(...)` close to the route or feature
   that owns the instance.
-* Resolve imperative workflow diagnostics instead of only removing comments.
-* Migrate guards, dynamic redirects, nested route collections, inherited route
+- Resolve imperative workflow diagnostics instead of only removing comments.
+- Migrate guards, dynamic redirects, nested route collections, inherited route
   providers, and other route diagnostics that could not be inferred safely.
-* Confirm `componentDeps`, route provider names, and file-level DI checks.
-* Review HTTP mutations and subscriptions whose lifecycle semantics could not be
+- Confirm `componentDeps`, route provider names, and file-level DI checks.
+- Review HTTP mutations and subscriptions whose lifecycle semantics could not be
   moved automatically.
-* Add app-specific graph lookups in `architecture.spec.ts`.
+- Add app-specific graph lookups in `architecture.spec.ts`.
 
 ## Verify the result
 

@@ -145,11 +145,11 @@ export const MyRouteLoadErrorScreen = craftComponent(
 
 `CraftRouteLoadError()` yields a signal of the reserved `craftException`. Its payload includes:
 
-* `phase`: `'component'` or `'children'`;
-* `routePath`: the route definition path that failed;
-* `targetUrl`: the URL the user tried to reach;
-* `cause`: the final error thrown by the loader/retry strategy;
-* `attempt`: the number of load attempts made.
+- `phase`: `'component'` or `'children'`;
+- `routePath`: the route definition path that failed;
+- `targetUrl`: the URL the user tried to reach;
+- `cause`: the final error thrown by the loader/retry strategy;
+- `attempt`: the number of load attempts made.
 
 `injectCraftRouteLoadRecovery().retry()` navigates back to `targetUrl`; `reload()` refreshes the
 browser.
@@ -256,8 +256,8 @@ Route-load error components participate in the same generated DI checks as other
 The ESLint rule `craft-ts/require-exception-component-di-check` generates
 `RouteExceptionComponentCheckedDI` checks for:
 
-* global `withRouteLoadError(...)` components;
-* route-local `provideRouteLoadErrorComponent(...)` components.
+- global `withRouteLoadError(...)` components;
+- route-local `provideRouteLoadErrorComponent(...)` components.
 
 Run ESLint with `--fix` after adding or changing a route-load error component:
 
@@ -273,7 +273,7 @@ armed `RouteExceptionComponentCheckedDI`.
 
 ## See Also
 
-* [Routing setup](/guide/routing/setup) — `withRetry` on lazy imports
-* [Global error component](/guide/routing/global-error-component)
-* [Non-blocking navigation](/guide/routing/pending-ui)
-* [Architecture rules](/guide/testing/architecture) — `assertRouteDiProofs` keeps the error-screen proof armed
+- [Routing setup](/guide/routing/setup) — `withRetry` on lazy imports
+- [Global error component](/guide/routing/global-error-component)
+- [Non-blocking navigation](/guide/routing/pending-ui)
+- [Architecture rules](/guide/testing/architecture) — `assertRouteDiProofs` keeps the error-screen proof armed

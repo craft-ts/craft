@@ -502,10 +502,10 @@ Effect-aware resource adapters require `@craft-ts/effect`.
 The current server-function integration is a **proof of concept**, not a final
 API. It currently combines:
 
-* `serverFunction` and `createServerFunctionClient` from `@craft-ts/core`;
-* `executeEffect` and `effectServerMiddleware` from `@craft-ts/effect`;
-* `Effect`/`Layer` on the server;
-* a local HTTP transport and `@effect/platform-node` in the demo.
+- `serverFunction` and `createServerFunctionClient` from `@craft-ts/core`;
+- `executeEffect` and `effectServerMiddleware` from `@craft-ts/effect`;
+- `Effect`/`Layer` on the server;
+- a local HTTP transport and `@effect/platform-node` in the demo.
 
 The client must import only the server function's type, while the server owns
 the implementation and server-only Layers. Authentication and authorization
@@ -518,27 +518,27 @@ integration to change before this becomes a stable feature.
 
 ## Common mistakes
 
-* **Putting every value in Effect:** keep local UI state in `state` and URL state
+- **Putting every value in Effect:** keep local UI state in `state` and URL state
   in `queryParams`.
-* **Subscribing in a component:** return an Effect from a resource adapter and
+- **Subscribing in a component:** return an Effect from a resource adapter and
   let Craft own loading and cancellation.
-* **Using `Effect.die` for a business case:** use a tagged error in `E` so the UI
+- **Using `Effect.die` for a business case:** use a tagged error in `E` so the UI
   can handle it exhaustively.
-* **Providing a Layer inside a loader:** provide it at app or route scope so its
+- **Providing a Layer inside a loader:** provide it at app or route scope so its
   lifetime and requirements are visible.
-* **Trusting client context in a server function:** treat it as a claim and
+- **Trusting client context in a server function:** treat it as a claim and
   verify it on the server.
-* **Using a bare `yield* effect` in a route program:** use `runEffect` so Craft
+- **Using a bare `yield* effect` in a route program:** use `runEffect` so Craft
   sees the typed exception union.
-* **Declaring a member `SyncOp` to get it into a computed:** the marker states a
+- **Declaring a member `SyncOp` to get it into a computed:** the marker states a
   fact, it does not create one. If the member can suspend, move the work to a
   loader — the runtime will refuse it anyway.
 
 ## See also
 
-* [Learn CraftTS with Effect](/learn-effect/)
-* [Which primitive should I use?](/guide/concepts/choose-primitive)
-* [Exceptions as values](/guide/concepts/exceptions)
-* [Program operators](/guide/advanced/program-operators)
-* [Effect Schema](/guide/state/schema-validation#effect-schema)
-* [Effect integration tests](/learn-effect/08-testing)
+- [Learn CraftTS with Effect](/learn-effect/)
+- [Which primitive should I use?](/guide/concepts/choose-primitive)
+- [Exceptions as values](/guide/concepts/exceptions)
+- [Program operators](/guide/advanced/program-operators)
+- [Effect Schema](/guide/state/schema-validation#effect-schema)
+- [Effect integration tests](/learn-effect/08-testing)

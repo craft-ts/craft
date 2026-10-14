@@ -49,16 +49,16 @@ import { ConsoleService, CONSOLE_SERVICE_META_DATA } from '@craft-ts/core';
 
 The same pattern exists for the other boundaries:
 
-* `LocalStorageService`
-* `SessionStorageService`
-* `CookiesService`
-* `BrowserLocationService`
-* `BrowserHistoryService`
-* `BrowserNavigatorService`
-* `BrowserPerformanceService`
-* `BrowserCryptoService`
-* `BrowserDocumentService`
-* `BrowserWindowService`
+- `LocalStorageService`
+- `SessionStorageService`
+- `CookiesService`
+- `BrowserLocationService`
+- `BrowserHistoryService`
+- `BrowserNavigatorService`
+- `BrowserPerformanceService`
+- `BrowserCryptoService`
+- `BrowserDocumentService`
+- `BrowserWindowService`
 
 ## Motivation
 
@@ -66,8 +66,8 @@ Direct browser access inside a service hides dependencies inside business logic 
 
 Browser boundaries solve that in two complementary ways:
 
-* use `yield* X.method(...)` when the browser interaction should happen directly inside the generator
-* use `XService(...)` when you want to derive bound browser helpers and reuse them inside returned callbacks
+- use `yield* X.method(...)` when the browser interaction should happen directly inside the generator
+- use `XService(...)` when you want to derive bound browser helpers and reuse them inside returned callbacks
 
 ## Mental Model
 
@@ -90,6 +90,7 @@ const { BootLogger } = craftService(
   },
 );
 ```
+
 
 ### Derived Service Helper
 
@@ -116,6 +117,7 @@ const { AuditTrail } = craftService(
   },
 );
 ```
+
 
 That second form is what preserves derivability while still tracking the browser dependency explicitly.
 
@@ -210,146 +212,146 @@ const uuid = yield * BrowserCrypto.randomUUID();
 
 Every service below is:
 
-* `providedIn: 'global'`
-* `browserBoundary: true`
-* exposed both as a DSL object and as generated service helpers
+- `providedIn: 'global'`
+- `browserBoundary: true`
+- exposed both as a DSL object and as generated service helpers
 
 ### `Console` and `ConsoleService`
 
 Methods:
 
-* `debug`
-* `info`
-* `log`
-* `warn`
-* `error`
-* `trace`
-* `group`
-* `groupCollapsed`
-* `groupEnd`
-* `time`
-* `timeEnd`
+- `debug`
+- `info`
+- `log`
+- `warn`
+- `error`
+- `trace`
+- `group`
+- `groupCollapsed`
+- `groupEnd`
+- `time`
+- `timeEnd`
 
 Generated helpers:
 
-* `ConsoleService`
-* `ConsoleService`
-* `CONSOLE_SERVICE_META_DATA`
+- `ConsoleService`
+- `ConsoleService`
+- `CONSOLE_SERVICE_META_DATA`
 
 ### `LocalStorage` and `LocalStorageService`
 
 Methods:
 
-* `getItem`
-* `setItem`
-* `removeItem`
-* `clear`
-* `key`
-* `length`
+- `getItem`
+- `setItem`
+- `removeItem`
+- `clear`
+- `key`
+- `length`
 
 ### `SessionStorage` and `SessionStorageService`
 
 Methods:
 
-* `getItem`
-* `setItem`
-* `removeItem`
-* `clear`
-* `key`
-* `length`
+- `getItem`
+- `setItem`
+- `removeItem`
+- `clear`
+- `key`
+- `length`
 
 ### `Cookies` and `CookiesService`
 
 Methods:
 
-* `get`
-* `getAll`
-* `set`
-* `remove`
-* `has`
+- `get`
+- `getAll`
+- `set`
+- `remove`
+- `has`
 
 ### `BrowserLocation` and `BrowserLocationService`
 
 Methods:
 
-* `href`
-* `origin`
-* `protocol`
-* `host`
-* `hostname`
-* `port`
-* `pathname`
-* `search`
-* `hash`
-* `assign`
-* `replace`
-* `reload`
+- `href`
+- `origin`
+- `protocol`
+- `host`
+- `hostname`
+- `port`
+- `pathname`
+- `search`
+- `hash`
+- `assign`
+- `replace`
+- `reload`
 
 ### `BrowserHistory` and `BrowserHistoryService`
 
 Methods:
 
-* `length`
-* `state`
-* `back`
-* `forward`
-* `go`
-* `pushState`
-* `replaceState`
+- `length`
+- `state`
+- `back`
+- `forward`
+- `go`
+- `pushState`
+- `replaceState`
 
 ### `BrowserNavigator` and `BrowserNavigatorService`
 
 Methods:
 
-* `userAgent`
-* `language`
-* `languages`
-* `onLine`
-* `cookieEnabled`
-* `sendBeacon`
+- `userAgent`
+- `language`
+- `languages`
+- `onLine`
+- `cookieEnabled`
+- `sendBeacon`
 
 ### `BrowserPerformance` and `BrowserPerformanceService`
 
 Methods:
 
-* `now`
-* `mark`
-* `measure`
-* `clearMarks`
-* `clearMeasures`
+- `now`
+- `mark`
+- `measure`
+- `clearMarks`
+- `clearMeasures`
 
 ### `BrowserCrypto` and `BrowserCryptoService`
 
 Methods:
 
-* `randomUUID`
-* `getRandomValues`
-* `digest`
+- `randomUUID`
+- `getRandomValues`
+- `digest`
 
 ### `BrowserDocument` and `BrowserDocumentService`
 
 Methods:
 
-* `title`
-* `setTitle`
-* `lang`
-* `setLang`
-* `dir`
-* `setDir`
-* `visibilityState`
-* `hasFocus`
+- `title`
+- `setTitle`
+- `lang`
+- `setLang`
+- `dir`
+- `setDir`
+- `visibilityState`
+- `hasFocus`
 
 ### `BrowserWindow` and `BrowserWindowService`
 
 Methods:
 
-* `innerWidth`
-* `innerHeight`
-* `scrollX`
-* `scrollY`
-* `scrollTo`
-* `alert`
-* `confirm`
+- `innerWidth`
+- `innerHeight`
+- `scrollX`
+- `scrollY`
+- `scrollTo`
+- `alert`
+- `confirm`
 
 ## Related Adapter: `CraftHttpClient`
 
@@ -361,10 +363,10 @@ treated as a browser-global.
 
 Its contract is intentionally different:
 
-* it is not treated as `browserBoundary: true`
-* it requires `success: response<T>()` inside a declarative builder
-* it can declare ordered `exceptions: [function* (...) { ... }]` rules
-* it returns a promise of `Success | craftException({ _tag: 'HttpError' })`
+- it is not treated as `browserBoundary: true`
+- it requires `success: response<T>()` inside a declarative builder
+- it can declare ordered `exceptions: [function* (...) { ... }]` rules
+- it returns a promise of `Success | craftException({ _tag: 'HttpError' })`
 
 Usage looks like this:
 
@@ -411,9 +413,9 @@ const loginResult = await login();
 
 The browser boundaries stay intentionally narrow.
 
-* Reads are exposed as methods so the public API stays uniform with `yield*`.
-* Raw `window`, `document`, and DOM nodes are not exposed as public outputs.
-* `BrowserDocument` and `BrowserWindow` remain minimal rather than becoming generic escape hatches.
+- Reads are exposed as methods so the public API stays uniform with `yield*`.
+- Raw `window`, `document`, and DOM nodes are not exposed as public outputs.
+- `BrowserDocument` and `BrowserWindow` remain minimal rather than becoming generic escape hatches.
 
 This keeps the API focused on explicit browser interactions instead of reintroducing broad direct access to host globals.
 
@@ -421,11 +423,11 @@ This keeps the API focused on explicit browser interactions instead of reintrodu
 
 Browser boundaries participate in the same dependency tracking model as any other crafted service.
 
-* [`craftService`](/guide/app/craft-service) is what you use to consume them and compose higher-level services.
-* Use a small `craftService` adapter for host dependencies that are not part of
+- [`craftService`](/guide/app/craft-service) is what you use to consume them and compose higher-level services.
+- Use a small `craftService` adapter for host dependencies that are not part of
   this built-in browser boundary set.
 
 ## See Also
 
-* [`craftService`](/guide/app/craft-service)
-* [Architecture rules](/guide/testing/architecture) — assert HTTP only crosses a boundary
+- [`craftService`](/guide/app/craft-service)
+- [Architecture rules](/guide/testing/architecture) — assert HTTP only crosses a boundary

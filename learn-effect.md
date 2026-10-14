@@ -3,6 +3,7 @@ url: https://craft-ts.github.io/craft/learn-effect.md
 ---
 # Learn CraftTS with Effect
 
+
 This is the guided path for teams that already use [Effect](https://effect.website/)
 and want CraftTS to own the UI, reactivity and application graph.
 
@@ -63,4 +64,6 @@ Effect program crosses into a Craft resource.
 
 :::
 
+
 [Start → Craft component](/learn-effect/01-first-component)
+

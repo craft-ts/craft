@@ -1,10 +1,8 @@
 ---
 url: https://craft-ts.github.io/craft/resources/ai-agents.md
-description: >-
-  Point Cursor, Claude, Copilot, and other coding agents at CraftTS docs, MCP
-  tools, and Agent Skills after you import @craft-ts/core.
+description: Point Cursor, Claude, Copilot, and other coding agents at CraftTS
+  docs, MCP tools, and Agent Skills after you import @craft-ts/core.
 ---
-
 # Coding agents
 
 CraftTS has a deliberate vocabulary. After you import `@craft-ts/core`, give
@@ -25,9 +23,9 @@ Do not scrape the HTML docs. Start from `llms.txt` or the MCP tools.
 These follow the [llms.txt](https://llmstxt.org/) spec and are generated from
 this VitePress site at build time.
 
-* Index (curated links): https://craft-ts.github.io/craft/llms.txt
-* Concatenated docs: https://craft-ts.github.io/craft/llms-full.txt
-* One page, as markdown: append `.md` to any docs URL, for example
+- Index (curated links): https://craft-ts.github.io/craft/llms.txt
+- Concatenated docs: https://craft-ts.github.io/craft/llms-full.txt
+- One page, as markdown: append `.md` to any docs URL, for example
   [local state](https://craft-ts.github.io/craft/guide/state/local-state.md)
 
 Paste this into an `AGENTS.md` (or `CLAUDE.md`) at the root of the app that
@@ -129,8 +127,8 @@ snippet is not in context.
 
 ## See also
 
-* [Which primitive should I use?](/guide/concepts/choose-primitive)
-* [The mental model](/guide/concepts/mental-model)
-* [Architecture rules](/guide/testing/architecture)
-* [CLI automation](/guide/routing/automation)
-* [Migration](/resources/migration)
+- [Which primitive should I use?](/guide/concepts/choose-primitive)
+- [The mental model](/guide/concepts/mental-model)
+- [Architecture rules](/guide/testing/architecture)
+- [CLI automation](/guide/routing/automation)
+- [Migration](/resources/migration)

@@ -54,6 +54,7 @@ export const Tasks = craftComponent('Tasks', {}, function* () {
 });
 ```
 
+
 One function, read top to bottom. What the component takes — its service, its
 primitives, its inputs — is declared with `yield*`; what it renders is what it
 returns. The **service** is the seam: it holds the behaviour, so it can be
@@ -127,6 +128,7 @@ const UserCard = craftComponent(
 );
 ```
 
+
 An `Input<T>` **is a yieldable reader** — `yield* user()` reads the current
 value. An `Output<H>` is a plain callback: call it.
 
@@ -195,8 +197,8 @@ craftComponent(
 );
 ```
 
-* **`providers`** — the component's own DI scope, mounted before the function runs.
-* **`host`** — default properties for the root element. Its `class` comes from
+- **`providers`** — the component's own DI scope, mounted before the function runs.
+- **`host`** — default properties for the root element. Its `class` comes from
   a sheet, like every class.
 
 The meta carries no CSS. A component's look lives in a `*.style.ts` sheet beside
@@ -260,7 +262,7 @@ with `.pipe(catchNode.exhaustive(...))` — see
 
 ## See Also
 
-* [Learn: your first state](/learn/01-first-state) — the guided version
-* [Directives and `.pipe(...)`](/guide/components/directives)
-* [Accessibility](/guide/components/accessibility)
-* [Testing components](/guide/testing/components)
+- [Learn: your first state](/learn/01-first-state) — the guided version
+- [Directives and `.pipe(...)`](/guide/components/directives)
+- [Accessibility](/guide/components/accessibility)
+- [Testing components](/guide/testing/components)

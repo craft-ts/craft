@@ -215,6 +215,6 @@ receive those methods as arguments. See
 
 ## See Also
 
-* [Anatomy of a primitive](/guide/concepts/primitive-anatomy)
-* [Insertions](/guide/concepts/insertions)
-* [craftService](/guide/app/craft-service) — packaging state behind a reusable boundary
+- [Anatomy of a primitive](/guide/concepts/primitive-anatomy)
+- [Insertions](/guide/concepts/insertions)
+- [craftService](/guide/app/craft-service) — packaging state behind a reusable boundary

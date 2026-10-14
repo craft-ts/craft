@@ -186,6 +186,8 @@ Component-owned state now lives in a named, injectable and testable service —
 no `@Injectable`, no constructor. Reusable per-call logic can use the `function`
 scope and compose other services without owning a shared instance.
 
+
 [← 2. Derive instead of duplicate](/learn/02-derive)
 
 [4. Compose services →](/learn/04-compose)
+

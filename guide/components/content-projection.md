@@ -60,6 +60,8 @@ Card({
 });
 ```
 
+
+
 The selector is analysed **statically**. This is rejected, because it does not
 contain `div[data-slot="body"]`:
 
@@ -145,6 +147,7 @@ const ToolbarAction = craftComponent(
 type ExtractedContract = ProjectionContractOf<typeof ToolbarAction>;
 type ToolbarActionUnit = ProjectionOf<typeof ToolbarAction>;
 ```
+
 
 `ProjectionContractOf<Component>` extracts that contract.
 `ProjectionOf<Component>` adds the stable key the renderer expects. For generic
@@ -392,18 +395,18 @@ of the tree.
 
 ## API summary
 
-* `content(renderer, options?)` — create deferred DOM content
-* `renderContent(value)` and `renderContent(slotName, value)` — render it
-* `RenderableContent`, `ContentSlot` — free-form slots
-* `RequiredContent<Requirement>` — static DOM contracts
-* `ProjectionContractOf<Component>` — extract a logical contract
-* `ProjectionOf<Component>`, `ProjectionSlot<Contract>` — type projectable
+- `content(renderer, options?)` — create deferred DOM content
+- `renderContent(value)` and `renderContent(slotName, value)` — render it
+- `RenderableContent`, `ContentSlot` — free-form slots
+- `RequiredContent<Requirement>` — static DOM contracts
+- `ProjectionContractOf<Component>` — extract a logical contract
+- `ProjectionOf<Component>`, `ProjectionSlot<Contract>` — type projectable
   collections
 
 The older fragment and slot primitives are no longer part of the public API.
 
 ## See Also
 
-* [Customization](/guide/components/customization)
-* [Styling a component](/guide/components/styles)
-* [Directives and `.pipe(...)`](/guide/components/directives)
+- [Customization](/guide/components/customization)
+- [Styling a component](/guide/components/styles)
+- [Directives and `.pipe(...)`](/guide/components/directives)

@@ -181,5 +181,5 @@ business need, while reusing the same lifecycle as `craftRegisterFor`.
 
 ## See Also
 
-* [craftRegisterFor](/guide/app/register) — the built-in registry on top of this
-* [Observability](/guide/advanced/observability)
+- [craftRegisterFor](/guide/app/register) — the built-in registry on top of this
+- [Observability](/guide/advanced/observability)

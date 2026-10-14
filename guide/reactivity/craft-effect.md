@@ -67,7 +67,7 @@ const user = yield* query('user', {
 
 ## See Also
 
-* [craftComputed](/guide/reactivity/craft-computed)
-* [craftMethod](/guide/reactivity/craft-method)
-* [Local state](/guide/state/local-state) — deriving instead of writing from an effect
-* [Architecture rules](/guide/testing/architecture) — `assertCraftEffectNoNetwork` when an effect calls HTTP or a mutation, `assertCraftEffectNoImperativeSync` when it writes a `state`/`source$` or triggers a query/mutation
+- [craftComputed](/guide/reactivity/craft-computed)
+- [craftMethod](/guide/reactivity/craft-method)
+- [Local state](/guide/state/local-state) — deriving instead of writing from an effect
+- [Architecture rules](/guide/testing/architecture) — `assertCraftEffectNoNetwork` when an effect calls HTTP or a mutation, `assertCraftEffectNoImperativeSync` when it writes a `state`/`source$` or triggers a query/mutation

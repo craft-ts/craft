@@ -167,9 +167,9 @@ const incrementAll = function* () {
 
 Each entry carries:
 
-* `ref` — the value produced by the service, or the context returned by the
+- `ref` — the value produced by the service, or the context returned by the
   component/directive factory;
-* `hostName` — the name of the host scope that created the entry.
+- `hostName` — the name of the host scope that created the entry.
 
 The signal is live: the parent never re-subscribes when a child appears or
 disappears.
@@ -389,6 +389,6 @@ but `craftRegisterFor` stays the recommended application-level API.
 
 ## See Also
 
-* [Target wrapper](/guide/app/target-wrapper) — the extension point underneath
-* [craftService](/guide/app/craft-service)
-* [Customization](/guide/components/customization)
+- [Target wrapper](/guide/app/target-wrapper) — the extension point underneath
+- [craftService](/guide/app/craft-service)
+- [Customization](/guide/components/customization)

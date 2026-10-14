@@ -50,5 +50,5 @@ the rule is about ownership and dependency flow.
 
 ## See also
 
-* [Craft graph vs Nx](/guide/testing/craft-graph-vs-nx)
-* [Writing your own rules](/guide/testing/architecture#writing-your-own-rules)
+- [Craft graph vs Nx](/guide/testing/craft-graph-vs-nx)
+- [Writing your own rules](/guide/testing/architecture#writing-your-own-rules)

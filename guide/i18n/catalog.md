@@ -54,7 +54,7 @@ are tokens. `` msg`Order total ${amount}.` `` has params `{ amount: number }`,
 and nothing else.
 
 `plural(count, branches)` takes the counting token and one message per category.
-Which categories are *required* is decided by the locale id, not by you:
+Which categories are _required_ is decided by the locale id, not by you:
 `defineLocale('pl-PL', …)` will not accept a plural missing `few` or `many`.
 That check is a type error, before any Polish speaker sees the wrong branch.
 
@@ -79,9 +79,9 @@ export const fr = defineLocaleLike(en, 'fr-FR', {
 key set is. Every other locale goes through `defineLocaleLike(reference, id,
 catalog)`, which checks three things against the reference at compile time:
 
-* the same keys, no more and no fewer;
-* the same parameters on every message;
-* the plural categories that *this* locale requires, which may differ from the
+- the same keys, no more and no fewer;
+- the same parameters on every message;
+- the plural categories that _this_ locale requires, which may differ from the
   reference's.
 
 `assertLocaleParity` adds one check the types cannot express: two locales must
@@ -121,5 +121,5 @@ with the default options. Deliver such a message from the application instead.
 
 ## Next
 
-* [Tokens](./tokens.md) — what `amount` and `count` above actually are.
-* [The runtime](./runtime.md) — turning these locales into a `t`.
+- [Tokens](./tokens.md) — what `amount` and `count` above actually are.
+- [The runtime](./runtime.md) — turning these locales into a `t`.

@@ -1,6 +1,5 @@
 ---
-url: >-
-  https://craft-ts.github.io/craft/guide/testing/architecture/craft-effect-imperative-sync.md
+url: https://craft-ts.github.io/craft/guide/testing/architecture/craft-effect-imperative-sync.md
 ---
 # Keep `craftEffect` out of imperative synchronisation
 
@@ -134,5 +133,5 @@ valid. The rule protects synchronization, not all side effects.
 
 ## See also
 
-* [Reacting to mutations](/guide/state/react-on-mutation)
-* [From event to source](/guide/reactivity/from-event-to-source)
+- [Reacting to mutations](/guide/state/react-on-mutation)
+- [From event to source](/guide/reactivity/from-event-to-source)

@@ -38,13 +38,13 @@ rebuilds.
 
 CraftTS has four MCP servers, each with a different responsibility:
 
-* [`@craft-ts/mcp`](https://www.npmjs.com/package/@craft-ts/mcp) gives an agent
+- [`@craft-ts/mcp`](https://www.npmjs.com/package/@craft-ts/mcp) gives an agent
   the published documentation, examples, skills, and LLM entry points.
-* [`@craft-ts/function-registry-mcp`](/guide/ai/mcp-tools) bridges a running
+- [`@craft-ts/function-registry-mcp`](/guide/ai/mcp-tools) bridges a running
   browser tab to `page` and `registry.*` tools.
-* [`@craft-ts/log-mcp`](/guide/ai/mcp-tools) exposes the local log store through
+- [`@craft-ts/log-mcp`](/guide/ai/mcp-tools) exposes the local log store through
   `logs.*` tools.
-* [`@craft-ts/graph-mcp`](/guide/ai/mcp-tools) answers architecture questions
+- [`@craft-ts/graph-mcp`](/guide/ai/mcp-tools) answers architecture questions
   from the static dependency graph through `graph.*` tools.
 
 See [MCP tools](/guide/ai/mcp-tools) for the complete tool inventory and the

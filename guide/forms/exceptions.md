@@ -204,7 +204,7 @@ fields and leaves pathless issues on the form root through
 
 ## See also
 
-* [Validation](/guide/forms/validation)
-* [Nested forms](/guide/forms/nested)
-* [Submitting a form](/guide/forms/submit)
-* [Exceptions as values](/guide/concepts/exceptions)
+- [Validation](/guide/forms/validation)
+- [Nested forms](/guide/forms/nested)
+- [Submitting a form](/guide/forms/submit)
+- [Exceptions as values](/guide/concepts/exceptions)

@@ -165,10 +165,10 @@ For the morph to bridge a slow navigation, **something** carrying the shared ele
 opts in by **declaring the shared-element payload shape** with `viewTransitionPayload<T>()` — the
 view-transition analogue of how `queryParams` declares a route's query-params shape. This:
 
-* makes a typed `viewTransition: T | null` payload **required** on every `craftRouterLink` / `navigate`
+- makes a typed `viewTransition: T | null` payload **required** on every `craftRouterLink` / `navigate`
   targeting it (`null` is an explicit opt-out);
-* exposes a route-generated, fully-typed `injectXxxViewTransition(): Signal<T | null>` helper;
-* tells the outlet to **skip the blank phase** (a blank would break the morph): `stay → pending → loaded`.
+- exposes a route-generated, fully-typed `injectXxxViewTransition(): Signal<T | null>` helper;
+- tells the outlet to **skip the blank phase** (a blank would break the morph): `stay → pending → loaded`.
 
 ```ts
 export const { photosRoutes, injectPhotosPhotoIdViewTransition } = craftRoutes(
@@ -203,7 +203,7 @@ components carry their own per-route DI checks.
 Because its components depend on the `:photoId` param **and** the declared view-transition payload, it is
 only correct under the `photos` route — so it is **pinned** to that mount with
 `.withParent<ParentRoutes<'photos'>>()`, and the parent enforces it with `assertChildRouteMounts(...)`.
-See [Pinning a lazy child to its mount path](/guide/routing/setup#pinning-a-lazy-child-to-its-mount-path-withparent-assertchildroutemounts).
+See [Pinning a lazy child to its mount path](/guide/routing/scaling#pinning-a-lazy-child-to-its-mount-path-withparent-assertchildroutemounts).
 
 The link passes a payload of the **declared type** (required, and shape-checked):
 
@@ -272,7 +272,7 @@ if that pending proof is missing or not armed with `CanRun`.
 
 ## See Also
 
-* [Route exception handling](/guide/routing/exception-handling)
-* [Route guards](/guide/routing/guards) — what the outlet is waiting on
-* [Global error component](/guide/routing/global-error-component)
-* [Architecture rules](/guide/testing/architecture) — `assertRouteDiProofs` keeps the pending-component proof armed
+- [Route exception handling](/guide/routing/exception-handling)
+- [Route guards](/guide/routing/guards) — what the outlet is waiting on
+- [Global error component](/guide/routing/global-error-component)
+- [Architecture rules](/guide/testing/architecture) — `assertRouteDiProofs` keeps the pending-component proof armed

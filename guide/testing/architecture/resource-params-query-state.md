@@ -1,6 +1,5 @@
 ---
-url: >-
-  https://craft-ts.github.io/craft/guide/testing/architecture/resource-params-query-state.md
+url: https://craft-ts.github.io/craft/guide/testing/architecture/resource-params-query-state.md
 ---
 # Resource params should prefer URL-backed state
 
@@ -81,6 +80,6 @@ Keep the allowlist narrow and document the reason beside the architecture test.
 
 ## See also
 
-* [Query params](/guide/state/url-state)
-* [Architecture rules](/guide/testing/architecture)
-* [ESLint rules](/guide/routing/eslint-rules)
+- [Query params](/guide/state/url-state)
+- [Architecture rules](/guide/testing/architecture)
+- [ESLint rules](/guide/routing/eslint-rules)

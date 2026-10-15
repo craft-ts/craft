@@ -143,6 +143,7 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 - [Testing components](https://craft-ts.github.io/craft/guide/testing/components.md): A component is one function, so the seam is no longer inside it: it is the service the component takes.
 - [Type-level tests](https://craft-ts.github.io/craft/guide/testing/type-level.md): Some of what a template guarantees is not observable at runtime — it is in the types.
 - [Browser boundaries](https://craft-ts.github.io/craft/guide/testing/browser-boundaries.md): A browser boundary is the line between your logic and the outside world: localStorage, navigator, location, the network.
+- [Page stability](https://craft-ts.github.io/craft/guide/testing/page-stability.md): A page can loop without anything failing.
 - [Extensible architecture graph](https://craft-ts.github.io/craft/guide/testing/extensible-architecture-graph.md): The Craft architecture graph is extensible by TypeScript backend, without making the graph engine import that backend.
 - [Graph insights](https://craft-ts.github.io/craft/guide/testing/graph-insights.md): The dependency graph behind the architecture rules also measures what it models.
 - [Craft graph vs Nx](https://craft-ts.github.io/craft/guide/testing/craft-graph-vs-nx.md): Nx organises the workspace.

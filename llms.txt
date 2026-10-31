@@ -39,6 +39,7 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 - [Coding agents](https://craft-ts.github.io/craft/resources/ai-agents.md): CraftTS has a deliberate vocabulary.
 - [MCP tools](https://craft-ts.github.io/craft/guide/ai/mcp-tools.md): CraftTS exposes separate MCP servers for documentation, a running application, local logs, and the static dependency graph.
 - [Live page MCP](https://craft-ts.github.io/craft/guide/ai/dev-page.md): The running development tab publishes its named controls.
+- [Guided resume](https://craft-ts.github.io/craft/guide/ai/guided-resume.md): Resume a recorded debug session in the live app: an AI reads what the person did up to an event, brings a fresh tab to the same state, hands the tab back for what only the person can do (signing in…
 - [Send application context to AI](https://craft-ts.github.io/craft/guide/ai/send-context-webhook.md): provideSendContextToAi adds a developer-oriented context inspector to a Craft application.
 
 ## Overview
@@ -49,8 +50,8 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 ## Core concepts
 
 - [The mental model](https://craft-ts.github.io/craft/guide/concepts/mental-model.md): Three words describe everything @craft-ts does: declare, yield, derive.
-- [Which primitive should I use?](https://craft-ts.github.io/craft/guide/concepts/choose-primitive.md): There are five primitives.
-- [Anatomy of a primitive](https://craft-ts.github.io/craft/guide/concepts/primitive-anatomy.md): The five primitives — state, query, mutation, queryParams, asyncProcess — share one shape.
+- [Which primitive should I use?](https://craft-ts.github.io/craft/guide/concepts/choose-primitive.md): There are six primitives.
+- [Anatomy of a primitive](https://craft-ts.github.io/craft/guide/concepts/primitive-anatomy.md): The six primitives — state, query, mutation, queryParams, pathParams, asyncProcess — share one shape.
 - [Generators and yield*](https://craft-ts.github.io/craft/guide/concepts/generators.md): yield* is the one mechanism the whole library rests on.
 - [Insertions](https://craft-ts.github.io/craft/guide/concepts/insertions.md): An insertion is a function that receives a primitive's internals and returns what to expose on it.
 - [Typed insertion pipes](https://craft-ts.github.io/craft/guide/concepts/insertion-pipes.md): Each primitive accepts one insertion directly.
@@ -62,7 +63,7 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 - [State machines](https://craft-ts.github.io/craft/guide/state/state-machines.md): craftStateMachine models a finite workflow as a named, typed, reactive primitive.
 - [query](https://craft-ts.github.io/craft/guide/state/server-state.md): query fetches data and owns its whole lifecycle — loading, resolved, exception — re-running itself when its inputs change.
 - [Mutations](https://craft-ts.github.io/craft/guide/state/mutations.md): mutation is query's counterpart for writes: same shape, triggered explicitly, owning its own loading and failure state.
-- [queryParams](https://craft-ts.github.io/craft/guide/state/url-state.md): queryParams is a state whose home is the URL's query string.
+- [URL state: queryParams and pathParams](https://craft-ts.github.io/craft/guide/state/url-state.md): queryParams is a state whose home is the URL's query string.
 - [asyncProcess](https://craft-ts.github.io/craft/guide/state/async-process.md): asyncProcess runs an async operation and tracks its status, for work that is neither a server read nor a server write.
 - [Selecting a sub-state](https://craft-ts.github.io/craft/guide/state/select.md): insertSelect targets a nested part of a state and attaches insertions to that part, so the logic lives next to the data it operates on rather than at the top of a deeply nested object.
 - [Reacting to mutations](https://craft-ts.github.io/craft/guide/state/react-on-mutation.md): insertReactOnMutation declares the link between a write and the reads it affects: patch the query optimistically, reload it, or both — without calling refetch() from the mutation's call site.
@@ -94,7 +95,7 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 - [Routing setup](https://craft-ts.github.io/craft/guide/routing/setup.md): Six steps turn plain route definitions into routes the compiler checks: a missing provider, a misspelled input or a route pointing at nothing becomes a build error instead of a blank screen.
 - [CLI automation](https://craft-ts.github.io/craft/guide/routing/automation.md): Writing a typed route by hand means four pieces that must agree: the route, its componentDeps, the withRetry wrapper and the DI check.
 - [ESLint rules](https://craft-ts.github.io/craft/guide/routing/eslint-rules.md): The rule set is not decoration: several checks in this documentation only work because a rule generated or maintained the code they read.
-- [Route providers](https://craft-ts.github.io/craft/guide/routing/route-providers.md): A route can provide services built from its own URL — the :userId in the path, its data, its query params, the value its guard resolved — with full type-safe dependency tracking.
+- [Route providers](https://craft-ts.github.io/craft/guide/routing/route-providers.md): A route can provide services built from its own URL — raw :userId path segments, decoded pathParams, its data, query params, or the value its guard resolved — with full type-safe dependency tracking.
 - [Route guards](https://craft-ts.github.io/craft/guide/routing/guards.md): A guard is a bare function* on canActivate / canMatch.
 - [Route exception handling](https://craft-ts.github.io/craft/guide/routing/exception-handling.md): When a guard, a matcher or a resolver raises a declared exception, this page is where you say what happens next: redirect, render a dedicated component, stay put, or carry on.
 - [Non-blocking navigation](https://craft-ts.github.io/craft/guide/routing/pending-ui.md): By default, a slow guard or resolver can leave the current screen unchanged with no feedback.
@@ -169,6 +170,8 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 - [Metric thresholds](https://craft-ts.github.io/craft/guide/testing/architecture/metric-thresholds.md): assertMetricThresholds is an optional architecture rule inspired by the complexity checks in Sonar.
 - [Queries and mutations must reach server state](https://craft-ts.github.io/craft/guide/testing/architecture/server-state-loader.md): assertQueryMutationHasServerState verifies that query and mutation loaders reach an approved server-state boundary, such as CraftHttpClient or a client-exposed server-function family: export functi…
 - [Primitive loader requirements](https://craft-ts.github.io/craft/guide/testing/architecture/primitive-loader-requirements.md): assertPrimitiveLoaderRequirements is the configurable form of the server-state rule.
+- [Query params belong to their route](https://craft-ts.github.io/craft/guide/testing/architecture/query-params-route-ownership.md): export function keepQueryParamsRouteOwned(graph: ArchitectureGraph) { assertQueryParamsRouteOwnership(graph.graph); } assertQueryParamsRouteOwnership keeps URL-backed state within the route that ow…
+- [Unique runtime entity names](https://craft-ts.github.io/craft/guide/testing/architecture/runtime-entity-names.md): export function keepRuntimeEntityNamesUnique(graph: ArchitectureGraph) { assertRuntimeEntityNamesUnique(graph.graph); } assertRuntimeEntityNamesUnique requires every Craft service and every primiti…
 
 ## Reactivity utilities
 

@@ -123,7 +123,7 @@ type AppRouteCheckedDI<
 > = RouteCheckedDI<
   ComponentDepsOf<Component>,
   'CraftRouter',
-  CraftRouter | ActivatedRoute,
+  CraftRouter | CraftRouteContext,
   Context,
   RouteInputs
 >;

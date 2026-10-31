@@ -19,6 +19,175 @@ can miss a real DI error. Run `eslint --fix` in CI.
 
 The plugin is exposed from `@craft-ts/dev-tools/eslint-rules`.
 
+## Route app-local links through Craft
+
+`craft-ts/prefer-craft-router-link` is enabled at `error` in the recommended
+and Effect presets, including generated apps. The demo application's client
+source enables the same rule explicitly. It rejects app-relative `href` values
+on Craft anchors so the router can capture and replay route changes.
+
+Before — this native anchor reloads the document instead of using the app
+router:
+
+```ts
+// ❌ app-local destination
+a('hero-shop', { href: '/catalogue' }, 'Découvrir la boutique');
+```
+
+After — name the Craft route and let `CraftRouterLink` handle the navigation:
+
+```ts
+a('hero-shop', {}, 'Découvrir la boutique').pipe(
+  CraftRouterLink({ to: 'catalogue' }),
+);
+```
+
+External destinations remain native links:
+
+```ts
+a(
+  'documentation',
+  { href: 'https://example.com/guide', target: '_blank' },
+  'Documentation',
+);
+```
+
+Static app-relative paths such as `'/catalogue'`, `'catalogue'`, `'./catalogue'`
+and `'../catalogue'` are rejected. Absolute URLs, protocol-relative URLs,
+fragment links, downloads, and `_blank` links are allowed. A dynamic `href` is
+reported because ESLint cannot tell whether it points inside or outside the
+app; mark a deliberately native URL with `data-navigation: 'external'`.
+
+There is no autofix: the author must map the destination to a declared Craft
+route (including any route parameters). Use `CraftRouterLink` for anchor
+navigation and `CraftRouter.navigate(...)` for navigation initiated by a
+button or another action.
+
+## Keep route state in Craft routing
+
+`craft-ts/no-manual-craft-routing` is enabled at `error` in the recommended
+and Effect presets, including generated apps. It catches browser `location`
+reads of `hash` and `pathname`, hand-parsed hash route checks, same-app writes
+to `location.hash` or `location.href`, `location.assign(...)` / `replace(...)`
+calls to app paths, URL-bearing `history.pushState` / `replaceState` calls, and
+subscriptions to `popstate` or `hashchange`. These patterns implement route
+matching, navigation, or history tracking outside `provideCraftRouter` and
+`CraftRouterOutlet`.
+
+Before — the service parses the route and changes it by editing browser history:
+
+```ts
+const sessionId = /^#\/sessions\/([^/]+)$/.exec(location.hash)?.[1];
+history.pushState({}, '', `#/sessions/${nextSessionId}`);
+```
+
+After — declare the path parameter with the route, then use Craft's typed route
+helpers and navigation API:
+
+```ts
+// In the route declaration:
+{
+  path: 'sessions/:sessionId',
+  pathParams: { sessionId: sessionIdPathParam },
+  // Route providers expose SessionIdParams to the page's services.
+}
+
+// In a routed service:
+const sessionId = yield* SessionIdParams();
+const router = yield* CraftRouter();
+yield* router.navigate({
+  to: 'sessions/:sessionId',
+  params: { sessionId: nextSessionId },
+});
+```
+
+The rule has no autofix: choosing a route and mapping parsed values to its
+typed path or query parameters requires understanding the feature. It leaves
+fragment links and ordinary `location.search` reads alone. Browser URL work
+for a separate protocol (such as a worker or iframe) should remain behind that
+protocol's boundary, rather than deciding which app page is active.
+
+`craft-ts/prefer-craft-route-over-page-state` adds a softer warning at `warn`
+in the recommended and Effect presets. A string-valued `state('page', ...)`,
+`state('currentPage', ...)`, `state('activePage', ...)`, or
+`state('routePage', ...)` can duplicate the route table by storing which page
+the URL already selects.
+
+Before — local state selects which routed page is visible:
+
+```ts
+const page = yield* state('page', 'sessions');
+```
+
+After — declare both pages in `craftRoutes` and let the router activate one in
+`CraftRouterOutlet()`:
+
+```ts
+import { loadCraftComponent } from '@craft-ts/component';
+import { CraftRouterOutlet, craftRoute, craftRoutes } from '@craft-ts/core';
+
+export const { appRoutes } = craftRoutes('app', [
+  craftRoute('sessions', {
+    ...loadCraftComponent(({ withRetry }) =>
+      withRetry(import('./sessions-page')).then(
+        (module) => module.SessionsPage,
+      ),
+    ),
+  }),
+  craftRoute('sessions/:sessionId', {
+    ...loadCraftComponent(({ withRetry }) =>
+      withRetry(import('./replay-page')).then((module) => module.ReplayPage),
+    ),
+  }),
+]);
+
+// In the application shell's template:
+main(CraftRouterOutlet());
+```
+
+This is a review warning, not an error: names such as `page` can also mean
+pagination or page-local UI state. Keep those states when they do not choose
+the active route. The warning has no autofix.
+
+## Use Craft state and computed values
+
+`craft-ts/no-direct-craft-reactivity` is enabled at `error` in the recommended
+and Effect presets, including generated apps. It rejects imports of the
+low-level `craftSignal` and `ɵcomputed` factories from `@craft-ts/core`. They
+produce signal-shaped values without the lifecycle, naming, composition, and
+runtime tracking provided by Craft primitives.
+
+Before — aliasing the factories makes them look like general purpose signals:
+
+```ts
+import { ɵcomputed as computed, craftSignal as signal } from '@craft-ts/core';
+
+const count = signal(0);
+const doubled = computed(() => count() * 2);
+```
+
+After — declare writable values with `state` and derived values with
+`craftComputed` inside a Craft service:
+
+```ts
+import { craftComputed, craftService, state } from '@craft-ts/core';
+
+const { Counter } = craftService(
+  { name: 'Counter', providedIn: 'global' },
+  function* () {
+    const count = yield* state('count', 0, ({ update }) => ({
+      increment: () => update((value) => value + 1),
+    }));
+    yield* craftComputed('doubled', function* () {
+      return (yield* count()) * 2;
+    });
+  },
+);
+```
+
+There is no autofix: the author must choose the owning service and its scope,
+then expose the state methods and computed values that consumers need.
+
 ## Scope-matched craft service inputs
 
 `craft-ts/require-craft-service-input-scope` is enabled at `error` in the
@@ -220,10 +389,77 @@ What each rule does:
 - `craft-ts/require-reactive-template-bindings`: requires signals, named Craft values, and component inputs to be read inside granular binding callbacks instead of during VNode construction; static values and message-catalog interpolation helpers remain valid
 - `craft-ts/no-craft-use`: forbids the synchronous `craftUse(...)` escape hatch in Craft TypeScript files. Declare primitive dependencies with `yield*` in a service, method, or effect body; component templates are synchronous and consume the resulting view API directly.
 - `craft-ts/no-craft-service-return`: forbids returning a value from a `craftService` factory. Its API is assembled from the named values yielded by its generator; use `yield* craftPrivate(...)` for primitives that should stay internal, and `craftExpose(name, value)` for standalone values that belong in the API. The rule autofixes simple returned objects whose properties already match yielded primitive names.
+- `craft-ts/no-duplicate-craft-service-exposure`: requires each public key in a `craftService` to occur once, including keys created by named utilities such as `state(...)` and keys created by `craftExpose(...)`. Remove a duplicate exposure or choose a distinct key for a standalone value; the rule does not autofix because removing an API key can affect consumers.
+- `craft-ts/no-reexposed-craft-service-utility`: forbids passing a locally declared, publicly yielded utility result back to `craftExpose(...)` under a different key. The utility is already available by its declared key; remove the redundant call and keep the existing key. The rule does not autofix.
 - `craft-ts/require-craft-service-input-scope`: keeps global services input-free, limits provider-scoped services to `$provided`, and checks function-scoped inputs. TypeScript also rejects invalid service-helper bindings at call sites.
 - `craft-ts/prefer-direct-craft-service-exposure`: reports `craftExpose(...)` wrappers that repeat a yielded service's name, a named primitive result, or a member already returned by a primitive such as `state`, including when the member is renamed; keep the existing nested path (for example, `View.searchInput.setSearchInput`). It also reports service property shortcuts that can be yielded directly and forbids `craftExpose` inside supported primitive declarations or callbacks. Keep `craftExpose` for standalone or computed values.
 - `craft-ts/prefer-craft-computed-for-reactive-generator`: reports a zero-argument generator exposed as a service value when its only statement returns a value derived from a `yield*` read. Declare that value with `yield* craftComputed(name, function* () { ... })`; parameterized generators and multi-step workflows are unaffected.
 - `craft-ts/require-craft-component-for-exported-node-factory`: requires an exported function that directly returns a Craft node, such as `button(...)`, to be declared with `craftComponent(...)` so Craft directives and composition remain available
+
+### Keep `craftService` exposure keys unique
+
+Named utilities yielded directly from a `craftService` are already exposed
+under their declared name. `craftExpose` also adds a public key, so the same
+key must not be used by another utility or another `craftExpose` call.
+
+This rule catches **key collisions**, even when the values are different. The
+next rule catches the other case: exposing the **same yielded utility** again
+under a different key. Both checks protect the service API, but they diagnose
+different mistakes.
+
+Before — `expanded` is exposed by `state(...)` and then exposed again:
+
+```ts
+const expanded = yield* state('expanded', false);
+
+// ❌ `expanded` is already a public service key
+yield* craftExpose('expanded', expanded);
+```
+
+After — yield the primitive once; the service exposes it under `expanded`:
+
+```ts
+yield* state('expanded', false);
+```
+
+The rule also catches duplicate standalone keys:
+
+```ts
+// ❌ both values claim the same public key
+yield* craftExpose('format', formatDate);
+yield* craftExpose('format', formatCurrency);
+
+// ✅ each value has its own key
+yield* craftExpose('formatDate', formatDate);
+yield* craftExpose('formatCurrency', formatCurrency);
+```
+
+### Do not re-expose a declared service utility
+
+`no-duplicate-craft-service-exposure` catches repeated keys. This rule catches
+re-exporting the same utility under a different key: a public utility yielded
+from `state`, `query`, `mutation`, or another named primitive already has an
+API path, so adding an alias with `craftExpose` creates a redundant second
+path.
+
+Before — the local variable is the already-public `state('language')` utility:
+
+```ts
+const language = yield* state('language', 'en');
+
+// ❌ creates a second path to the same utility
+yield* craftExpose('locale', language);
+```
+
+After — keep the primitive's public `language` key:
+
+```ts
+yield* state('language', 'en');
+```
+
+Neither rule offers `eslint --fix`: removing or renaming a key can change the
+service API, so the author must choose the intended public name and update its
+consumers.
 
 ### Avoid flattening primitive members with `craftExpose`
 
@@ -472,9 +708,39 @@ checks exported arrow functions.
 - `craft-ts/no-injection-token`: forbids authored `InjectionToken` contracts; declare them with `craftService({ name, providedIn: 'abstract' }, abstract<Contract>())`
 - `craft-ts/prefer-craft-http-client`: forbids direct transport usage in favor of `CraftHttpClient`
 - `craft-ts/prefer-craft-http-transport`: forbids direct `fetch()` and `XMLHttpRequest` because they bypass typed responses and exceptions, tracing, cancellation, and the architecture graph; use `query()` for reads or `mutation()` for writes with `CraftHttpClient`, or `CraftBinaryHttpClient` for raw binary bodies
+
+### `require-server-function-codec`
+
+Client-exposed server functions declare a schema on both sides of the
+transport: the input schema decodes and validates the incoming value, and the
+output schema validates the result before it is encoded for the client. These
+contracts also let scenario catalogs encode deterministic recipe mocks.
+
+**Before — a boundary whose input or result shape is implicit:**
+
+```typescript
+serverFunction('orders.list', inputSchema, { exposure: 'client' });
+```
+
+**After — both transport directions have a declared schema:**
+
+```typescript
+serverFunction('orders.list', inputSchema, {
+  exposure: 'client',
+  output: ordersSchema,
+});
+```
+
+The rule reports the missing input decoder or output encoder separately. There
+is no automatic fix because choosing the correct schema is a domain decision.
+An opaque third-party protocol may set `codecExemption` to a specific reason
+and handling location; vague or empty exemptions fail lint.
 - `craft-ts/prefer-craft-input-output`: keeps component inputs and outputs in the `Input`/`Output` model used by `craftComponent(...)`
 - `craft-ts/require-primitive-derived-property`: requires a `computed` or `craftComputed` that only depends on one primitive in the same component/service to be exposed by that primitive's insertion; simple cases are autofixed
 - `craft-ts/no-reused-primitive-method`: requires an exposed primitive insertion method to have one call site per file, including unchanged aliases; naming an alias is not a call site, binding it is. Create a context-specific insertion method for each distinct use
+- `craft-ts/prefer-craft-long-press`: reports a local pointer/touch hold implementation that combines a start event, release/cancel events, and a timer. Use [`longPress`](/guide/components/directives#long-press) from `@craft-ts/core`; for a genuinely custom gesture, declare its semantic replay boundary with `runCraftReplayTrigger(...)`. No autofix is offered because replacing a gesture requires choosing its handler and options.
+- `craft-ts/prefer-craft-pointer-gestures`: reports native pointer listeners with coordinate tracking and drag/swipe phases. Use [`drag` or `swipe`](/guide/components/directives#drag-and-swipe) from `@craft-ts/core`; keep high-frequency preview work presentation-only and put semantic work in the terminal callback. No autofix is offered because gesture intent and thresholds need a human choice.
+- `craft-ts/require-craft-replay-trigger`: reports a direct native gesture listener whose callback contains a Craft generator or `executeYieldable(...)` without `runCraftReplayTrigger(...)`. Visual-only listeners and Craft template event bindings remain valid; the rule only claims the callback shapes it can recognize in the current file.
 - `craft-ts/no-async-await`: forbids `async` functions, `await`, and `for await...of` because native Promise suspension hides Craft dependencies and can lose cancellation or exception tracking; use generator-based Craft primitives, `craftSleep`, and `CraftHttpClient` instead
 - `craft-ts/require-loop-sleep-or-stop`: requires a `while` / `do` / `for` driven by `yield*` or `true` to suspend on `craftSleep` (cancelled with its owner) or to have a `break`, `return` or `throw`; without either it re-runs as fast as the runtime allows. See [page stability](/guide/testing/page-stability#craft-ts-require-loop-sleep-or-stop)
 - `craft-ts/require-generator-resource-loader`: requires `query`, `mutation`, and `asyncProcess` loaders to be generator functions because a plain or async return hides remote dependencies from the resource lifecycle; use `yield*` to keep each suspension tracked
@@ -489,7 +755,7 @@ checks exported arrow functions.
 - `craft-ts/no-explicit-craft-insertion-type`: forbids explicit parameter and return annotations on callbacks passed to `insert*Pipe`; let the primitive infer the insertion context and derived output
 - `craft-ts/no-craft-primitive-type-assertion`: forbids chained assertions such as `as unknown as Generator<...>` around Craft primitive generators, which can hide the inferred output and dependency contract
 - `craft-ts/prefer-insert-deep-yieldable`: rejects adapting a property of a primitive result with `deepYieldable(...)`; add `insertDeepYieldable()` to the primitive and read the property directly
-- `craft-ts/no-imperative-template-action-chain`: forbids chaining multiple Craft actions in one template event callback, or in a generator passed as a component prop (`trigger: function* () { … }`); emit one `source$` event and let the query, mutation, and state react through `on$`. With type information, any `yield*` of a service method counts as an action (`yield* View.label.recordConfirm()`), whatever its name; `yield*` of a reactive reader does not (`const user = yield* View.user()`), so a handler can read as many values as it needs around a single action
+- `craft-ts/no-imperative-template-action-chain`: forbids chaining multiple Craft actions in one template event callback, or in a generator passed as a component prop (`trigger: function* () { … }`); it also follows named event handlers from the legacy four-argument `craftComponent(...)` form. Emit one `source$` event and let the query, mutation, and state react through `on$`. With type information, any `yield*` of a service method counts as an action (`yield* View.label.recordConfirm()`), whatever its name; `yield*` of a reactive reader does not (`const user = yield* View.user()`), so a handler can read as many values as it needs around a single action
 - `craft-ts/prefer-route-query-params-for-filter-state`: warns when a local `state()` is used directly or through a local derivation as `params` for `query`, `queryEffect`, `asyncProcess`, or `asyncProcessEffect`; use `queryParams()` for values that should survive reloads and be represented in the URL. The graph-wide counterpart, which also sees cross-file dependencies, is [`assertResourceParamsPreferQueryParams`](/guide/testing/architecture/resource-params-query-state).
 - `craft-ts/no-imperative-storage-in-craft-method`: forbids direct storage access and imperative location changes in a `craftMethod`; use `insertReactOnMutation(...)` with `optimisticUpdate: () => undefined` to clear the affected query and let its persistence follow the query state.
 - `craft-ts/no-transition-actions`: forbids `query.call(...)`, `mutation.mutate(...)`, and `asyncProcess.method(...)` inside `transitionStep(...)`; validate the event and emit a source, then let the resource react to that source.
@@ -512,12 +778,14 @@ checks exported arrow functions.
 - `craft-ts/no-raw-css-value`: forbids a string or number literal as an argument to a `@craft-ts/style` helper — `p('12px')`, `bg('red')`. If the scale is missing the step, add it to the scale; if the value genuinely cannot be proven, `unsafeLength('13px', reason)` compiles and makes the debt countable in the [graph](/guide/style/testing#what-the-graph-adds)
 - `craft-ts/no-free-has`: forbids a hand-written `:has()` in styles. It reaches across the component boundary, so what a component looks like depends on markup it does not own — a state the matrix cannot enumerate. Use the `descendant` axis, which is a closed set and carries its own test driver
 - `craft-ts/style-file-boundary`: restricts a `*.style.ts` to style-vocabulary imports. The [build plugin](/guide/style/setup) imports the file in Node to read what it registered, so an application import would run application code at build time
-- `craft-ts/require-effect-adapters`: requires the Effect-aware adapters — `queryEffect`, `mutationEffect`, `asyncProcessEffect`, and `transitionGuardEffect` — instead of the plain primitives and `transitionGuard` in an Effect application. See [Choose the right adapter](/guide/advanced/effect#choose-the-right-adapter)
+- `craft-ts/require-effect-adapters`: requires the Effect-aware adapters — `queryEffect`, `mutationEffect`, `asyncProcessEffect`, and `transitionGuardEffect` — instead of the plain primitives and `transitionGuard` in an Effect application. A `query` whose loader yields an imported `CraftHttpClient` request stays a Craft query because that request is a Craft generator, not an `Effect`; server-function queries follow the same boundary. See [Choose the right adapter](/guide/advanced/effect#choose-the-right-adapter)
 - `craft-ts/craft-signal-source-name-match`: requires `signalSource(name, ...)` to take a string literal matching the variable, class property or object property it is assigned to, so the name in a trace is the name in the source. A computed name defeats the [architecture graph](/guide/testing/architecture), which reads these names statically
 - `craft-ts/require-child-route-mount-check`: adds the missing `assertChildRouteMounts(...)` call + import (Quick Fix) for any `craftRoutes(...)` collection that mounts lazy `loadChildren`, so a `.withParent`-pinned child mounted under the wrong path is a compile error
 - `craft-ts/require-lazy-load-with-retry`: wraps route `loadComponent` and `loadChildren` imports with the generated `withRetry(...)` loader helper while preserving a statically analyzable import specifier
 - `craft-ts/global-exception-registry-match`: keeps `CraftGlobalExceptionRegistry` synchronized with handlers delegating to `globalError()`
-- `craft-ts/prefer-craft-router-link`: requires `CraftRouterLink` for internal `a(..., { href: ... })` navigation; external URLs, fragment links, downloads, `_blank`, and links marked with `data-navigation: 'external'` remain native
+- `craft-ts/prefer-craft-router-link`: requires `CraftRouterLink` for app-relative Craft anchor `href`s, and reports ambiguous dynamic hrefs; external URLs, fragment links, downloads, `_blank`, and links marked with `data-navigation: 'external'` remain native. No autofix is offered because the author must choose the declared route and its parameters.
+- `craft-ts/no-manual-craft-routing`: rejects browser URL parsing and History API/event handling used to match, select, or change Craft routes; use `CraftActivatedRoute` with typed path/query helpers to read the route, `CraftRouter.navigate(...)` for actions, and `CraftRouterLink(...)` for links. No autofix is offered because route ownership and parameter mapping require a human choice.
+- `craft-ts/prefer-craft-route-over-page-state`: warns when string-valued state named `page`, `currentPage`, `activePage`, or `routePage` may duplicate route activation; if it chooses the visible app page, declare routes with `craftRoutes(...)` and render them with `CraftRouterOutlet()`. Pagination and page-local state remain valid. Warning only; no autofix.
 - `craft-ts/no-raw-craft-router-url`: rejects reading `CraftRouter.url`; use the typed route parameter helper generated by `craftRoutes(...)` instead of parsing the URL
 - `craft-ts/no-craft-component-return-type`: rejects explicit annotations on `craftComponent(...)` results so dependency and template inference remains intact
 

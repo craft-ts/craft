@@ -17,20 +17,26 @@ Typical uses include:
 
 The feature is user-driven. It does not call an AI service by itself. Without
 an `endpoint`, everything stays in the browser and the user copies the prompt
-or the timeline when they choose to. The required `recording` option decides
-when capture starts: `true` starts a session clip automatically at app startup;
-`false` waits until the user clicks **Record**. In either mode, the user can
-stop and manually start recording from the timeline controls. Events are only
-captured while a recording clip is active.
+when they choose to. Recording defaults to `true` and starts a session clip
+automatically at app startup; set it to `false` to wait until the user clicks
+**Record**. In either mode, the user can stop and manually start recording from
+the timeline controls. Events are only captured while a recording clip is active.
 
 ## Minimal setup
 
 Register the provider once in the application providers. The default UI then
-adds an `AI context` launcher in the bottom-right corner and a context menu to
-Craft component hosts. The minimal setup opts in to session recording:
+adds a `✦ Report` launcher in the bottom-right corner and a context menu to
+Craft component hosts. Drag the grip icon beside the launcher to move it out
+of the way. The launcher stays within the viewport and keeps its position when
+the chat opens and closes. The grip also accepts arrow keys; double-click it to
+restore the application's default position.
+
+The minimal setup uses the default session recording behavior:
 
 ```ts
-export const minimalAiContextProviders = [provideSendContextToAi({ recording: true })];
+export const minimalAiContextProviders = [
+  provideSendContextToAi({}),
+];
 ```
 
 The two entry points are equivalent:
@@ -38,9 +44,17 @@ The two entry points are equivalent:
 - open the launcher to start with an empty context, then interact with the app;
 - right-click a component to start with that component already selected.
 
-From the chat, the user can add more elements with another right-click, remove
-selected elements, write an instruction, record or clear the timeline, and
-choose which sections to include in the generated Markdown prompt.
+The panel contains an instruction, selected elements, and the action timeline.
+The timeline is collapsed initially; use **Show** to inspect its events.
+Choose **+ Select an element**, then click anywhere in the application to add a
+new target without triggering its action or losing the current instruction.
+The cursor changes to a crosshair while the picker is active.
+**Escape** or **Cancel selection** cancels the picker. Right-clicking a component
+and choosing **Add to AI context** also adds another target to the same draft.
+Selected elements can be removed individually.
+
+The two checkboxes control whether to include the action timeline and the full
+page. The instruction and selected component context are always included.
 
 ## What is collected
 
@@ -59,69 +73,80 @@ The session combines several kinds of context:
   briefly pause the page while they are collected.
 
 The default prompt contains selected elements, component information, the
-timeline summary, and app snapshots when they exist. Timeline JSON and DOM/CSS
-captures are opt-in. The checkboxes in the chat change the Markdown prompt;
-the webhook also receives the structured fields so an agent can process them
-without parsing Markdown.
+timeline summary, and app snapshots when they exist. **Include full page** adds
+the page DOM and computed CSS, excluding the AI overlay itself. It can produce
+a large prompt. JSON export and replay controls are kept out of this panel.
 
-The chat also supports recording a named **clip**. A clip is a subset of the
-timeline, which is useful when an investigation contains several unrelated
-interactions. `Copy JSON` copies a versioned export of the **full session**,
-regardless of which clip is selected. `Copy prompt` builds the AI-oriented
-Markdown document. **Clear** removes the current timeline and, if recording
-was active, starts a fresh clip so the next reproduction can be captured.
+**Clear** removes the current timeline and, if recording was active, starts a
+fresh clip so the next interactions form a focused reproduction. Clearing keeps
+the instruction and selected targets. A stopped recording stays stopped.
 
-## Export and replay a debugging session
+Programmatic session exports and replay APIs remain available for debugging
+integrations. Use `session.exportSessionJson()` to obtain a portable session;
+the AI panel's **Copy prompt** action produces the context for an assistant.
 
-Use the timeline's `Record` control while reproducing an issue, then choose
-`Copy JSON` to copy the complete session. The export includes the starting URL,
-the event timeline, clips, and recorded HTTP request/response data. DOM events
-include a replay target and action; form values and relevant keyboard details
-are included when available. Password fields and fields whose names indicate
-secrets are omitted, and the normal send-context redactor runs before data is
-exported. Events from the debugging overlay itself are excluded.
+## Match the application's colours
 
-In the local app, open the context panel, paste the JSON into **Replay a
-session**, and choose `Validate`. Invalid JSON, unsupported versions, and
-sessions marked as truncated are rejected. Retention can evict old events, so
-an export with lost events is explicitly marked incomplete and cannot be
-replayed as a complete session.
+Pass partial light and dark palettes with `theme`. Each colour accepts a CSS
+colour, a CSS variable reference, or a typed Craft style colour token. Unspecified
+colours keep their defaults; dark values override the light palette for the
+selected colour scheme. By default, the overlay follows the document's
+`data-mode` attribute when present, then falls back to the browser preference.
+Set `colorScheme` to `system`, `light`, or `dark` to choose explicitly. The
+palette applies to the launcher, context menu, and panel.
 
-For the most useful replay, first reload the local app on the recorded path,
-then reopen the panel, paste the export again, and validate it. The origin in
-the export may belong to another environment; replay compares request paths
-and uses the current local app. It re-runs the app's code and interactions; it
-does not restore the app's complete initial state.
+```ts
+export const themedAiContextProviders = provideSendContextToAi({
+  recording: true,
+  theme: {
+    light: {
+      bg: 'var(--app-surface)',
+      text: 'var(--app-text)',
+      accent: '#6d28d9',
+      'accent-hover': '#5b21b6',
+      'on-accent': '#ffffff',
+      focus: '#7c3aed',
+    },
+    dark: {
+      bg: '#18181b',
+      text: '#fafafa',
+      border: '#71717a',
+    },
+  },
+});
+```
 
-After validation, use:
+The most common keys are `bg`, `surface`, `surface-muted`, `control-bg`, `text`,
+`text-muted`, `border`, `border-subtle`, `accent`, `accent-hover`, `accent-text`,
+`on-accent`, and `focus`. `SendContextColors` exposes all supported colour keys.
+CSS variables can point directly to the application's existing theme, so its
+colours can change without replacing this provider.
 
-- `Play` to replay interactions at the intervals recorded in the session;
-- `Pause` to hold replay before the next interaction;
-- `Next step` to dispatch one interaction and advance Craft's virtual clock
-  to that event's recorded time;
-- `Stop` to end replay and restore the normal Craft clock and `fetch`.
+Set `launcherLabel` to change the default floating button's visible text (the
+small star stays in place):
 
-Recorded HTTP responses are returned for matching `fetch` requests. A request
-with no recorded match stops replay and is rejected; it is never sent through
-`fetch` to the server. Matching uses the request method, local path and query,
-body, and recorded order. Craft timers scheduled through `CraftTemporalRuntime`
-and progressive `scheduleFor` rendering use the replay clock: they remain
-paused between steps and run when replay advances time. Direct calls by the
-application to native timers or animation-frame APIs are outside this virtual
-clock's control.
+```ts
+provideSendContextToAi({
+  recording: false,
+  launcherLabel: 'Share context',
+});
+```
 
-Events that include a captured state can be compared with state observed after
-replay. A mismatch is reported in the panel so the interaction can be
-investigated; replay does not force the recorded state back into the app.
+For a different icon, layout, or behavior, provide a custom launcher component
+with `provideSendContextLauncherComponent`. The `theme` palette also applies to
+the built-in launcher.
 
 ## Send the context to an agent
 
-Pass a browser-accessible webhook URL to enable the `Send` action:
+Pass a browser-accessible webhook URL to enable the `Send` action. For example,
+the endpoint can create a support ticket or forward the payload to an email
+service; that server-side integration stays in your application:
 
 ```ts
 export const aiContextProviders = provideSendContextToAi({
   recording: true,
   endpoint: 'https://agent.example.com/hooks/context',
+  sendButtonLabel: 'Send to support',
 });
 ```
 
@@ -147,15 +172,17 @@ The browser sends a JSON `POST` with this versioned shape:
 
 `prompt` is generated from the instruction, the selected options, and the
 structured fields. `component` is omitted when the chat was opened from the
-launcher without a captured component. `captures.component` and
-`captures.page` are present only when their corresponding DOM/CSS options were
-selected. Events generated by the webhook request itself are excluded from
+launcher without a captured component. `captures.page` is present when **Include full page** is selected.
+Unchecking **Include action timeline** removes events from both the prompt and
+the structured payload. Events generated by the webhook request itself are excluded from
 the context sent to that webhook.
+
+Set `sendButtonLabel` to match the destination, such as `Send to support`.
 
 Any `2xx` response is successful, including `200`, `202`, and `204`. Network
 failures, timeouts, and non-`2xx` responses are shown in the chat. `Retry`
-reuses the exact same payload, and `Copy payload` copies that payload only
-after a failed request.
+reuses the exact same payload. **Copy prompt** remains available after a
+failed request.
 
 The endpoint is application configuration shipped to the browser, not a
 secret. It must allow the application's origin through CORS and accept JSON
@@ -207,18 +234,20 @@ emission, subscription, clearing, and programmatic export.
 
 ## Customize the UI with DI
 
-There are three levels of UI customization:
+There are four levels of UI customization:
 
 | Provider                                                                  | What it replaces or adds                  | When to use it                                                     |
 | ------------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------ |
+| `provideSendContextToAi({ launcherLabel: 'Share context' })`              | The default launcher text                 | Change the visible button label                                    |
 | `provideSendContextChatComponent(() => MyChat)`                           | The default chat panel                    | Keep the built-in launcher and context menu, but replace the panel |
 | `provideSendContextUiRenderer(() => MyRenderer)`                          | The complete renderer                     | Own the launcher/chat lifecycle and render the whole experience    |
-| `SEND_CONTEXT_LAUNCHER_COMPONENT` / `SEND_CONTEXT_CONTEXT_MENU_COMPONENT` | The floating launcher or right-click menu | Match the application's controls or visual language                |
+| `provideSendContextLauncherComponent(() => MyLauncher)` / `provideSendContextContextMenuComponent(() => MyMenu)` | The floating launcher or right-click menu | Match the application's controls or visual language                |
 
 The complete renderer receives `SendContextUiContext`. It exposes the live
 session, events, clips, selected targets, captured payload, DOM capture element,
 recording state, endpoint, and operations such as `addTarget`, `removeTarget`,
-`selectClip`, and `close`.
+`selectClip`, `pickTarget`, `cancelTargetSelection`, and `close`. The optional
+`selectingTarget` property reports whether the picker is active.
 
 ```ts
 import {

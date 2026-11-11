@@ -68,7 +68,7 @@ import {
   craftRoutes,
   pathParams,
 } from '@craft-ts/core';
-import { UsersPage } from './users.page';
+import { loadCraftComponent } from '@craft-ts/component';
 
 const positiveIntegerCodec = {
   decode(raw: string) {
@@ -85,8 +85,9 @@ const positiveIntegerCodec = {
 
 export const { usersRoutes } = craftRoutes('users', [
   craftRoute('users/:userId/page/:page', {
-    loadComponent: async () => UsersPage,
-    componentDeps: {},
+    ...loadCraftComponent(({ withRetry }) =>
+      withRetry(import('./users.page')).then((m) => m.UsersPage),
+    ),
     pathParams: {
       userId: pathParams('userId'),
       page: pathParams(

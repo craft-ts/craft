@@ -92,8 +92,8 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 
 ## Routing & type-safe DI
 
-- [Routing setup](https://craft-ts.github.io/craft/guide/routing/setup.md): Six steps turn plain route definitions into routes the compiler checks: a missing provider, a misspelled input or a route pointing at nothing becomes a build error instead of a blank screen.
-- [CLI automation](https://craft-ts.github.io/craft/guide/routing/automation.md): Writing a typed route by hand means four pieces that must agree: the route, its componentDeps, the withRetry wrapper and the DI check.
+- [Routing setup](https://craft-ts.github.io/craft/guide/routing/setup.md): Four steps turn route definitions into routes the compiler checks: a missing provider, a misspelled input or a route pointing at nothing becomes a build error instead of a blank screen.
+- [CLI automation](https://craft-ts.github.io/craft/guide/routing/automation.md): Writing a typed route by hand means the route, its lazy component loader and the DI check must agree.
 - [ESLint rules](https://craft-ts.github.io/craft/guide/routing/eslint-rules.md): The rule set is not decoration: several checks in this documentation only work because a rule generated or maintained the code they read.
 - [Route providers](https://craft-ts.github.io/craft/guide/routing/route-providers.md): A route can provide services built from its own URL — raw :userId path segments, decoded pathParams, its data, query params, or the value its guard resolved — with full type-safe dependency tracking.
 - [Route guards](https://craft-ts.github.io/craft/guide/routing/guards.md): A guard is a bare function* on canActivate / canMatch.
@@ -177,6 +177,7 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 
 - [craftComputed](https://craft-ts.github.io/craft/guide/reactivity/craft-computed.md): A yieldable reactive value that can read Craft dependencies and other reactive Craft values with yield*.
 - [craftEffect](https://craft-ts.github.io/craft/guide/reactivity/craft-effect.md): An effect that can resolve craft dependencies with yield*.
+- [Destruction and cleanup failures](https://craft-ts.github.io/craft/guide/reactivity/lifecycle.md): Craft uses the same synchronous cleanup contract for dependency-injection scopes, effects, streams, rendered components and the resources they own: Every registered cleanup is attempted, even when …
 - [craftMethod](https://craft-ts.github.io/craft/guide/reactivity/craft-method.md): Wraps a generator so it can be called like an ordinary method — from a template, an event handler, anywhere outside the craft driver — while still resolving its dependencies with yield*.
 - [source$](https://craft-ts.github.io/craft/guide/reactivity/source.md): An event source: something you emit() to, that others react to — with automatic cleanup and signal-based value tracking.
 - [on$](https://craft-ts.github.io/craft/guide/reactivity/on.md): Binds a callback to a source$, with automatic cleanup.
@@ -231,5 +232,5 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 - [Primitive method usage](https://craft-ts.github.io/craft/guide/testing/architecture/primitive-method-usage.md): assertPrimitiveMethodsUsedOnce requires every method exposed by a primitive insertion to have one source-level call site.
 - [Resource params should prefer URL-backed state](https://craft-ts.github.io/craft/guide/testing/architecture/resource-params-query-state.md): assertResourceParamsPreferQueryParams rejects query and asyncProcess params that depend on a local state.
 - [Unused primitive methods](https://craft-ts.github.io/craft/guide/testing/architecture/unused-primitive-method.md): assertNoUnusedPrimitiveMethods requires every method exposed by a primitive insertion to have at least one call site in the project.
-- [Folder layout organizer](https://craft-ts.github.io/craft/guide/testing/folder-layout.md): craft organize analyzes a fresh Craft dependency graph and proposes a folder layout.
+- [Folder layout](https://craft-ts.github.io/craft/guide/testing/folder-layout.md): Every file of a CraftTS app has one folder it belongs in, and that folder is computed from the app's imports — not from file names, and not from where the file sits today.
 - [/](https://craft-ts.github.io/craft/): Packages The toolkit is split into focused packages.

@@ -70,6 +70,7 @@ import {
   craftRoute,
   craftUntilSettled,
 } from '@craft-ts/core';
+import { loadCraftComponent } from '@craft-ts/component';
 
 // Reusable guards — each returns a success value | craftException(...)
 const roleGuard = craftGen(
@@ -123,12 +124,11 @@ craftRoute(
     resolve: craftResolve(function* () {
       return yield* craftUntilSettled(pizzeriaDraftQuery);
     }),
-    loadComponent: ({ withRetry }) =>
+    ...loadCraftComponent(({ withRetry }) =>
       withRetry(
         import('./pages/admin-pizzeria-form-page/admin-pizzeria-form-page'),
       ).then((m) => m.AdminPizzeriaFormPage),
-    componentDeps:
-      {} as import('./pages/admin-pizzeria-form-page/admin-pizzeria-form-page').GenDeps_AdminPizzeriaFormPage,
+    ),
   },
   {
     // Resolved centrally — exhaustive over canActivate ∪ canMatch ∪ resolve.
@@ -274,8 +274,9 @@ const authGuard = craftGen(
 craftRoute(
   'query/:userId',
   {
-    componentDeps: {} as import('./query').GenDeps_GlobalQuery,
-    loadComponent: ({ withRetry }) => withRetry(import('./query')),
+    ...loadCraftComponent(({ withRetry }) =>
+      withRetry(import('./query')).then((m) => m.GlobalQuery),
+    ),
     canActivate: function* () {
       return yield* authGuard(); // success value = the user
     },
@@ -309,8 +310,9 @@ const featureFlagGuard = craftGen(
 craftRoute(
   'beta',
   {
-    componentDeps: {} as import('./beta').GenDeps_Beta,
-    loadComponent: ({ withRetry }) => withRetry(import('./beta')),
+    ...loadCraftComponent(({ withRetry }) =>
+      withRetry(import('./beta')).then((m) => m.Beta),
+    ),
     canMatch: function* () {
       yield* featureFlagGuard('beta');
       return true;
@@ -341,8 +343,9 @@ exhaustive `handleExceptions` map — the compiler still forces you to handle ev
 craftRoute(
   'users/:userId',
   {
-    componentDeps: {} as import('./user').GenDeps_User,
-    loadComponent: ({ withRetry }) => withRetry(import('./user')),
+    ...loadCraftComponent(({ withRetry }) =>
+      withRetry(import('./user')).then((m) => m.User),
+    ),
     canActivate: function* (route) {
       const userId = route.params['userId'];
 

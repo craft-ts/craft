@@ -13,8 +13,8 @@ architecture — no hidden runtime dependencies or direct transport calls — an
 
 ::: warning An ESLint error is not a compile error
 A missing autofix does not break the build. If you skip the quick fix after
-changing a component's DI shape, `main.ts` keeps reading a stale `GenDeps_*` and
-can miss a real DI error. Run `eslint --fix` in CI.
+changing route metadata, the same-file DI proof or exhaustiveness check may be
+missing. Run `eslint --fix` in CI so those proofs stay armed.
 :::
 
 The plugin is exposed from `@craft-ts/dev-tools/eslint-rules`.
@@ -116,7 +116,7 @@ the URL already selects.
 Before — local state selects which routed page is visible:
 
 ```ts
-const page = yield* state('page', 'sessions');
+const page = yield * state('page', 'sessions');
 ```
 
 After — declare both pages in `craftRoutes` and let the router activate one in
@@ -188,6 +188,120 @@ const { Counter } = craftService(
 There is no autofix: the author must choose the owning service and its scope,
 then expose the state methods and computed values that consumers need.
 
+`craft-ts/no-mutable-craft-service-closure-state` is enabled at `error` in the
+recommended and Effect presets, including generated apps. It rejects a local
+service variable that a `craftExpose(...)` callback assigns, increments, or
+mutates through a property. Those values persist between calls, but ordinary
+JavaScript closures hide their updates from Craft's state graph.
+
+Before — exposed actions mutate closure variables imperatively:
+
+```ts
+let watching: Lookup | undefined;
+let pollRun = 0;
+
+yield* craftExpose('watch', (lookup: Lookup) => {
+  watching = lookup;
+  pollRun += 1;
+});
+```
+
+After — declare the values with `state()` and make updates named insertions:
+
+```ts
+const watcher = yield* state(
+  'watcher',
+  { lookup: undefined as Lookup | undefined, run: 0 },
+  ({ update }) => ({
+    start: (lookup: Lookup) =>
+      update((current) => ({ lookup, run: current.run + 1 })),
+    stop: () =>
+      update((current) => ({ lookup: undefined, run: current.run + 1 })),
+  }),
+);
+
+// The service exposes these insertions as watcher.start and watcher.stop.
+```
+
+Use the state's reactive value when scheduled work needs to read the current
+watch target or generation. The rule has no autofix because the state shape and
+its insertion API depend on the service's behavior. It reports direct writes
+inside exposed callbacks; writes delegated to helper functions are outside its
+static analysis.
+
+## Imported state and action references
+
+`craft-ts/no-imported-state-actions` is enabled at `error` in the recommended
+and Effect presets. An imported mutable reference remains outside the current
+component or service's dependency graph, even when used from a Craft callback.
+Resolve its owner with `yield*` in the Craft factory and use the yielded value,
+or pass the needed capability to a standalone helper as an explicit input.
+
+Before — a helper closes over state and resource references imported from a
+different module:
+
+```ts
+import { status, archive } from './shared-state';
+
+export function removeSession(id: string) {
+  status.set('Suppression…');
+  archive.deleteSession.mutate(id);
+}
+```
+
+After — pass the required actions from the caller's DI scope:
+
+```ts
+type RemoveSessionActions = {
+  status: { set(value: string): void };
+  deleteSession: { mutate(id: string): unknown };
+};
+
+export function removeSession(actions: RemoveSessionActions, id: string) {
+  actions.status.set('Suppression…');
+  actions.deleteSession.mutate(id);
+}
+```
+
+The caller resolves `status` and `archive` through its Craft service or
+component dependencies, then passes only the capabilities this helper needs.
+Inside a service, use the yielded API directly. There is no autofix because the
+right owner and lifetime are application decisions.
+
+## Keep state writes yieldable
+
+`craft-ts/no-state-facade` rejects a custom callable type that combines a
+synchronous state reader with mutation methods such as `set` or `update`. That
+shape hides the state's Craft owner and makes writes look like ordinary signal
+mutations. ESLint cannot choose the correct owner or execution boundary, so
+there is no automatic fix; replace the facade manually.
+
+Before — rejected: a local facade invents a second state API:
+
+```ts
+type StateFacade<T> = (() => T) & {
+  set(value: T): void;
+  update(change: (current: T) => T): void;
+};
+```
+
+After — expose insertion methods from `state(...)` and yield their writes:
+
+```ts
+const counter = yield* state('counter', 0, ({ set, update }) => ({
+  set,
+  update,
+}));
+
+yield* counter.set(1);
+yield* counter.update((value) => value + 1);
+```
+
+For a synchronous platform callback, send one intent event and let the owning
+state react with `on$()`; do not publish a mutable state facade to the rest of
+the feature. `craft-ts/no-imported-state-actions` separately rejects mutation
+calls made directly on imported bindings.
+
 ## Scope-matched craft service inputs
 
 `craft-ts/require-craft-service-input-scope` is enabled at `error` in the
@@ -217,9 +331,7 @@ inputs through `withComponentProviders`:
 ```ts
 craftService(
   { name: 'ProfileContext', providedIn: 'toProvide' },
-  function* (inputs: {
-    $provided: { profileId: CraftServiceInput<string> };
-  }) {
+  function* (inputs: { $provided: { profileId: CraftServiceInput<string> } }) {
     // ...
   },
 );
@@ -324,8 +436,9 @@ export default [
       'craft-ts/prefer-craft-template-blocks': 'error',
       'craft-ts/no-render-writes': 'error',
       'craft-ts/require-reactive-template-bindings': 'error',
-      'craft-ts/no-craft-use': 'error',
+      'craft-ts/no-craft-use': 'warn',
       'craft-ts/no-craft-service-return': 'error',
+      'craft-ts/no-mutable-craft-service-closure-state': 'error',
       'craft-ts/require-craft-service-input-scope': 'error',
       'craft-ts/no-craft-component-return-type': 'error',
       'craft-ts/require-craft-component-for-exported-node-factory': 'error',
@@ -386,14 +499,18 @@ What each rule does:
 - `craft-ts/require-craft-computed-for-dynamic-template-lookup`: rejects dynamic object or array lookups in a Craft template when the lookup key comes from a reactive member; move the lookup to a named `craftComputed()` in the component's service and bind that value directly
 - `craft-ts/no-render-writes`: rejects detectable `set()`, `update()`, and `mutate()` calls in component templates and render bindings while allowing DOM event and `onXxx` output callbacks
 - `craft-ts/no-external-state-transition`: rejects generic `replace`, `set`, `update`, or `patch` calls on a value returned by Craft `state(...)` outside its state insertion. Put the transition behind a named state method that accepts intent and computes the next value internally.
+- `craft-ts/no-imported-state-actions`: rejects mutable actions on imported bindings, including inside Craft callbacks. Resolve the owner through Craft DI and pass the needed capability as an explicit function input; the rule has no autofix.
+- `craft-ts/no-state-facade`: rejects custom callable state types that combine a synchronous mutation method with a reader. Expose state operations through a `state(...)` insertion and delegate writes with `yield*`.
 - `craft-ts/require-reactive-template-bindings`: requires signals, named Craft values, and component inputs to be read inside granular binding callbacks instead of during VNode construction; static values and message-catalog interpolation helpers remain valid
-- `craft-ts/no-craft-use`: forbids the synchronous `craftUse(...)` escape hatch in Craft TypeScript files. Declare primitive dependencies with `yield*` in a service, method, or effect body; component templates are synchronous and consume the resulting view API directly.
+- `craft-ts/no-craft-use`: warns when `craftUse(...)` appears outside a test file. In business code, prefer a named Craft primitive and `yield*` in its generator. Keep `craftUse` for synchronous test boundaries, including focused tests of a generator.
 - `craft-ts/no-craft-service-return`: forbids returning a value from a `craftService` factory. Its API is assembled from the named values yielded by its generator; use `yield* craftPrivate(...)` for primitives that should stay internal, and `craftExpose(name, value)` for standalone values that belong in the API. The rule autofixes simple returned objects whose properties already match yielded primitive names.
+- `craft-ts/no-mutable-craft-service-closure-state`: rejects writes to service-local variables from direct `craftExpose(...)` callbacks, including assignments, increments, and property assignments. Declare persistent values with `state(...)` and expose transitions through its insertion; helper-delegated writes are outside this rule's static analysis.
 - `craft-ts/no-duplicate-craft-service-exposure`: requires each public key in a `craftService` to occur once, including keys created by named utilities such as `state(...)` and keys created by `craftExpose(...)`. Remove a duplicate exposure or choose a distinct key for a standalone value; the rule does not autofix because removing an API key can affect consumers.
 - `craft-ts/no-reexposed-craft-service-utility`: forbids passing a locally declared, publicly yielded utility result back to `craftExpose(...)` under a different key. The utility is already available by its declared key; remove the redundant call and keep the existing key. The rule does not autofix.
 - `craft-ts/require-craft-service-input-scope`: keeps global services input-free, limits provider-scoped services to `$provided`, and checks function-scoped inputs. TypeScript also rejects invalid service-helper bindings at call sites.
-- `craft-ts/prefer-direct-craft-service-exposure`: reports `craftExpose(...)` wrappers that repeat a yielded service's name, a named primitive result, or a member already returned by a primitive such as `state`, including when the member is renamed; keep the existing nested path (for example, `View.searchInput.setSearchInput`). It also reports service property shortcuts that can be yielded directly and forbids `craftExpose` inside supported primitive declarations or callbacks. Keep `craftExpose` for standalone or computed values.
+- `craft-ts/prefer-direct-craft-service-exposure`: reports `craftExpose(...)` wrappers that repeat a yielded service's name, a named primitive result, or a member already returned by a primitive such as `state`, including when the member is renamed; keep the existing nested path (for example, `View.searchInput.setSearchInput`). It also reports a member destructured from a yielded service only to be exposed again: expose it from the shortcut with `craftExpose('save', View.save)`, or yield `View.count()` when the member is a reader (calling a shortcut runs a method). It forbids `craftExpose` inside supported primitive declarations or callbacks. Keep `craftExpose` for standalone or computed values.
 - `craft-ts/prefer-craft-computed-for-reactive-generator`: reports a zero-argument generator exposed as a service value when its only statement returns a value derived from a `yield*` read. Declare that value with `yield* craftComputed(name, function* () { ... })`; parameterized generators and multi-step workflows are unaffected.
+- `craft-ts/prefer-computed-local-dependency`: reports a dependency yielded outside a `craftComputed` when every use of that dependency is inside that computed. Yield it in a generator callback there so the computed records its own dependency; no autofix is offered because the callback may need to become a generator.
 - `craft-ts/require-craft-component-for-exported-node-factory`: requires an exported function that directly returns a Craft node, such as `button(...)`, to be declared with `craftComponent(...)` so Craft directives and composition remain available
 
 ### Keep `craftService` exposure keys unique
@@ -410,28 +527,28 @@ different mistakes.
 Before — `expanded` is exposed by `state(...)` and then exposed again:
 
 ```ts
-const expanded = yield* state('expanded', false);
+const expanded = yield * state('expanded', false);
 
 // ❌ `expanded` is already a public service key
-yield* craftExpose('expanded', expanded);
+yield * craftExpose('expanded', expanded);
 ```
 
 After — yield the primitive once; the service exposes it under `expanded`:
 
 ```ts
-yield* state('expanded', false);
+yield * state('expanded', false);
 ```
 
 The rule also catches duplicate standalone keys:
 
 ```ts
 // ❌ both values claim the same public key
-yield* craftExpose('format', formatDate);
-yield* craftExpose('format', formatCurrency);
+yield * craftExpose('format', formatDate);
+yield * craftExpose('format', formatCurrency);
 
 // ✅ each value has its own key
-yield* craftExpose('formatDate', formatDate);
-yield* craftExpose('formatCurrency', formatCurrency);
+yield * craftExpose('formatDate', formatDate);
+yield * craftExpose('formatCurrency', formatCurrency);
 ```
 
 ### Do not re-expose a declared service utility
@@ -445,16 +562,16 @@ path.
 Before — the local variable is the already-public `state('language')` utility:
 
 ```ts
-const language = yield* state('language', 'en');
+const language = yield * state('language', 'en');
 
 // ❌ creates a second path to the same utility
-yield* craftExpose('locale', language);
+yield * craftExpose('locale', language);
 ```
 
 After — keep the primitive's public `language` key:
 
 ```ts
-yield* state('language', 'en');
+yield * state('language', 'en');
 ```
 
 Neither rule offers `eslint --fix`: removing or renaming a key can change the
@@ -470,23 +587,27 @@ second, flat access path and can make the two paths drift apart.
 Before — the method is already available through `searchInput`:
 
 ```ts
-const searchInput = yield* state('searchInput', '', ({ set }) => ({
-  setSearchInput: (value: string) => set(value),
-}));
+const searchInput =
+  yield *
+  state('searchInput', '', ({ set }) => ({
+    setSearchInput: (value: string) => set(value),
+  }));
 
 // ❌ duplicates searchInput.setSearchInput on the service API
-yield* craftExpose('setSearchInput', searchInput.setSearchInput);
+yield * craftExpose('setSearchInput', searchInput.setSearchInput);
 ```
 
 After — keep the member under its primitive and update consumers to use that
 path:
 
 ```ts
-const searchInput = yield* state('searchInput', '', ({ set }) => ({
-  setSearchInput: (value: string) => set(value),
-}));
+const searchInput =
+  yield *
+  state('searchInput', '', ({ set }) => ({
+    setSearchInput: (value: string) => set(value),
+  }));
 
-yield* View.searchInput.setSearchInput(value);
+yield * View.searchInput.setSearchInput(value);
 ```
 
 The rule catches these members even when the first `craftExpose` argument
@@ -735,8 +856,9 @@ The rule reports the missing input decoder or output encoder separately. There
 is no automatic fix because choosing the correct schema is a domain decision.
 An opaque third-party protocol may set `codecExemption` to a specific reason
 and handling location; vague or empty exemptions fail lint.
+
 - `craft-ts/prefer-craft-input-output`: keeps component inputs and outputs in the `Input`/`Output` model used by `craftComponent(...)`
-- `craft-ts/require-primitive-derived-property`: requires a `computed` or `craftComputed` that only depends on one primitive in the same component/service to be exposed by that primitive's insertion; simple cases are autofixed
+- `craft-ts/require-primitive-derived-property`: requires a `computed` or `craftComputed` that only depends on one primitive in the same component/service to be exposed by that primitive's insertion, including directly yielded named `craftComputed` values; simple cases are autofixed
 - `craft-ts/no-reused-primitive-method`: requires an exposed primitive insertion method to have one call site per file, including unchanged aliases; naming an alias is not a call site, binding it is. Create a context-specific insertion method for each distinct use
 - `craft-ts/prefer-craft-long-press`: reports a local pointer/touch hold implementation that combines a start event, release/cancel events, and a timer. Use [`longPress`](/guide/components/directives#long-press) from `@craft-ts/core`; for a genuinely custom gesture, declare its semantic replay boundary with `runCraftReplayTrigger(...)`. No autofix is offered because replacing a gesture requires choosing its handler and options.
 - `craft-ts/prefer-craft-pointer-gestures`: reports native pointer listeners with coordinate tracking and drag/swipe phases. Use [`drag` or `swipe`](/guide/components/directives#drag-and-swipe) from `@craft-ts/core`; keep high-frequency preview work presentation-only and put semantic work in the terminal callback. No autofix is offered because gesture intent and thresholds need a human choice.
@@ -746,7 +868,43 @@ and handling location; vague or empty exemptions fail lint.
 - `craft-ts/require-generator-resource-loader`: requires `query`, `mutation`, and `asyncProcess` loaders to be generator functions because a plain or async return hides remote dependencies from the resource lifecycle; use `yield*` to keep each suspension tracked
 - `craft-ts/no-throw`: forbids `throw` in Craft code because it bypasses the typed resource exception channel, and offers a Quick Fix that returns `craftException({ _tag: 'UNEXPECTED_ERROR' }, { error: ... })`; keep technical boundaries and tests outside this rule when their contracts require thrown errors
 - `craft-ts/no-imperative-craft-resource-trigger`: forbids `query.call(...)`, `mutation.mutate(...)`, and `asyncProcess.method(...)` in a `craftEffect` dependency graph, including through `craftGen(...)`. The graph-wide counterpart, including `state` / `source$` writes, is [`assertCraftEffectNoImperativeSync`](/guide/testing/architecture#assertcrafteffectnoimperativesync).
-- `craft-ts/no-imperative-craft-method-actions`: forbids composing multiple imperative actions in a `craftMethod`; emit a `source$` event and let the affected query react with `insertReactOnMutation(...)` instead. A handler such as `event.preventDefault()` followed by one `mutation.mutate(...)` remains valid.
+- `craft-ts/no-imperative-craft-method-actions`: forbids composing multiple imperative actions in a `craftMethod`; emit a `source$` event and let the affected query react with `insertReactOnMutation(...)` instead. It also reports repeated `state.set` / `state.update` calls on the same state across methods exposed with `craftExpose(...)`, and writes to multiple states in one block of an exposed `craftService` method; emit one source event and let each state react with `on$(...)`. A handler such as `event.preventDefault()` followed by one `mutation.mutate(...)` remains valid. The rule checks exposed named functions and direct state writes, so it does not claim to detect every possible control-flow path.
+
+When one replay operation changes several pieces of state, keep the imperative
+method to one event emission. The state owner describes the resulting updates:
+
+```typescript
+// Before: the exposed method coordinates state updates itself.
+function clearImportedSession() {
+  session.set(undefined);
+  events.set([]);
+  loadError.set(undefined);
+}
+
+// After: one event carries the intent; each state reacts to it.
+const clearImportedSession$ = source$<void>('clearImportedSession');
+
+const session = state('session', initialSession, ({ set }) => ({
+  clearOnImport: on$(clearImportedSession$, () => set(undefined)),
+}));
+const events = state('events', initialEvents, ({ set }) => ({
+  clearOnImport: on$(clearImportedSession$, () => set([])),
+}));
+const loadError = state('loadError', undefined, ({ set }) => ({
+  clearOnImport: on$(clearImportedSession$, () => set(undefined)),
+}));
+
+function clearImportedSession() {
+  clearImportedSession$.emit();
+}
+```
+
+`craft-ts/no-reused-primitive-method` rejects reusing one exposed primitive
+insertion method at multiple call sites in a file. The graph-wide
+`assertPrimitiveMethodsUsedOnce` check enforces that invariant across the
+application. The `craftExpose(...)` check above applies the same single-callsite
+constraint to direct `set` / `update` calls on a state binding. When several
+states must respond to one operation, use a shared `source$` and `on$(...)`.
 - `craft-ts/no-event-only-craft-method`: errors by default when a `craftMethod` only calls `preventDefault()`, `stopPropagation()`, or `stopImmediatePropagation()` and then delegates to one action. Bind the action with [`eventAction(...)`](/guide/components/directives#event-actions-and-dom-modifiers) on the element. The default architecture check enforces the same rule across files.
 - `craft-ts/no-remote-work-in-craft-method`: forbids `CraftHttpClient.*(...)` inside `craftMethod` because that action boundary does not own request loading, cancellation, exceptions, or graph dependencies; define the request directly in the `query` or `mutation` loader.
 - `craft-ts/no-type-assertions-in-resource-loader`: forbids `as ...` and angle-bracket assertions inside `query`, `mutation`, and `asyncProcess` loaders because assertions only silence TypeScript and can hide Promise, response, or transport mismatches; repair the request or adapter typing instead.
@@ -762,6 +920,7 @@ and handling location; vague or empty exemptions fail lint.
 - `craft-ts/require-craft-resource-trigger-yield`: requires those triggers to use `yield*` inside generator functions, while ordinary UI callbacks may keep imperative calls
 - `craft-ts/require-craft-method-for-yieldable-callback`: requires callbacks returned by a `craftComponent` factory to wrap yieldable Craft method calls in `craftMethod(...)`
 - `craft-ts/prefer-direct-yieldable-callback`: replaces a template generator or generator method that only delegates `yield* callback()` with the callback reference itself (`callback` or `object.method`)
+- `craft-ts/prefer-direct-yieldable-destructuring`: inlines a `yield*` result into its only object destructuring
 - `craft-ts/prefer-deep-yieldable-for-item`: warns when a `forNode` item is read repeatedly through `yield* item()` property accesses; expose a named `insertDeepYieldable('property')` collection and use direct item property readers
 - `craft-ts/require-yieldable-reactive-read`: requires Craft reactive readers to be delegated with `yield*` inside generator functions; a named `ifNode` condition callback may return one reader invocation directly
 - `craft-ts/require-yieldable-template-method`: requires yieldable Craft method calls in a `craftComponent` template to be delegated with `yield*`, or passed as a reference (`click: counter.increment`)
@@ -1011,7 +1170,7 @@ computation depends only on `users`.
 
 ### Keep casts and synchronous reads out of templates
 
-Craft templates reject both `as ...` / angle-bracket assertions and
+Craft templates reject `as ...` / angle-bracket assertions and warn on
 `craftUse(...)`. Fix the type or perform the synchronous-to-reactive
 conversion in the component logic, then expose a typed reader or generator to
 the template:
@@ -1024,10 +1183,13 @@ return { typedStep };
 matchNode.exhaustive(typedStep, 'step', steps);
 ```
 
-`no-craft-use` applies to Craft TypeScript files, not only the fourth
-`craftComponent(...)` argument. A synchronous integration boundary may opt out
-locally when its external API cannot consume a generator, but application
-state and templates should use `yield*`.
+`no-craft-use` warns throughout Craft TypeScript outside test files, including
+documentation snippets that teach business code. A synchronous read can hide
+where a reactive dependency is consumed; declare it in the owning generator
+with `yield*` and expose the resulting Craft value. Test files may use
+`craftUse` to inspect a value synchronously or to exercise a generator at a
+precise boundary. This rule is a warning, so lint does not block code while
+the right Craft abstraction is being chosen.
 
 ### Form and accessibility diagnostics
 
@@ -1111,6 +1273,29 @@ The rule leaves callbacks with parameters, extra statements, or additional
 computation unchanged. In those cases the generator contains behavior that
 cannot be represented by passing the callback reference alone.
 
+### Destructure directly from `yield*`
+
+`prefer-direct-yieldable-destructuring` removes a temporary when a later
+statement only destructures that value and the temporary has no other reads.
+This keeps a yielded service result and the values used from it in one
+declaration:
+
+```ts
+// Before: playback is only an intermediate value for this destructuring.
+const playback = yield* ReplayPlayback();
+const { send, updateReplayViewport } = playback;
+
+// After `eslint --fix`.
+const { send, updateReplayViewport } = yield* ReplayPlayback();
+```
+
+The rule is enabled at `error` in the recommended and Effect presets, so
+generated apps receive it automatically. It reports any temporary whose only
+use is an object destructuring. `eslint --fix` handles adjacent `const`
+declarations; when statements separate them, move the destructuring beside its
+`yield*` call manually because that preserves the evaluation order. Cases with
+type annotations or additional uses are left alone.
+
 ### Prefer deep-yieldable `forNode` items
 
 `prefer-deep-yieldable-for-item` detects when a component reads several
@@ -1175,6 +1360,7 @@ maintain by hand:
 | `require-child-route-mount-check`            | the `assertChildRouteMounts(...)` call and its import         |
 | `require-lazy-load-with-retry`               | the `withRetry(...)` wrapper on lazy route imports            |
 | `prefer-direct-yieldable-callback`           | replaces redundant generators with direct callback references |
+| `prefer-direct-yieldable-destructuring`       | inlines a `yield*` result into its only object destructuring           |
 
 ## Adopting them progressively
 
@@ -1224,3 +1410,43 @@ file before doing the full refactor.
 - [CLI automation](/guide/routing/automation) — the codemods they complement
 - [Architecture rules](/guide/testing/architecture) — graph-wide constraints ESLint cannot see
 - [Activating the style system](/guide/style/setup) — what the four style rules are guarding
+
+
+### Reactive `forNode` indexes
+
+`craft-ts/no-raw-for-index` is an error in both `recommended` and `effect`,
+including generated apps. The render callback receives a reader; calling it
+returns a generator. Neither is a scalar position.
+
+```ts
+// Rejected: these stringify a function or a generator.
+forNode(users, { track: user => user.id }, (user, index) =>
+  p(`${index}: ${String(index())}`),
+);
+
+// Accepted: the binding subscribes to the current position.
+forNode(users, { track: user => user.id }, (user, index) =>
+  p(function* () {
+    return `${(yield* index()) + 1}: ${(yield* user()).name}`;
+  }),
+);
+
+// Accepted: forward the reader to an Input<number>.
+forNode(users, { track: user => user.id }, (_user, index) =>
+  Row({ position: index }),
+);
+```
+
+The rule detects interpolation, explicit string/boolean/number coercion,
+boolean tests, scalar operators and `toString`/`valueOf` calls on the reader
+or its unconsumed generator. It follows actual Craft imports (including aliases
+and namespaces), local named callbacks and immutable local aliases, respecting
+shadowed variables and nested lists. Direct bindings, storing or forwarding the
+reader, and `yield* index()` remain valid. The numeric index of `track` is
+unaffected.
+
+This is local scope analysis without TypeScript services. It does not follow
+relative re-exports or imported callbacks, mutable aliases, values transported through object fields,
+or helper return values. TypeScript still checks incompatible scalar props and
+callback annotations. There is no autofix: choose the generator binding or
+action that should subscribe, then read `yield* index()` there.

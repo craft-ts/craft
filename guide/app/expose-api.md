@@ -15,7 +15,7 @@ When only one public property is needed, `X.property()` is a shortcut for
 a one-property derivation.
 
 ```ts
-import { craftService, craftExpose } from '@craft-ts/core';
+import { craftService, craftExpose, craftMethod } from '@craft-ts/core';
 
 const { UsersApi } = craftService(
   { name: 'UsersApi', providedIn: 'global' },
@@ -28,10 +28,10 @@ const { UsersApi } = craftService(
 const { UserUpdater } = craftService(
   { name: 'UserUpdater', providedIn: 'global' },
   function* () {
-    const updateUser = yield* UsersApi.updateUser();
-
-    yield* craftExpose('rename', (user: { id: string; name: string }, name: string) =>
-      updateUser({ ...user, name }));
+    yield* craftMethod('rename', function* (user: { id: string; name: string }, name: string) {
+      // A method's shortcut calls it: only `updateUser` is recorded as used.
+      return yield* UsersApi.updateUser({ ...user, name });
+    });
   },
 );
 ```
@@ -47,7 +47,7 @@ return yield * UsersApi.updateUser({ id: '1', name: 'Romain' });
 The shortcut accepts the same bindings as `X(...)`:
 
 ```typescript
-const increment = yield* Counter.increment({ initialValue: startAt });
+const count = yield* Counter.count({ initialValue: startAt });
 ```
 
 Use the full `X(bindings, expose)` form when deriving several
@@ -128,8 +128,19 @@ A shortcut hands back the member it designates, and a reactive member (a
 `state`, a `craftComputed`, a query's `status`…) is **read**: `yield*
 SearchApi.usersQuery.isLoading()` is the loading flag itself, not a reader to
 call a second time. Yielded on its own, as above, the member is also exposed by
-the consumer under its own name (`isLoading`). Objects and methods are returned
-as they are; a method is called, with or without arguments.
+the consumer under its own name (`isLoading`). Objects are returned as they
+are. A method, a `craftMethod` included, is **called**, with or without
+arguments, wherever the shortcut is yielded, and its result is not exposed.
+
+To expose a method instead, pass the shortcut to `craftExpose` without calling
+it:
+
+```typescript
+function* () {
+  yield* craftExpose('save', UsersApi.save); // exposes `save`, does not run it
+  yield* craftExpose('increment', Store.counter.increment);
+}
+```
 
 The dependency graph records only the accessed nested property
 (`derivedPropertiesUsed: { usersQuery: { isLoading: ... } }`), not the full
@@ -223,18 +234,20 @@ void provideCounterExtended;
 This keeps the dependency graph precise, which is important for both type inference and testing.
 
 When a service factory wants one member as part of its own API, yield the
-property shortcut directly. When it wants the full service, yield the service
-directly. Both forms expose under the natural lower-camel-case key:
+property shortcut of a reader, or pass the shortcut of a method to
+`craftExpose`. When it wants the full service, yield the service directly:
 
 ```typescript
 function* () {
-  yield* I18n.translate(); // exposes `translate`
+  yield* I18n.language(); // exposes `language`
+  yield* craftExpose('translate', I18n.translate); // exposes `translate`
   yield* ClientCurrency(); // exposes `clientCurrency`
 }
 ```
 
-Use `craftExpose('label', value)` when the public key differs from the source
-name or when exposing a value that is not a service dependency. The
+`yield* I18n.translate()` would call `translate` instead. Use
+`craftExpose('label', value)` as well when the public key differs from the
+source name or when exposing a value that is not a service dependency. The
 `craft-ts/prefer-direct-craft-service-exposure` rule flags same-name wrappers.
 
 ## See Also

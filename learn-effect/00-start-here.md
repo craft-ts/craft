@@ -95,11 +95,7 @@ The adapter turns `Effect<User, UserNotFound, UserRepositoryService>` into a
 Craft resource with loading, value and exception readers.
 
 ```ts
-import {
-  craftComponent,
-  p,
-  withComponentProviders,
-} from '@craft-ts/component';
+import { craftComponent, p, withComponentProviders } from '@craft-ts/component';
 import { craftService } from '@craft-ts/core';
 import { queryEffect } from '@craft-ts/effect';
 
@@ -117,11 +113,11 @@ export const Profile = craftComponent(
   'EffectQuickstartProfile',
   {},
   function* () {
-    const { profile } = yield* ProfileData();
-
     return [
       p(function* () {
-        return (yield* profile.value())?.name ?? 'Loading…';
+        return (
+          (yield* (yield* ProfileData()).profile.value())?.name ?? 'Loading…'
+        );
       }),
     ];
   },

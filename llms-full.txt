@@ -76,25 +76,32 @@ the function that declares what it owns and returns what it renders:
 
 ```ts
 import { craftComponent, forNode, h1, li, ul } from '@craft-ts/component';
-import { state } from '@craft-ts/core';
+import { craftService, state } from '@craft-ts/core';
 
 type Task = { id: string; title: string; done: boolean };
 
-export const Tasks = craftComponent(
-  'Tasks', // name: stable component name used by tooling and host tags
-  {}, // meta: providers, styles and host configuration
+const { TasksView, provideTasksView } = craftService(
+  { name: 'tasksView', providedIn: 'toProvide' },
   function* () {
-    // one function: it declares what the component owns, then returns nodes
-    const tasks = yield* state('tasks', [
+    yield* state('tasks', [
       // name: state identifier
       { id: '1', title: 'Read step 1', done: false },
     ] as Task[]); // initial value: the seeded task list
+  },
+);
 
+export const Tasks = craftComponent(
+  'Tasks', // name: stable component name used by tooling and host tags
+  { providers: [provideTasksView()] }, // meta: providers, styles and host configuration
+  function* () {
+    // one function: it returns nodes that read the component's view service
     return [
       h1('Tasks'),
       ul(
         forNode(
-          tasks, // source: the reactive collection to render
+          function* () {
+            return yield* (yield* TasksView()).tasks();
+          }, // source: the reactive collection to render
           { track: (task) => task.id }, // options: stable identity for each item
           // render: creates one node per task
           (task) =>
@@ -1710,17 +1717,22 @@ export const TasksLink = craftComponent(
 
 ```ts
 import { button, craftComponent } from '@craft-ts/component';
-import { CraftRouter, craftMethod } from '@craft-ts/core';
+import { CraftRouter } from '@craft-ts/core';
 
-export const TaskOpener = craftComponent('TaskOpener', {}, function* () {
-  const router = yield* CraftRouter(undefined, ({ navigate }) => ({ navigate }));
-
-  const goToTask = yield* craftMethod('goToTask', function* (taskId: string) {
-    void router.navigate({ to: 'tasks/:taskId', params: { taskId } });
-  });
-
-  return button('openTask', { type: 'button', click: () => goToTask('1') }, 'Open task 1');
-});
+export const TaskOpener = craftComponent('TaskOpener', {}, () =>
+  button(
+    'openTask',
+    {
+      type: 'button',
+      *click() {
+        void (yield* CraftRouter(undefined, ({ navigate }) => ({
+          navigate,
+        }))).navigate({ to: 'tasks/:taskId', params: { taskId: '1' } });
+      },
+    },
+    'Open task 1',
+  ),
+);
 ```
 
 The target is `{ to, params?, queryParams? }`, and all of it is checked:
@@ -2042,22 +2054,23 @@ import { craftComponent, forNode, h1, li, ul } from '@craft-ts/component';
 export const Tasks = craftComponent(
   'Tasks',
   { providers: [provideTaskList()] },
-  function* () {
-    const { tasks } = yield* TaskList();
-
-    return [
-      h1(function* () {
-        return `Tasks — ${yield* tasks.remaining()} left`;
-      }),
-      ul(
-        forNode(tasks, { track: (task) => task.id }, (task) =>
+  () => [
+    h1(function* () {
+      return `Tasks — ${yield* (yield* TaskList()).tasks.remaining()} left`;
+    }),
+    ul(
+      forNode(
+        function* () {
+          return yield* (yield* TaskList()).tasks();
+        },
+        { track: (task) => task.id },
+        (task) =>
           li(function* () {
             return (yield* task()).title;
           }),
-        ),
       ),
-    ];
-  },
+    ),
+  ],
 );
 ```
 
@@ -2080,15 +2093,20 @@ mocked through the register:
       inputs: {},
       register: {
         TaskList: {
-          // The exposed `tasks` state: its call shape and the members read.
-          // A state method hands back an invocation, so the fake does too.
-          tasks: Object.assign(
-            () => [{ id: '1', title: 'Write tests', done: false }],
-            {
-              remaining: function* () {
-                return 1;
+          // State reads are yieldable signals; preserve that contract in the
+          // mock so the template can yield the list like it does in the app.
+          tasks: markYieldableValue(
+            Object.assign(
+              function* () {
+                return [{ id: '1', title: 'Write tests', done: false }];
               },
-            },
+              {
+                remaining: function* () {
+                  return 1;
+                },
+              },
+            ),
+            'tasks',
           ),
         },
       },
@@ -2373,11 +2391,7 @@ The adapter turns `Effect<User, UserNotFound, UserRepositoryService>` into a
 Craft resource with loading, value and exception readers.
 
 ```ts
-import {
-  craftComponent,
-  p,
-  withComponentProviders,
-} from '@craft-ts/component';
+import { craftComponent, p, withComponentProviders } from '@craft-ts/component';
 import { craftService } from '@craft-ts/core';
 import { queryEffect } from '@craft-ts/effect';
 
@@ -2395,11 +2409,11 @@ export const Profile = craftComponent(
   'EffectQuickstartProfile',
   {},
   function* () {
-    const { profile } = yield* ProfileData();
-
     return [
       p(function* () {
-        return (yield* profile.value())?.name ?? 'Loading…';
+        return (
+          (yield* (yield* ProfileData()).profile.value())?.name ?? 'Loading…'
+        );
       }),
     ];
   },
@@ -2946,22 +2960,32 @@ Effect; the adapter runs it in place, so you get a plain reactive value:
 
 ```ts
 import { craftComponent, p } from '@craft-ts/component';
-import { state } from '@craft-ts/core';
+import { craftExpose, craftService, state } from '@craft-ts/core';
 import { computedEffect } from '@craft-ts/effect';
 
-export const CartTotal = craftComponent('LearnEffectCartTotal', {}, function* () {
-  const lines = yield* state('lines', [
-    { sku: 'sku-1', qty: 2, unitCents: 1_000 },
-    { sku: 'sku-2', qty: 1, unitCents: 1_000 },
-  ] as CartLine[]);
+const { CartTotalView, provideCartTotalView } = craftService(
+  { name: 'cartTotalView', providedIn: 'toProvide' },
+  function* () {
+    const lines = yield* state('lines', [
+      { sku: 'sku-1', qty: 2, unitCents: 1_000 },
+      { sku: 'sku-2', qty: 1, unitCents: 1_000 },
+    ] as CartLine[]);
 
-  // The factory RETURNS the Effect; `computedEffect` runs it in place.
-  const totalLabel = computedEffect('totalLabel', function* () {
-    return cartTotalLabel(yield* lines());
-  });
+    // The factory RETURNS the Effect; `computedEffect` runs it in place.
+    yield* craftExpose(
+      'totalLabel',
+      computedEffect('totalLabel', function* () {
+        return cartTotalLabel(yield* lines());
+      }),
+    );
+  },
+);
 
-  return [p(totalLabel)];
-});
+export const CartTotal = craftComponent(
+  'LearnEffectCartTotal',
+  { providers: [provideCartTotalView()] },
+  () => p(CartTotalView.totalLabel),
+);
 ```
 
 Anything nobody declared synchronous is refused at the call, before anything
@@ -8136,6 +8160,79 @@ insertion callback. See
 - [Reacting to mutations](/guide/state/react-on-mutation)
 - [Anatomy of a primitive](/guide/concepts/primitive-anatomy)
 
+## Promise-based SDKs
+
+Use [`craftAwait`](/guide/state/awaiting-promises) inside a generator loader to
+await a third-party SDK or browser API. Pass the loader's `abortSignal` to the
+SDK; rejected promises become typed `CRAFT_PROMISE_REJECTED` exceptions.
+
+---
+
+---
+url: https://craft-ts.github.io/craft/guide/state/awaiting-promises.md
+---
+# Awaiting Promise-based SDKs
+
+Use `craftAwait` when a generator loader needs a browser API, generated client,
+or other Promise-based SDK. It works inside `query`, `mutation`,
+`asyncProcess`, and asynchronous route guards/resolvers.
+
+```typescript
+import { craftAwait, query } from '@craft-ts/core';
+
+const user = yield* query('user', {
+  params: () => userId,
+  loader: function* ({ params, abortSignal }) {
+    const profile = yield* craftAwait(() => sdk.readUser(params, abortSignal));
+    return profile;
+  },
+});
+```
+
+The resolved SDK value keeps its type. Pass either a `PromiseLike<T>` or a
+factory returning one; a factory starts when the program runs. Plain promises
+are not iterable, so replace `yield* sdk.readUser(...)` or
+`yield sdk.readUser(...)` with `yield* craftAwait(() => sdk.readUser(...))`.
+
+## Rejections and recovery
+
+A rejected promise or a synchronous factory throw becomes the typed
+`CRAFT_PROMISE_REJECTED` exception, with the original error in `payload.cause`.
+The enclosing resource reports `status() === 'exception'`, and exposes the
+failure through `exception()` and `exceptions().loader.CRAFT_PROMISE_REJECTED`.
+It does not require access to an internal technical `error` member.
+
+Recover locally with a program operator:
+
+```typescript
+import { catchTag, CRAFT_PROMISE_REJECTED_CODE, craftAwait } from '@craft-ts/core';
+
+const profile = yield* craftAwait(() => sdk.readUser(userId, abortSignal)).pipe(
+  catchTag(CRAFT_PROMISE_REJECTED_CODE, function* () {
+    return cachedProfile;
+  }),
+);
+```
+
+Returning a native Promise from a loader remains supported for interoperability.
+`craftAwait` provides composition inside a generator and the typed rejection
+channel shown above.
+
+## Cancellation
+
+Pass the loader's `abortSignal` to an SDK that accepts it. For a producer with
+its own release operation, provide `cancel`:
+
+```typescript
+const task = sdk.startRead();
+const result = yield* craftAwait(task.promise, { cancel: () => task.cancel() });
+```
+
+While the program is suspended, its driver invokes `cancel` when its owning
+injector is destroyed or its operation is aborted. A query also aborts its old
+loader when parameters change. A successful await releases the cancellation
+listener without calling `cancel`. The helper does not add retries.
+
 ---
 
 ---
@@ -8305,8 +8402,10 @@ deleteUser.select('5')?.value();
 
 ::: details Advanced — yielding dependencies
 `method`, `loader` and the insertion can all be generators, and `providers`
-scopes dependencies to this mutation alone. A loader must not be `async` or
-return a native `Promise`; use `yield*` for asynchronous Craft operations:
+scopes dependencies to this mutation alone. Prefer generator loaders and
+`yield*` for asynchronous Craft operations. For a Promise-based SDK, use
+[`craftAwait`](/guide/state/awaiting-promises) to keep rejections in the typed
+exception channel:
 
 ```typescript
 const { saveUser } =
@@ -8878,8 +8977,10 @@ debouncedById.select('2')?.value(); // data2
 
 ::: details Advanced — yielding dependencies
 `method` and `loader` are generators, and `providers` scopes dependencies to
-this process alone. A loader must not be `async` or return a native `Promise`:
-use `yield*` for asynchronous Craft operations:
+this process alone. Prefer generator loaders and `yield*` for asynchronous
+Craft operations. For a Promise-based SDK, use
+[`craftAwait`](/guide/state/awaiting-promises) to keep rejections in the typed
+exception channel:
 
 ```typescript
 const { loadProfile } =
@@ -14097,6 +14198,55 @@ const { Counter } = craftService(
 There is no autofix: the author must choose the owning service and its scope,
 then expose the state methods and computed values that consumers need.
 
+`craft-ts/prefer-craft-computed-for-reactive-array-length` is enabled at
+`error` in the recommended preset, including generated apps. It keeps
+array-derived presentation state inside the service that owns the reactive
+array.
+
+Before — a template decides whether a reactive list is empty or counts its
+items:
+
+```ts
+hidden: function* () {
+  return (yield* (yield* ReplayResumesViewModel()).messages()).length === 0;
+},
+heading: function* () {
+  return plural(
+    (yield* (yield* ReplayResumesViewModel()).derived()).length,
+    'session',
+  );
+},
+```
+
+After — expose the boolean or count with `craftComputed` in the service, then
+read that scalar in the template:
+
+```ts
+const hasNoMessages = yield* craftComputed('hasNoMessages', function* () {
+  return (yield* messages()).length === 0;
+});
+const derivedSessionCount = yield* craftComputed(
+  'derivedSessionCount',
+  function* () {
+    return (yield* derived()).length;
+  },
+);
+
+hidden: function* () {
+  return yield* (yield* ReplayResumesViewModel()).hasNoMessages();
+},
+heading: function* () {
+  return plural(
+    yield* (yield* ReplayResumesViewModel()).derivedSessionCount(),
+    'session',
+  );
+},
+```
+
+There is no autofix because the owning service must choose the scalar API and
+its name. Reading `.length` inside that service's `craftComputed` remains
+valid.
+
 `craft-ts/no-mutable-craft-service-closure-state` is enabled at `error` in the
 recommended and Effect presets, including generated apps. It rejects a local
 service variable that a `craftExpose(...)` callback assigns, increments, or
@@ -14109,25 +14259,28 @@ Before — exposed actions mutate closure variables imperatively:
 let watching: Lookup | undefined;
 let pollRun = 0;
 
-yield* craftExpose('watch', (lookup: Lookup) => {
-  watching = lookup;
-  pollRun += 1;
-});
+yield *
+  craftExpose('watch', (lookup: Lookup) => {
+    watching = lookup;
+    pollRun += 1;
+  });
 ```
 
 After — declare the values with `state()` and make updates named insertions:
 
 ```ts
-const watcher = yield* state(
-  'watcher',
-  { lookup: undefined as Lookup | undefined, run: 0 },
-  ({ update }) => ({
-    start: (lookup: Lookup) =>
-      update((current) => ({ lookup, run: current.run + 1 })),
-    stop: () =>
-      update((current) => ({ lookup: undefined, run: current.run + 1 })),
-  }),
-);
+const watcher =
+  yield *
+  state(
+    'watcher',
+    { lookup: undefined as Lookup | undefined, run: 0 },
+    ({ update }) => ({
+      start: (lookup: Lookup) =>
+        update((current) => ({ lookup, run: current.run + 1 })),
+      stop: () =>
+        update((current) => ({ lookup: undefined, run: current.run + 1 })),
+    }),
+  );
 
 // The service exposes these insertions as watcher.start and watcher.stop.
 ```
@@ -14197,19 +14350,61 @@ type StateFacade<T> = (() => T) & {
 After — expose insertion methods from `state(...)` and yield their writes:
 
 ```ts
-const counter = yield* state('counter', 0, ({ set, update }) => ({
-  set,
-  update,
-}));
+const counter =
+  yield *
+  state('counter', 0, ({ set, update }) => ({
+    set,
+    update,
+  }));
 
-yield* counter.set(1);
-yield* counter.update((value) => value + 1);
+yield * counter.set(1);
+yield * counter.update((value) => value + 1);
 ```
 
 For a synchronous platform callback, send one intent event and let the owning
 state react with `on$()`; do not publish a mutable state facade to the rest of
 the feature. `craft-ts/no-imported-state-actions` separately rejects mutation
 calls made directly on imported bindings.
+
+## Declare recurring resource triggers as streams
+
+`craft-ts/no-recursive-craft-schedule` reports a scheduled callback that passes
+itself back to `schedule(...)`. That pattern creates an imperative recurring
+loop: the callback owns both the work and the decision to run again. When the
+recurrence triggers a `query`, `mutation`, or `asyncProcess`, declare its cadence
+as a stream and pass that stream as the resource's `method` instead.
+
+Before — the callback manually schedules its next run:
+
+```ts
+const refreshAgain = () => {
+  refreshRequested$.emit(++refreshCount);
+  temporal.schedule(refreshAgain, REFRESH_EVERY_MS, {
+    owner: 'session-archive',
+  });
+};
+refreshAgain();
+```
+
+After — the stream declares when the query runs and the resource owns its
+lifetime:
+
+```ts
+yield *
+  query('sessions', {
+    method: timer(0, REFRESH_EVERY_MS),
+    loader: function* () {
+      return yield* loadSessions();
+    },
+  });
+```
+
+Import `timer` from `@craft-ts/stream`. Its first value triggers the initial
+load, and subsequent values trigger refreshes. The stream is stopped with the
+resource owner. There is no autofix: ESLint cannot infer whether the first run
+is immediate or delayed, which value should be emitted as a request parameter,
+or which resource should own the recurring work. See
+[trigger a resource from a stream](/guide/reactivity/streams#trigger-a-resource-from-a-stream).
 
 ## Scope-matched craft service inputs
 
@@ -14376,6 +14571,7 @@ export default [
       'craft-ts/no-reused-primitive-method': 'error',
       'craft-ts/no-async-await': 'error',
       'craft-ts/no-throw': 'error',
+      'craft-ts/no-recursive-craft-schedule': 'error',
       'craft-ts/no-imperative-craft-resource-trigger': 'error',
       'craft-ts/no-imperative-craft-method-actions': 'error',
       'craft-ts/no-remote-work-in-craft-method': 'error',
@@ -14410,7 +14606,7 @@ What each rule does:
 - `craft-ts/no-external-state-transition`: rejects generic `replace`, `set`, `update`, or `patch` calls on a value returned by Craft `state(...)` outside its state insertion. Put the transition behind a named state method that accepts intent and computes the next value internally.
 - `craft-ts/no-imported-state-actions`: rejects mutable actions on imported bindings, including inside Craft callbacks. Resolve the owner through Craft DI and pass the needed capability as an explicit function input; the rule has no autofix.
 - `craft-ts/no-state-facade`: rejects custom callable state types that combine a synchronous mutation method with a reader. Expose state operations through a `state(...)` insertion and delegate writes with `yield*`.
-- `craft-ts/require-reactive-template-bindings`: requires signals, named Craft values, and component inputs to be read inside granular binding callbacks instead of during VNode construction; static values and message-catalog interpolation helpers remain valid
+- `craft-ts/require-reactive-template-bindings`: requires signals, named Craft values, and component inputs to be read inside granular binding callbacks instead of during VNode construction; also keeps derived helper calls and data transformations out of those bindings. Static values, Craft readers, presentation conversions, message-catalog interpolation, renderer calls, and event/output callbacks remain valid.
 - `craft-ts/no-craft-use`: warns when `craftUse(...)` appears outside a test file. In business code, prefer a named Craft primitive and `yield*` in its generator. Keep `craftUse` for synchronous test boundaries, including focused tests of a generator.
 - `craft-ts/no-craft-service-return`: forbids returning a value from a `craftService` factory. Its API is assembled from the named values yielded by its generator; use `yield* craftPrivate(...)` for primitives that should stay internal, and `craftExpose(name, value)` for standalone values that belong in the API. The rule autofixes simple returned objects whose properties already match yielded primitive names.
 - `craft-ts/no-mutable-craft-service-closure-state`: rejects writes to service-local variables from direct `craftExpose(...)` callbacks, including assignments, increments, and property assignments. Declare persistent values with `state(...)` and expose transitions through its insertion; helper-delegated writes are outside this rule's static analysis.
@@ -14419,6 +14615,7 @@ What each rule does:
 - `craft-ts/require-craft-service-input-scope`: keeps global services input-free, limits provider-scoped services to `$provided`, and checks function-scoped inputs. TypeScript also rejects invalid service-helper bindings at call sites.
 - `craft-ts/prefer-direct-craft-service-exposure`: reports `craftExpose(...)` wrappers that repeat a yielded service's name, a named primitive result, or a member already returned by a primitive such as `state`, including when the member is renamed; keep the existing nested path (for example, `View.searchInput.setSearchInput`). It also reports a member destructured from a yielded service only to be exposed again: expose it from the shortcut with `craftExpose('save', View.save)`, or yield `View.count()` when the member is a reader (calling a shortcut runs a method). It forbids `craftExpose` inside supported primitive declarations or callbacks. Keep `craftExpose` for standalone or computed values.
 - `craft-ts/prefer-craft-computed-for-reactive-generator`: reports a zero-argument generator exposed as a service value when its only statement returns a value derived from a `yield*` read. Declare that value with `yield* craftComputed(name, function* () { ... })`; parameterized generators and multi-step workflows are unaffected.
+- `craft-ts/prefer-craft-computed-for-reactive-array-length`: reports `.length` reads from reactive array readers in consumers. Expose a boolean or count through `craftComputed` in the owning service; `.length` inside that computed is allowed, and no autofix is offered because the scalar API needs a domain-specific name.
 - `craft-ts/prefer-computed-local-dependency`: reports a dependency yielded outside a `craftComputed` when every use of that dependency is inside that computed. Yield it in a generator callback there so the computed records its own dependency; no autofix is offered because the callback may need to become a generator.
 - `craft-ts/require-craft-component-for-exported-node-factory`: requires an exported function that directly returns a Craft node, such as `button(...)`, to be declared with `craftComponent(...)` so Craft directives and composition remain available
 
@@ -14774,6 +14971,7 @@ and handling location; vague or empty exemptions fail lint.
 - `craft-ts/require-craft-replay-trigger`: reports a direct native gesture listener whose callback contains a Craft generator or `executeYieldable(...)` without `runCraftReplayTrigger(...)`. Visual-only listeners and Craft template event bindings remain valid; the rule only claims the callback shapes it can recognize in the current file.
 - `craft-ts/no-async-await`: forbids `async` functions, `await`, and `for await...of` because native Promise suspension hides Craft dependencies and can lose cancellation or exception tracking; use generator-based Craft primitives, `craftSleep`, and `CraftHttpClient` instead
 - `craft-ts/require-loop-sleep-or-stop`: requires a `while` / `do` / `for` driven by `yield*` or `true` to suspend on `craftSleep` (cancelled with its owner) or to have a `break`, `return` or `throw`; without either it re-runs as fast as the runtime allows. See [page stability](/guide/testing/page-stability#craft-ts-require-loop-sleep-or-stop)
+- `craft-ts/no-recursive-craft-schedule`: reports a function passed to `schedule(...)` from inside that same function, including direct variable aliases. Use `timer(...)` from `@craft-ts/stream` as the resource `method` to declare recurring query, mutation, or async process triggers. The rule does not autofix because it cannot infer cadence, initial trigger timing, or emitted request parameters; see [the stream migration example](#declare-recurring-resource-triggers-as-streams).
 - `craft-ts/require-generator-resource-loader`: requires `query`, `mutation`, and `asyncProcess` loaders to be generator functions because a plain or async return hides remote dependencies from the resource lifecycle; use `yield*` to keep each suspension tracked
 - `craft-ts/no-throw`: forbids `throw` in Craft code because it bypasses the typed resource exception channel, and offers a Quick Fix that returns `craftException({ _tag: 'UNEXPECTED_ERROR' }, { error: ... })`; keep technical boundaries and tests outside this rule when their contracts require thrown errors
 - `craft-ts/no-imperative-craft-resource-trigger`: forbids `query.call(...)`, `mutation.mutate(...)`, and `asyncProcess.method(...)` in a `craftEffect` dependency graph, including through `craftGen(...)`. The graph-wide counterpart, including `state` / `source$` writes, is [`assertCraftEffectNoImperativeSync`](/guide/testing/architecture#assertcrafteffectnoimperativesync).
@@ -14814,6 +15012,7 @@ insertion method at multiple call sites in a file. The graph-wide
 application. The `craftExpose(...)` check above applies the same single-callsite
 constraint to direct `set` / `update` calls on a state binding. When several
 states must respond to one operation, use a shared `source$` and `on$(...)`.
+
 - `craft-ts/no-event-only-craft-method`: errors by default when a `craftMethod` only calls `preventDefault()`, `stopPropagation()`, or `stopImmediatePropagation()` and then delegates to one action. Bind the action with [`eventAction(...)`](/guide/components/directives#event-actions-and-dom-modifiers) on the element. The default architecture check enforces the same rule across files.
 - `craft-ts/no-remote-work-in-craft-method`: forbids `CraftHttpClient.*(...)` inside `craftMethod` because that action boundary does not own request loading, cancellation, exceptions, or graph dependencies; define the request directly in the `query` or `mutation` loader.
 - `craft-ts/no-type-assertions-in-resource-loader`: forbids `as ...` and angle-bracket assertions inside `query`, `mutation`, and `asyncProcess` loaders because assertions only silence TypeScript and can hide Promise, response, or transport mismatches; repair the request or adapter typing instead.
@@ -14832,6 +15031,8 @@ states must respond to one operation, use a shared `source$` and `on$(...)`.
 - `craft-ts/prefer-direct-yieldable-destructuring`: inlines a `yield*` result into its only object destructuring
 - `craft-ts/prefer-deep-yieldable-for-item`: warns when a `forNode` item is read repeatedly through `yield* item()` property accesses; expose a named `insertDeepYieldable('property')` collection and use direct item property readers
 - `craft-ts/require-yieldable-reactive-read`: requires Craft reactive readers to be delegated with `yield*` inside generator functions; a named `ifNode` condition callback may return one reader invocation directly
+- `craft-ts/no-craft-computed-in-component`: forbids `craftComputed(...)` in a `craftComponent(...)` factory; expose the derived reader from a `craftService(...)` and keep the component focused on rendering.
+- `craft-ts/no-component-service-binding`: forbids binding a yielded service result in the component factory; read it in the template callback where it is consumed.
 - `craft-ts/require-yieldable-template-method`: requires yieldable Craft method calls in a `craftComponent` template to be delegated with `yield*`, or passed as a reference (`click: counter.increment`)
 - `craft-ts/require-yieldable-insertion-write`: requires `set(...)`, `patch(...)`, and `update(...)` to be delegated with `yield*` when they are used inside a generator method
 - `craft-ts/require-assert-exhaustive-route-exceptions`: adds the collection-level `assertExhaustiveRouteExceptions(...)` safety net
@@ -14856,6 +15057,87 @@ states must respond to one operation, use a shared `source$` and `on$(...)`.
 - `craft-ts/prefer-craft-route-over-page-state`: warns when string-valued state named `page`, `currentPage`, `activePage`, or `routePage` may duplicate route activation; if it chooses the visible app page, declare routes with `craftRoutes(...)` and render them with `CraftRouterOutlet()`. Pagination and page-local state remain valid. Warning only; no autofix.
 - `craft-ts/no-raw-craft-router-url`: rejects reading `CraftRouter.url`; use the typed route parameter helper generated by `craftRoutes(...)` instead of parsing the URL
 - `craft-ts/no-craft-component-return-type`: rejects explicit annotations on `craftComponent(...)` results so dependency and template inference remains intact
+
+## Keep derived state in services
+
+`craft-ts/no-craft-computed-in-component` is an error in the recommended and
+Effect presets, including generated apps. A component consumes its view service
+and renders its readers; the service owns derived values.
+
+Before — the component derives a filtered list from a data service:
+
+```ts
+export const ItemList = craftComponent('ItemList', {}, function* () {
+  const store = yield* ItemStore();
+  const visibleItems = yield* craftComputed('visibleItems', function* () {
+    const items = yield* store.items();
+    return items.filter((item) => item.visible);
+  });
+  return ul(forNode(visibleItems, { track: (item) => item.id }, renderItem));
+});
+```
+
+After — the service owns the derivation and the component renders it:
+
+```ts
+export const { ItemListView } = craftService(
+  { name: 'itemListView', providedIn: 'global' },
+  function* () {
+    const store = yield* ItemStore();
+    yield* craftComputed('visibleItems', function* () {
+      const items = yield* store.items();
+      return items.filter((item) => item.visible);
+    });
+  },
+);
+
+export const ItemList = craftComponent('ItemList', {}, function* () {
+  const { visibleItems } = yield* ItemListView();
+  return ul(forNode(visibleItems, { track: (item) => item.id }, renderItem));
+});
+```
+
+There is no autofix: moving a derivation requires choosing its service scope
+and updating the service's exposed interface.
+
+## Read service values where the template uses them
+
+`craft-ts/no-component-service-binding` is an error in the recommended and
+Effect presets. It reports a `const` bound to a yielded service result, values
+destructured from that result, and aliases of those values in the
+`craftComponent(...)` factory. Read each service value inside the template
+binding that consumes it.
+
+Before — the component factory keeps a service result for a later callback:
+
+```ts
+export const ReplayPanel = craftComponent('ReplayPanel', {}, function* () {
+  const replay = yield* ReplaySession();
+  return button('pause', {
+    type: 'button',
+    click: function* () {
+      replay.seekReplayBeforeSequence(0);
+    },
+  });
+});
+```
+
+After — the event binding resolves the service at its use site:
+
+```ts
+export const ReplayPanel = craftComponent('ReplayPanel', {}, function* () {
+  return button('pause', {
+    type: 'button',
+    click: function* () {
+      (yield* ReplaySession()).seekReplayBeforeSequence(0);
+    },
+  });
+});
+```
+
+The rule allows yielded service reads inside template callbacks and does not
+autofix, because each value must be moved to the template binding that owns its
+use.
 
 ## Promise and transport boundaries
 
@@ -15142,6 +15424,42 @@ Literal and otherwise static values are still allowed, as are reads performed
 from DOM events and `onXxx` output callbacks. Because the rule is type-aware,
 the ESLint parser must use `projectService: true` or a TypeScript `project`.
 
+The same rule rejects helper calls and data transformations inside a binding,
+even when the reactive value was first copied into a local variable. This keeps
+derived display values in an insertion or a service `craftComputed`, where the
+dependency and its presentation are exposed together.
+
+Before — the template reads a saved session and formats its timestamp itself:
+
+```ts
+span({ class: ui.listLinkTitle }, function* () {
+  const { session: saved } = yield* item();
+  return sessionDate.format(new Date(saved.createdAt));
+});
+```
+
+After — add the label while building the derived view model, then bind the
+already prepared value:
+
+```ts
+const derived = yield* craftComputed('derived', function* () {
+  const sessions = yield* savedSessions();
+  return sessions.map((session) => ({
+    session,
+    createdAtLabel: sessionDate.format(new Date(session.createdAt)),
+  }));
+});
+
+span({ class: ui.listLinkTitle }, function* () {
+  return (yield* item()).createdAtLabel;
+});
+```
+
+There is no autofix: ESLint cannot choose the owning insertion, computed name,
+or view-model shape. Craft primitive reads and calls used to construct render
+nodes remain allowed, as do message-catalog interpolation helpers and DOM
+event/output callbacks.
+
 ### Pass simple yieldable callbacks directly
 
 `prefer-direct-yieldable-callback` removes a generator wrapper when the
@@ -15191,11 +15509,11 @@ declaration:
 
 ```ts
 // Before: playback is only an intermediate value for this destructuring.
-const playback = yield* ReplayPlayback();
+const playback = yield * ReplayPlayback();
 const { send, updateReplayViewport } = playback;
 
 // After `eslint --fix`.
-const { send, updateReplayViewport } = yield* ReplayPlayback();
+const { send, updateReplayViewport } = yield * ReplayPlayback();
 ```
 
 The rule is enabled at `error` in the recommended and Effect presets, so
@@ -15269,7 +15587,7 @@ maintain by hand:
 | `require-child-route-mount-check`            | the `assertChildRouteMounts(...)` call and its import         |
 | `require-lazy-load-with-retry`               | the `withRetry(...)` wrapper on lazy route imports            |
 | `prefer-direct-yieldable-callback`           | replaces redundant generators with direct callback references |
-| `prefer-direct-yieldable-destructuring`       | inlines a `yield*` result into its only object destructuring           |
+| `prefer-direct-yieldable-destructuring`      | inlines a `yield*` result into its only object destructuring  |
 
 ## Adopting them progressively
 
@@ -15320,7 +15638,6 @@ file before doing the full refactor.
 - [Architecture rules](/guide/testing/architecture) — graph-wide constraints ESLint cannot see
 - [Activating the style system](/guide/style/setup) — what the four style rules are guarding
 
-
 ### Reactive `forNode` indexes
 
 `craft-ts/no-raw-for-index` is an error in both `recommended` and `effect`,
@@ -15329,19 +15646,19 @@ returns a generator. Neither is a scalar position.
 
 ```ts
 // Rejected: these stringify a function or a generator.
-forNode(users, { track: user => user.id }, (user, index) =>
+forNode(users, { track: (user) => user.id }, (user, index) =>
   p(`${index}: ${String(index())}`),
 );
 
 // Accepted: the binding subscribes to the current position.
-forNode(users, { track: user => user.id }, (user, index) =>
+forNode(users, { track: (user) => user.id }, (user, index) =>
   p(function* () {
     return `${(yield* index()) + 1}: ${(yield* user()).name}`;
   }),
 );
 
 // Accepted: forward the reader to an Input<number>.
-forNode(users, { track: user => user.id }, (_user, index) =>
+forNode(users, { track: (user) => user.id }, (_user, index) =>
   Row({ position: index }),
 );
 ```
@@ -17175,24 +17492,36 @@ craftComponent(name, meta, template);
 
 ```ts
 import { craftComponent, forNode, h1, li, ul } from '@craft-ts/component';
-import { state } from '@craft-ts/core';
+import { craftService, state } from '@craft-ts/core';
 
 type Task = { id: string; title: string; done: boolean };
 
-export const Tasks = craftComponent('Tasks', {}, function* () {
-  const tasks = yield* state('tasks', [] as Task[]);
+const { TasksView, provideTasksView } = craftService(
+  { name: 'tasksView', providedIn: 'toProvide' },
+  function* () {
+    yield* state('tasks', [] as Task[]);
+  },
+);
 
-  return [
+export const Tasks = craftComponent(
+  'Tasks',
+  { providers: [provideTasksView()] },
+  () => [
     h1('Tasks'),
     ul(
-      forNode(tasks, { track: (task) => task.id }, (task) =>
-        li(function* () {
-          return (yield* task()).title;
-        }),
+      forNode(
+        function* () {
+          return yield* (yield* TasksView()).tasks();
+        },
+        { track: (task) => task.id },
+        (task) =>
+          li(function* () {
+            return (yield* task()).title;
+          }),
       ),
     ),
-  ];
-});
+  ],
+);
 ```
 
 
@@ -17300,6 +17629,21 @@ return [
   h1(`Tasks — static`), // static text needs no reader
 ];
 ```
+
+SVG icons use the same typed nodes and bindings:
+
+```typescript
+import { svg, path } from '@craft-ts/component';
+
+return svg({ viewBox: '0 0 24 24', 'aria-hidden': true }, [
+  path({ d: 'M5 12h14', stroke: 'currentColor', 'stroke-width': 2 }),
+]);
+```
+
+`svg` and its descendants are created in the SVG namespace, including during
+server rendering. `foreignObject` switches its children back to HTML. Shape
+helpers include `path`, `circle`, `rect`, and `g`; `h()` also accepts SVG tags.
+URL bindings retain the usual security checks.
 
 The same binding boundary applies to attributes, DOM properties, classes,
 styles, and host props. Prefer exposing a derived reader on the primitive
@@ -17445,6 +17789,12 @@ numeric render-callback overload: replace `index + 1` with
 `(yield* index()) + 1` inside a generator binding. Interpolation of the reader
 (`String(index)` or `` `${index}` ``) is rejected by
 [`craft-ts/no-raw-for-index`](/guide/routing/eslint-rules#reactive-fornode-indexes).
+
+## Overlays outside the component DOM
+
+Use [`portalNode`](/guide/components/portals) to mount an overlay in the document
+body or an application overlay root while keeping its template's injector,
+reactivity and cleanup.
 
 ---
 
@@ -19809,7 +20159,7 @@ export const meter = craftStyles('cardMeter', {
 
 ```ts
 import { article, craftComponent, div, type Input } from '@craft-ts/component';
-import { state } from '@craft-ts/core';
+import { craftService, state } from '@craft-ts/core';
 import { assign, unit } from '@craft-ts/style';
 import { card, meter, meterVars, panel } from './card.style';
 
@@ -19828,16 +20178,36 @@ const Card = craftComponent(
     ]),
 );
 
-const Page = craftComponent('Page', {}, function* () {
-  const alertProgress = yield* state('alertProgress', 20);
-  const panelProgress = yield* state('panelProgress', 80);
-  return [
-    // Per instance: a variant sets the variables it changes.
-    Card({ progress: alertProgress, 'data-cardLook': 'alert' }),
-    // Forwarded: the panel's variable becomes the card's ink.
-    div({ class: panel.root }, [Card({ progress: panelProgress })]),
-  ];
-});
+const { PageView, providePageView } = craftService(
+  { name: 'pageView', providedIn: 'toProvide' },
+  function* () {
+    yield* state('alertProgress', 20);
+    yield* state('panelProgress', 80);
+  },
+);
+
+const Page = craftComponent('Page', { providers: [providePageView()] }, () => [
+  // Per instance: a variant sets the variables it changes.
+  Card({
+    progress: function* () {
+      return yield* (yield* PageView()).alertProgress();
+    },
+    'data-cardLook': 'alert',
+  }),
+  // Forwarded: the panel's variable becomes the card's ink.
+  div(
+    {
+      class: panel.root,
+    },
+    [
+      Card({
+        progress: function* () {
+          return yield* (yield* PageView()).panelProgress();
+        },
+      }),
+    ],
+  ),
+]);
 ```
 
 ## Per instance: a variant sets what it changes
@@ -21556,7 +21926,7 @@ export const titleSheet = craftStyles('docsCardTitle', {
 
 ```ts
 import { craftComponent, div, h2, type Input } from '@craft-ts/component';
-import { state } from '@craft-ts/core';
+import { craftService, state } from '@craft-ts/core';
 import { cardSheet } from './card.style';
 import { titleSheet } from './card-2.style';
 
@@ -21567,14 +21937,24 @@ const CardTitle = craftComponent(
     h2({ class: titleSheet.root }, props.text),
 );
 
-const Card = craftComponent('Card', {}, function* () {
-  const title = yield* state('title', 'Card');
-  // The card sets `data-cardActive`; its sheet writes the inherited
-  // variable; the title, a separate component, reads it.
-  return div({ class: cardSheet.root, 'data-cardActive': 'true' }, [
-    CardTitle({ text: title }),
-  ]);
-});
+const { CardView, provideCardView } = craftService(
+  { name: 'cardView', providedIn: 'toProvide' },
+  function* () {
+    yield* state('title', 'Card');
+  },
+);
+
+const Card = craftComponent('Card', { providers: [provideCardView()] }, () =>
+  div({ class: cardSheet.root, 'data-cardActive': 'true' }, [
+    // The card sets `data-cardActive`; its sheet writes the inherited
+    // variable; the title, a separate component, reads it.
+    CardTitle({
+      text: function* () {
+        return yield* (yield* CardView()).title();
+      },
+    }),
+  ]),
+);
 ```
 
 The card sets `data-cardActive`, its sheet writes `cardVars.ink`, and the title,
@@ -22009,6 +22389,63 @@ The older fragment and slot primitives are no longer part of the public API.
 ---
 
 ---
+url: https://craft-ts.github.io/craft/guide/components/portals.md
+---
+# Portals
+
+Use `portalNode(target, children)` for a menu, tooltip, dialog or toast that must
+escape its component's DOM ancestors. A `transform`, `filter`, or
+`contain: layout paint` on a pane can otherwise offset and clip fixed overlays.
+
+```typescript
+import { craftComponent, div, ifNode, portalNode } from '@craft-ts/component';
+
+const Menu = craftComponent('Menu', {}, () => div([
+  Trigger({}),
+  portalNode('body', ifNode(MenuView.open, () => MenuSurface({}))),
+]));
+```
+
+The portal places its children directly under the target, without a wrapper.
+They retain the declaring template's injector, reactive scope, scoped styles,
+security checks and render tracing. Removing the portal or destroying its owner
+removes the remote content and releases its bindings and child components.
+Native DOM events bubble through the target's DOM ancestors.
+
+## Targets and updates
+
+The target can be `'body'`, an element in the declaring document, or a function
+returning such an element. The function runs in the template's injection and
+reactive context; reading a signal there lets the portal follow a changing
+host. Moving targets preserves the existing child view and its local state.
+
+```typescript
+portalNode(() => overlayRoot(), () => MenuSurface({}));
+```
+
+Children can be a node, an array, or a function returning nodes. Conditional
+content belongs inside the portal or can own the portal itself. An application
+can provide its overlay root through a service, then pass that element to
+`portalNode`. Put inherited theme variables on that target or the document root.
+
+Positioning, focus handling and dismissal remain the responsibility of the
+menu or dialog. A portal only changes where its view is mounted.
+
+## Server rendering and hydration
+
+`'body'` resolves against the current browser or server document. `renderCraft`
+returns `portalHtml` alongside `rootHtml`; its complete `html` already includes
+both, followed by the transfer snapshot. A server shell using the separate
+fields should put `portalHtml` at the end of its body.
+
+Hydration claims the existing remote nodes using their declaring application's
+hydration identities. It preserves their DOM identity, removes server portals
+that the client no longer renders, and leaves unrelated document content alone.
+Remote content counts toward the SSR HTML size budget.
+
+---
+
+---
 url: https://craft-ts.github.io/craft/guide/components/styles.md
 ---
 # Styling a component: the only way
@@ -22083,26 +22520,47 @@ The component imports it and binds **one constant class per element**:
 
 ```ts
 import { craftComponent, div, h2 } from '@craft-ts/component';
-import { state } from '@craft-ts/core';
+import { craftService, state } from '@craft-ts/core';
 import { assign, unit } from '@craft-ts/style';
 import { card, cardVars } from './card.style';
 
-const UploadCard = craftComponent('UploadCard', {}, function* () {
-  const progress = yield* state('progress', 40);
-  // The variant's point, or null for none: the attribute is then removed.
-  const tone = yield* state('tone', 'danger' as 'danger' | null);
-  // One constant class per element; the variant is an attribute.
-  return div({ class: card.root, 'data-cardTone': tone }, [
-    h2({ class: card.title }, 'Upload'),
-    div({
-      class: card.bar,
-      // The only thing `style:` accepts: a typed variable, written by assign.
-      style: function* () {
-        return assign(cardVars.progress, unit.pct(yield* progress()));
+const { UploadCardView, provideUploadCardView } = craftService(
+  { name: 'uploadCardView', providedIn: 'toProvide' },
+  function* () {
+    yield* state('progress', 40);
+    // The variant's point, or null for none: the attribute is then removed.
+    yield* state('tone', 'danger' as 'danger' | null);
+  },
+);
+
+const UploadCard = craftComponent(
+  'UploadCard',
+  { providers: [provideUploadCardView()] },
+  function* () {
+    // One constant class per element; the variant is an attribute.
+    return div(
+      {
+        class: card.root,
+        'data-cardTone': function* () {
+          return yield* (yield* UploadCardView()).tone();
+        },
       },
-    }),
-  ]);
-});
+      [
+        h2({ class: card.title }, 'Upload'),
+        div({
+          class: card.bar,
+          // The only thing `style:` accepts: a typed variable, written by assign.
+          style: function* () {
+            return assign(
+              cardVars.progress,
+              unit.pct(yield* (yield* UploadCardView()).progress()),
+            );
+          },
+        }),
+      ],
+    );
+  },
+);
 ```
 
 - `class` is always a sheet key (`card.root`), an array of them, or a typed
@@ -24098,31 +24556,29 @@ const { CounterView, provideCounterView } = craftService(
   { name: 'counterView', providedIn: 'toProvide' },
   function* () {
     yield* state('counter', 0, ({ state, update }) => ({
-      disabled: craftUse(craftComputed('disabled', function* () {
-        return (yield* state()) % 2 === 0;
-      })),
+      disabled: craftUse(
+        craftComputed('disabled', function* () {
+          return (yield* state()) % 2 === 0;
+        }),
+      ),
       increment: () => update((value) => value + 1),
     }));
-
   },
 );
 
 const Counter = craftComponent(
   'Counter',
   { providers: [provideCounterView()] },
-  function* () {
-    const { counter } = yield* CounterView();
-
-    return button(
+  () =>
+    button(
       'increment',
       {
         type: 'button',
-        disabled: counter.disabled,
-        click: counter.increment,
+        disabled: CounterView.counter.disabled,
+        click: CounterView.counter.increment,
       },
       '+',
-    );
-  },
+    ),
 );
 
 // The service is where the state lives, so that is where the derivation is
@@ -24160,7 +24616,7 @@ type _DisabledBindingIsCorrect = Expect<
   Equal<
     TemplateRendersStateWhen<
       TemplateChildren<ComponentTemplateOf<typeof Counter>>,
-      'counter.disabled'
+      'disabled'
     >,
     true
   >
@@ -24384,31 +24840,43 @@ arguments, generator callbacks, and outputs. For example, start with a
 component whose `disabled` property is nested inside the `counter` state:
 
 ```ts
-import { craftComputed, state, craftUse } from '@craft-ts/core';
+import { craftComputed, craftService, state, craftUse } from '@craft-ts/core';
 import { button, craftComponent, div } from '@craft-ts/component';
 
-const Counter = craftComponent('Counter', {}, function* () {
-  const counter = yield* state('counter', 0, ({ state, update }) => ({
-    disabled: craftUse(craftComputed('disabled', function* () {
-      return (yield* state()) === 0;
-    })),
-    increment: () => update((value) => value + 1),
-  }));
+const { CounterView, provideCounterView } = craftService(
+  { name: 'counterView', providedIn: 'toProvide' },
+  function* () {
+    yield* state('counter', 0, ({ state, update }) => ({
+      disabled: craftUse(
+        craftComputed('disabled', function* () {
+          return (yield* state()) === 0;
+        }),
+      ),
+      increment: () => update((value) => value + 1),
+    }));
+  },
+);
 
-  return div(
-    button(
-      'increment',
-      {
-        type: 'button',
-        disabled: counter.disabled,
-        *click(_event: MouseEvent) {
-          yield* counter.increment();
+const Counter = craftComponent(
+  'Counter',
+  { providers: [provideCounterView()] },
+  () =>
+    div(
+      button(
+        'increment',
+        {
+          type: 'button',
+          disabled: function* () {
+            return yield* (yield* CounterView()).counter.disabled();
+          },
+          *click(_event: MouseEvent) {
+            yield* (yield* CounterView()).counter.increment();
+          },
         },
-      },
-      '+',
+        '+',
+      ),
     ),
-  );
-});
+);
 ```
 
 
@@ -24457,24 +24925,36 @@ Primitive properties follow the same contract as events. For derived state, use
 
 ```ts
 import { button, craftComponent } from '@craft-ts/component';
-import { craftComputed, state, craftUse } from '@craft-ts/core';
+import { craftComputed, craftService, state, craftUse } from '@craft-ts/core';
 
-const Counter = craftComponent('Counter', {}, function* () {
-  const counter = yield* state('counter', 0, ({ state }) => ({
-    disabled: craftUse(craftComputed('disabled', function* () {
-      return (yield* state()) % 2 === 0;
-    })),
-  }));
+const { CounterView, provideCounterView } = craftService(
+  { name: 'counterView', providedIn: 'toProvide' },
+  function* () {
+    yield* state('counter', 0, ({ state }) => ({
+      disabled: craftUse(
+        craftComputed('disabled', function* () {
+          return (yield* state()) % 2 === 0;
+        }),
+      ),
+    }));
+  },
+);
 
-  return button(
-    'increment',
-    {
-      type: 'button',
-      disabled: counter.disabled,
-    },
-    '+',
-  );
-});
+const Counter = craftComponent(
+  'Counter',
+  { providers: [provideCounterView()] },
+  () =>
+    button(
+      'increment',
+      {
+        type: 'button',
+        disabled: function* () {
+          return yield* (yield* CounterView()).counter.disabled();
+        },
+      },
+      '+',
+    ),
+);
 ```
 
 
@@ -24544,29 +25024,36 @@ while their name brand is available to `ifNode` and the visibility contract.
 Use `ifNode` to retain the condition and its branches in the VNode contract:
 
 ```ts
-import { state } from '@craft-ts/core';
-import {
-  button,
-  craftComponent,
-  div,
-  ifNode,
-  span,
-} from '@craft-ts/component';
+import { craftService, state } from '@craft-ts/core';
+import { button, craftComponent, div, ifNode, span } from '@craft-ts/component';
 
-const Counter = craftComponent('Counter', {}, function* () {
-  const isAuth = yield* state('isAuth', true);
-  const brandedStatus = yield* state('brandedStatus', 'ready');
+const { CounterView, provideCounterView } = craftService(
+  { name: 'counterView', providedIn: 'toProvide' },
+  function* () {
+    yield* state('isAuth', true);
+    yield* state('brandedStatus', 'ready');
+  },
+);
 
-  return ifNode(
-    isAuth,
-    () =>
-      div([
-        button('increment', { type: 'button', click: function* () {} }, '+'),
-        span(brandedStatus),
-      ]),
-    () => [],
-  );
-});
+const Counter = craftComponent(
+  'Counter',
+  { providers: [provideCounterView()] },
+  () =>
+    ifNode(
+      'counter-authenticated',
+      function* () {
+        return yield* (yield* CounterView()).isAuth();
+      },
+      () =>
+        div([
+          button('increment', { type: 'button', click: function* () {} }, '+'),
+          span(function* () {
+            return yield* (yield* CounterView()).brandedStatus();
+          }),
+        ]),
+      () => [],
+    ),
+);
 ```
 
 
@@ -26235,6 +26722,49 @@ The default baseline also rejects event-only `craftMethod` wrappers through
 application's graph project, so moving the wrapper to another file does not
 avoid the rule. Use [`eventAction(...)`](/guide/components/directives#event-actions-and-dom-modifiers)
 on the element to apply DOM event modifiers and invoke the action directly.
+
+It also enforces `source-trigger-ownership`: a `source$` write must have a
+visible template event owner. Emit from the template's `click` handler, or
+through a `craftMethod` that the template binds to that event. A source write
+from a service body or from an action no template uses is reported. This keeps
+event sources tied to user intent instead of letting setup or background code
+start work imperatively.
+
+Before — setup triggers a source without a template action:
+
+```ts
+const refresh$ = yield* source$<void>('refresh$');
+refresh$.emit();
+```
+
+After — bind the source trigger to an action, and let the source's subscribers
+react declaratively:
+
+```ts
+const refresh$ = yield* source$<void>('refresh$');
+yield* craftMethod('refresh', function* () {
+  refresh$.emit();
+});
+
+// In the component template:
+button({ click: View.refresh }, 'Refresh');
+```
+
+The graph checks the relationship across service and component files, so a
+method only satisfies the rule when the template actually binds it to a click
+handler. There is no automatic fix: choosing which user action should own a
+source emission is application behavior.
+
+A component's branded `Output<Handler>` also declares an event binding. The
+graph follows actions passed to those outputs, aliases made with `craftExpose`,
+and calls between `craftMethod` actions. An ordinary callback such as
+`render: View.refresh` does not establish event ownership; declare an `Output`
+for a user action, or bind the action directly to a DOM event.
+
+A native event bridge outside the template tree, such as pointer picking inside
+a frozen iframe, can use a reasoned waiver targeted to
+`primitive:ServiceName.methodName`. Other writers remain checked, and the
+waiver fails as stale when that writer no longer needs it.
 
 ## What a rule looks like
 
@@ -30868,35 +31398,54 @@ export const CursorTracker = craftComponent('CursorTracker', {}, function* () {
 
 ```ts
 import { button, craftComponent, form, input, p } from '@craft-ts/component';
-import { craftComputed, fromEventToSource$, on$, state, craftUse } from '@craft-ts/core';
+import {
+  craftComputed,
+  craftService,
+  craftUse,
+  fromEventToSource$,
+  on$,
+  state,
+} from '@craft-ts/core';
 
-export const SubmitDemo = craftComponent('SubmitDemo', {}, function* () {
-  const submit$ = fromEventToSource$(document, 'submit', {
-    computedValue: (event: Event) => {
-      event.preventDefault();
-      const submitted = new FormData(event.target as HTMLFormElement);
-      return Object.fromEntries(submitted);
-    },
-  });
+const { SubmitDemoView, provideSubmitDemoView } = craftService(
+  { name: 'submitDemoView', providedIn: 'toProvide' },
+  function* () {
+    const submit$ = fromEventToSource$(document, 'submit', {
+      computedValue: (event: Event) => {
+        event.preventDefault();
+        const submitted = new FormData(event.target as HTMLFormElement);
+        return Object.fromEntries(submitted);
+      },
+    });
 
-  const formData = yield* state(
-    'formData',
-    null as Record<string, unknown> | null,
-    ({ state, set }) => ({
-      // bound to the source, so NOT exposed on the ref
-      handleSubmit: on$(submit$, (data) => set(data)),
-      formDataJson: craftUse(craftComputed('formDataJson', function* () {
-        return JSON.stringify(yield* state());
-      })),
-    }),
-  );
+    yield* state(
+      'formData',
+      null as Record<string, unknown> | null,
+      ({ state, set }) => ({
+        // bound to the source, so NOT exposed on the ref
+        handleSubmit: on$(submit$, (data) => set(data)),
+        formDataJson: craftUse(
+          craftComputed('formDataJson', function* () {
+            return JSON.stringify(yield* state());
+          }),
+        ),
+      }),
+    );
+  },
+);
 
-  return form([
-    input('username', { type: 'text', name: 'username' }),
-    button('submit', { type: 'submit' }, 'Submit'),
-    p(formData.formDataJson),
-  ]);
-});
+export const SubmitDemo = craftComponent(
+  'SubmitDemo',
+  { providers: [provideSubmitDemoView()] },
+  () =>
+    form([
+      input('username', { type: 'text', name: 'username' }),
+      button('submit', { type: 'submit' }, 'Submit'),
+      p(function* () {
+        return yield* (yield* SubmitDemoView()).formData.formDataJson();
+      }),
+    ]),
+);
 ```
 
 
@@ -31596,7 +32145,7 @@ Six things are guaranteed, and all six are checked before the app runs.
 | the key set is a **closed union**                           | an unknown key does not compile — no silent `order.totl`            |
 | every locale has the **same keys with the same parameters** | a translation you forgot is a compile error, not a fallback         |
 | parameters are **typed by their token**                     | a date cannot be passed where a currency amount belongs             |
-| a plural carries **every category the locale requires**     | Polish needs `one`/`few`/`many`/`other`; French needs `one`/`other` |
+| a plural carries **every category the locale requires**     | Polish needs `one`/`few`/`many`/`other`; French needs `one`/`many`/`other` |
 | a DI-aware token declares its **CraftTS services**           | a missing provider is a compile error at the component/route boundary |
 | a token declared with a **schema** types its own input       | the call site passes what the schema parses, not what the formatter wants |
 
@@ -31761,6 +32310,12 @@ key; the formatter decides how the value is rendered in the active locale. That
 is why `msg` can derive the params type of a message from the tokens it
 interpolates — see [Tokens](./tokens.md) for the full list.
 
+Compile-time cardinal categories come from Unicode CLDR. Runtime validation and
+selection use the host's `Intl.PluralRules`. French, Spanish, Italian and
+Portuguese require `one`, `many` and `other`; Chinese, Japanese and Korean need
+only `other`. For example, one million selects `many` in French. Translated
+catalogues may have different plural branches from the reference locale.
+
 ## `defineCatalog`, `msg`, `plural`
 
 ```ts
@@ -31797,6 +32352,7 @@ export const fr = defineLocaleLike(en, 'fr-FR', {
     total: msg`Total de la commande : ${amount}.`,
     items: plural(count, {
       one: msg`${count} article est dans la commande.`,
+      many: msg`${count} articles sont dans la commande.`,
       other: msg`${count} articles sont dans la commande.`,
     }),
   },
@@ -31986,7 +32542,7 @@ Here the unit system is a Craft service, so the same catalogue renders
 kilogrammes for one user and pounds for another:
 
 ```ts
-import { craftService, state } from '@craft-ts/core';
+import { craftExpose, craftService, state } from '@craft-ts/core';
 import { button, craftComponent, div, p } from '@craft-ts/component';
 import {
   createI18nRuntime,
@@ -32028,20 +32584,32 @@ const en = defineLocale(
 );
 const runtime = createI18nRuntime({ locales: [en] });
 
-const ShippingLine = craftComponent('ShippingLine', {}, function* () {
-  const units = yield* Units();
-  // The translator re-reads whenever the unit system does.
-  const translate = runtime.bind(units.system);
+const { ShippingLineView, provideShippingLineView } = craftService(
+  { name: 'shippingLineView', providedIn: 'toProvide' },
+  function* () {
+    const units = yield* Units();
+    yield* craftExpose('translate', runtime.bind(units.system));
+  },
+);
 
-  return div([
-    p(translate('order.line', { weight: 12 })),
-    button(
-      'imperial',
-      { type: 'button', click: units.system.useImperial },
-      'Imperial',
-    ),
-  ]);
-});
+const ShippingLine = craftComponent(
+  'ShippingLine',
+  { providers: [provideShippingLineView()] },
+  () =>
+    div([
+      p(ShippingLineView.translate('order.line', { weight: 12 })),
+      button(
+        'imperial',
+        {
+          type: 'button',
+          click: function* () {
+            yield* (yield* Units()).system.useImperial();
+          },
+        },
+        'Imperial',
+      ),
+    ]),
+);
 ```
 
 The yielded service travels with the message: pass the reader to the template
@@ -35235,6 +35803,7 @@ Coding agents: [llms.txt](https://craft-ts.github.io/craft/llms.txt) and
 | `queryParams`       | State that lives in the URL query string                 | [queryParams](/guide/state/url-state)                     |
 | `pathParams`        | A typed, route-scoped dynamic path segment               | [Path parameters](/guide/state/url-state#path-parameters) |
 | `asyncProcess`      | One-off async operation with lifecycle state             | [asyncProcess](/guide/state/async-process)                |
+| `craftAwait` | Await a third-party Promise in a generator loader | [Promises](/guide/state/awaiting-promises) |
 | `craftUse`          | Drives a primitive outside a generator (component field) | [Learn 1](/learn/01-first-state)                          |
 
 Not sure which one: [Which primitive should I use?](/guide/concepts/choose-primitive)
@@ -35498,6 +36067,68 @@ change between minor versions. See the
 | `createCraftDeploymentProvider`                                                                      | The single factory a provider package exports                  | [Providers](/guide/deployment/providers)         |
 | `createAlchemyDeploymentProvider`, `planAlchemyDeployment`                                           | The Alchemy provider and its Cloudflare/AWS planning           | [Alchemy provider](/guide/deployment/alchemy)    |
 | `npx craft-ts providers`                                                                             | Prints the provider capability matrix                          | [Providers](/guide/deployment/providers)         |
+
+---
+
+---
+url: https://craft-ts.github.io/craft/resources/cloud.md
+description: CraftTS Cloud — session replay, end-to-end tests from real
+  sessions, frustration insights and business analytics, hosted for you. Join
+  the early-access waitlist.
+---
+# CraftTS Cloud
+
+CraftTS records what an application does: every state change, every request, every
+event a user triggers. The open-source toolkit already turns that into
+[session replay](/guide/ai/guided-resume), tests from real journeys and
+[agents that drive the running app](/guide/ai/dev-page). Today you run all of it
+yourself: a log server, a dashboard, storage, a replay worker.
+
+**CraftTS Cloud would run it for you.** Add one provider to your app, and the
+recordings, the tests and the insights are there.
+
+::: info Not available yet
+CraftTS Cloud is not built yet. Before building it, I want to know who would use it
+and for what. If it would help you, join the waitlist below: it takes thirty
+seconds, and your answers decide what comes first.
+:::
+
+## What it would do
+
+### Reproduce any session
+
+Open a recorded session and watch what the user really did — then reopen the live
+app at the exact moment before it went wrong, with the same state, to debug it
+where it happened. No more "cannot reproduce".
+
+### End-to-end tests from real sessions
+
+Pick the journeys that matter and turn them into regression tests. They replay
+against every change, and point at the route or action that behaves differently.
+Your tests follow how people actually use the product, not how you guessed they
+would.
+
+### Find where users get frustrated
+
+Repeated clicks, abandoned forms, errors, back-and-forth navigation: the cloud
+finds the moments where people hesitate, retry or give up, ranks them by how many
+users they affect, and links each one to the sessions that show it.
+
+### Business event analytics
+
+Sign-ups, orders, upgrades, the events your product cares about: follow them from
+the same recordings, as funnels and trends, without adding a second tracking
+library.
+
+## Why it fits CraftTS
+
+A CraftTS application is declarative: services, states, queries and mutations are
+named and known to the framework. That is what makes a recording precise enough to
+be replayed, compared and turned into a test — and what makes the analysis speak
+the language of your code (`cart.checkout failed`), not of the DOM
+(`click on div.btn-3`).
+
+## Join the waitlist
 
 ---
 
@@ -36372,10 +37003,10 @@ A stream is **cold**: every subscription re-runs it. Make it hot with
 
 ### Three terminal notifications
 
-| Notification | Meaning                                                           |
-| ------------ | ----------------------------------------------------------------- |
-| `complete`   | The stream is done.                                               |
-| `exception`  | A **typed** failure (`{ _tag: ... }`), advertised in `Y`.         |
+| Notification | Meaning                                                            |
+| ------------ | ------------------------------------------------------------------ |
+| `complete`   | The stream is done.                                                |
+| `exception`  | A **typed** failure (`{ _tag: ... }`), advertised in `Y`.          |
 | `error`      | A **defect** — an unexpected throw. Never catchable by `catchTag`. |
 
 An `Observable`'s `error` is a defect. Exceptions are the typed channel.
@@ -36424,27 +37055,27 @@ const squares = of(1, 2, 3, 4).pipe(
 );
 ```
 
-| Operator                                                                                | What it does                                                       |
-| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `map`, `filter`, `tap`, `scan`                                                          | Per value; the callback may be a plain function or a **generator** |
-| `take`, `skip`, `takeWhile`, `distinctUntilChanged`, `startWith`, `pairwise`            | Select, bound, seed or pair                                        |
-| `takeUntil`, `takeUntilDestroyed`                                                       | End on a notifier / when the owner is destroyed                    |
-| `first`, `last`, `takeLast`, `reduce`                                                   | One value, the tail, or the folded result                          |
-| `skipWhile`, `skipUntil`, `distinct`, `defaultIfEmpty`, `ignoreElements`, `endWith`, `finalize` | Drop, deduplicate, fill in, end, clean up                  |
-| `switchAll`, `exhaustAll`, `concatAll`, `mergeAll`                                      | Flatten a stream **of streams**                                    |
-| `concatWith`, `mergeWith`, `combineLatestWith`                                          | The pipeable forms of `concat`, `merge`, `combineLatest`           |
-| `switchMap`, `exhaustMap`, `concatMap`, `mergeMap`                                      | [Flatten](#flattening) inner streams                               |
-| `combineLatest`, `merge`, `zip`, `race`, `withLatestFrom`                               | [Combine](#combining) streams                                      |
-| `debounce`, `throttle`, `auditTime`, `delay`, `timeout`, `retry`, `repeat`              | [Time](#time)                                                      |
-| `buffer`, `bufferCount`, `bufferTime`, `bufferWhen`, `sample`, `groupBy`, `window`, `windowCount` | [Group](#grouping-and-sampling) values                  |
-| `expand`                                                                                | Recursively project: results feed back in (bound it)               |
-| `count`, `min`, `max`, `every`, `isEmpty`, `find`, `findIndex`                          | Aggregate or answer a question about the whole stream              |
-| `single`, `elementAt`, `throwIfEmpty`, `skipLast`, `mapTo`, `distinctUntilKeyChanged`   | Select one value, hold back the tail, replace, deduplicate by key  |
-| `timestamp`, `timeInterval`, `audit`, `sampleTime`, `delayWhen`                         | Stamp values, or time them from a clock or a notifier stream       |
-| `zipWith`, `raceWith`, `zipAll`, `combineLatestAll`                                     | More combination forms; `…All` collects a stream **of streams**    |
-| `traceStage`                                                                            | Mark a point of the pipeline in [stream traces](#observability)    |
-| `catchTag`, `catchTag.exhaustive`, `mapException`, `orElse`                             | Work on the typed exception channel                                |
-| `share`, `shareReplay`                                                                  | One upstream run for many subscribers                              |
+| Operator                                                                                          | What it does                                                       |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `map`, `filter`, `tap`, `scan`                                                                    | Per value; the callback may be a plain function or a **generator** |
+| `take`, `skip`, `takeWhile`, `distinctUntilChanged`, `startWith`, `pairwise`                      | Select, bound, seed or pair                                        |
+| `takeUntil`, `takeUntilDestroyed`                                                                 | End on a notifier / when the owner is destroyed                    |
+| `first`, `last`, `takeLast`, `reduce`                                                             | One value, the tail, or the folded result                          |
+| `skipWhile`, `skipUntil`, `distinct`, `defaultIfEmpty`, `ignoreElements`, `endWith`, `finalize`   | Drop, deduplicate, fill in, end, clean up                          |
+| `switchAll`, `exhaustAll`, `concatAll`, `mergeAll`                                                | Flatten a stream **of streams**                                    |
+| `concatWith`, `mergeWith`, `combineLatestWith`                                                    | The pipeable forms of `concat`, `merge`, `combineLatest`           |
+| `switchMap`, `exhaustMap`, `concatMap`, `mergeMap`                                                | [Flatten](#flattening) inner streams                               |
+| `combineLatest`, `merge`, `zip`, `race`, `withLatestFrom`                                         | [Combine](#combining) streams                                      |
+| `debounce`, `throttle`, `auditTime`, `delay`, `timeout`, `retry`, `repeat`                        | [Time](#time)                                                      |
+| `buffer`, `bufferCount`, `bufferTime`, `bufferWhen`, `sample`, `groupBy`, `window`, `windowCount` | [Group](#grouping-and-sampling) values                             |
+| `expand`                                                                                          | Recursively project: results feed back in (bound it)               |
+| `count`, `min`, `max`, `every`, `isEmpty`, `find`, `findIndex`                                    | Aggregate or answer a question about the whole stream              |
+| `single`, `elementAt`, `throwIfEmpty`, `skipLast`, `mapTo`, `distinctUntilKeyChanged`             | Select one value, hold back the tail, replace, deduplicate by key  |
+| `timestamp`, `timeInterval`, `audit`, `sampleTime`, `delayWhen`                                   | Stamp values, or time them from a clock or a notifier stream       |
+| `zipWith`, `raceWith`, `zipAll`, `combineLatestAll`                                               | More combination forms; `…All` collects a stream **of streams**    |
+| `traceStage`                                                                                      | Mark a point of the pipeline in [stream traces](#observability)    |
+| `catchTag`, `catchTag.exhaustive`, `mapException`, `orElse`                                       | Work on the typed exception channel                                |
+| `share`, `shareReplay`                                                                            | One upstream run for many subscribers                              |
 
 Creators beyond `of`/`from`/`interval`: `range`, `iif` (a branch per subscription),
 `forkJoin` (the last value of each input, as a tuple or record) and `partition` (two
@@ -36484,12 +37115,12 @@ A projection returns an inner stream; the inner values are flattened into one st
 The four operators differ in what they do when an outer value arrives while an inner
 stream is still running:
 
-| Operator     | While an inner stream is running…                             |
-| ------------ | ------------------------------------------------------------- |
-| `switchMap`  | cancel it and start the new one                               |
-| `exhaustMap` | ignore the new value                                          |
-| `concatMap`  | queue the new value, run one inner stream at a time           |
-| `mergeMap`   | run it concurrently (up to `concurrency`, queueing beyond)    |
+| Operator     | While an inner stream is running…                          |
+| ------------ | ---------------------------------------------------------- |
+| `switchMap`  | cancel it and start the new one                            |
+| `exhaustMap` | ignore the new value                                       |
+| `concatMap`  | queue the new value, run one inner stream at a time        |
+| `mergeMap`   | run it concurrently (up to `concurrency`, queueing beyond) |
 
 ```typescript
 const results$ = query$.pipe(
@@ -36577,7 +37208,10 @@ the exception with that tag, and a tag the stream cannot produce is a compile
 error:
 
 ```typescript
-declare const user$: CraftStream<User, CraftGenExceptionMarker<NotFound | Forbidden>>;
+declare const user$: CraftStream<
+  User,
+  CraftGenExceptionMarker<NotFound | Forbidden>
+>;
 
 const safe$ = user$.pipe(
   catchTag('NotFound', (e) => GUEST), // e: NotFound
@@ -36700,7 +37334,7 @@ subscribe(
 program you `yield*`. Its dependencies and exceptions become the program's:
 
 ```typescript
-const latest = yield* lastValueFrom(prices$);
+const latest = yield * lastValueFrom(prices$);
 ```
 
 A stream that settles synchronously returns without suspending; otherwise the
@@ -36712,9 +37346,12 @@ its injector destroyed.
 Expose a stream as a named primitive of a `craftService`:
 
 ```typescript
-const { Feed } = craftService({ name: 'Feed', providedIn: 'global' }, function* () {
-  yield* streamSignal('latest', prices$);
-});
+const { Feed } = craftService(
+  { name: 'Feed', providedIn: 'global' },
+  function* () {
+    yield* streamSignal('latest', prices$);
+  },
+);
 
 const feed = craftUse(Feed());
 feed.latest.value(); // the latest value
@@ -36724,6 +37361,36 @@ feed.latest.exception(); // the typed exception, or undefined
 
 The stream's service dependencies are folded into the service's verified
 dependency tree, and its exceptions into the host's exception types.
+
+### Trigger a resource from a stream
+
+`query`, `mutation` and `asyncProcess` accept a `CraftStream` as `method`.
+Each emitted value is treated as a method input. The stream starts with the
+resource's injector and is stopped when its owner is destroyed. The same stream
+operators can shape when and what the resource receives.
+
+```typescript
+import { craftService, query } from '@craft-ts/core';
+import { timer } from '@craft-ts/stream';
+
+const { SessionArchive } = craftService(
+  { name: 'SessionArchive', providedIn: 'global' },
+  function* () {
+    yield* query('sessions', {
+      method: timer(0, 2_000),
+      loader: function* () {
+        return { sessions: [] };
+      },
+    });
+  },
+);
+```
+
+The first timer value triggers on startup; later values trigger every two
+seconds. A stream used as `method` supplies request parameters. The separate
+`stream` option still describes a resource result that can update over time.
+Typed stream exceptions become parameter exceptions; stream defects are sent to
+the configured error handler.
 
 ## Observability
 
@@ -36767,11 +37434,7 @@ provideStreamTrace((event, context) => {
   stream, and one that throws is ignored.
 
 ```ts
-source$.pipe(
-  traceStage('raw'),
-  map(parse),
-  traceStage('parsed'),
-)
+source$.pipe(traceStage('raw'), map(parse), traceStage('parsed'));
 ```
 
 **A defect takes an app snapshot.** A stream that ends with a defect (`error`,
@@ -36798,7 +37461,9 @@ through the **temporal runtime** of the stream's context, the same one `craftSle
   const restore = activateCraftTemporalRuntime(clock);
 
   const seen: number[] = [];
-  interval(100).pipe(take(3)).subscribe({ next: (n) => seen.push(n) });
+  interval(100)
+    .pipe(take(3))
+    .subscribe({ next: (n) => seen.push(n) });
 
   await clock.advanceBy(300);
   expect(seen).toEqual([0, 1, 2]);
@@ -36849,7 +37514,9 @@ waits on the temporal runtime itself.
 
 ```typescript
 const exposed = toSubscribable(stream$);
-const observable$ = new Observable((subscriber) => exposed.subscribe(subscriber));
+const observable$ = new Observable((subscriber) =>
+  exposed.subscribe(subscriber),
+);
 ```
 
 ## Effect interop
@@ -36914,7 +37581,7 @@ The deprecated operators with no equivalent (`retryWhen`, `repeatWhen`, `mergeSc
 `…MapTo`) block their file with a diagnostic that names the replacement. `exhaust` becomes `exhaustAll`.
 
 Semantic changes are reported as **review notices** on a migrated file: `catchError(() => x$)`
-becomes `orElse(() => x$)`, which continues on a *typed* exception of a craft stream and does
+becomes `orElse(() => x$)`, which continues on a _typed_ exception of a craft stream and does
 not catch defects — prefer `catchTag` so the handler is typed per exception; `timeout` raises
 a typed exception; `retry` retries typed exceptions only; `zip` buffers without bound.
 

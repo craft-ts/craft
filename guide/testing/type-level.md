@@ -121,31 +121,43 @@ arguments, generator callbacks, and outputs. For example, start with a
 component whose `disabled` property is nested inside the `counter` state:
 
 ```ts
-import { craftComputed, state, craftUse } from '@craft-ts/core';
+import { craftComputed, craftService, state, craftUse } from '@craft-ts/core';
 import { button, craftComponent, div } from '@craft-ts/component';
 
-const Counter = craftComponent('Counter', {}, function* () {
-  const counter = yield* state('counter', 0, ({ state, update }) => ({
-    disabled: craftUse(craftComputed('disabled', function* () {
-      return (yield* state()) === 0;
-    })),
-    increment: () => update((value) => value + 1),
-  }));
+const { CounterView, provideCounterView } = craftService(
+  { name: 'counterView', providedIn: 'toProvide' },
+  function* () {
+    yield* state('counter', 0, ({ state, update }) => ({
+      disabled: craftUse(
+        craftComputed('disabled', function* () {
+          return (yield* state()) === 0;
+        }),
+      ),
+      increment: () => update((value) => value + 1),
+    }));
+  },
+);
 
-  return div(
-    button(
-      'increment',
-      {
-        type: 'button',
-        disabled: counter.disabled,
-        *click(_event: MouseEvent) {
-          yield* counter.increment();
+const Counter = craftComponent(
+  'Counter',
+  { providers: [provideCounterView()] },
+  () =>
+    div(
+      button(
+        'increment',
+        {
+          type: 'button',
+          disabled: function* () {
+            return yield* (yield* CounterView()).counter.disabled();
+          },
+          *click(_event: MouseEvent) {
+            yield* (yield* CounterView()).counter.increment();
+          },
         },
-      },
-      '+',
+        '+',
+      ),
     ),
-  );
-});
+);
 ```
 
 
@@ -194,24 +206,36 @@ Primitive properties follow the same contract as events. For derived state, use
 
 ```ts
 import { button, craftComponent } from '@craft-ts/component';
-import { craftComputed, state, craftUse } from '@craft-ts/core';
+import { craftComputed, craftService, state, craftUse } from '@craft-ts/core';
 
-const Counter = craftComponent('Counter', {}, function* () {
-  const counter = yield* state('counter', 0, ({ state }) => ({
-    disabled: craftUse(craftComputed('disabled', function* () {
-      return (yield* state()) % 2 === 0;
-    })),
-  }));
+const { CounterView, provideCounterView } = craftService(
+  { name: 'counterView', providedIn: 'toProvide' },
+  function* () {
+    yield* state('counter', 0, ({ state }) => ({
+      disabled: craftUse(
+        craftComputed('disabled', function* () {
+          return (yield* state()) % 2 === 0;
+        }),
+      ),
+    }));
+  },
+);
 
-  return button(
-    'increment',
-    {
-      type: 'button',
-      disabled: counter.disabled,
-    },
-    '+',
-  );
-});
+const Counter = craftComponent(
+  'Counter',
+  { providers: [provideCounterView()] },
+  () =>
+    button(
+      'increment',
+      {
+        type: 'button',
+        disabled: function* () {
+          return yield* (yield* CounterView()).counter.disabled();
+        },
+      },
+      '+',
+    ),
+);
 ```
 
 
@@ -281,29 +305,36 @@ while their name brand is available to `ifNode` and the visibility contract.
 Use `ifNode` to retain the condition and its branches in the VNode contract:
 
 ```ts
-import { state } from '@craft-ts/core';
-import {
-  button,
-  craftComponent,
-  div,
-  ifNode,
-  span,
-} from '@craft-ts/component';
+import { craftService, state } from '@craft-ts/core';
+import { button, craftComponent, div, ifNode, span } from '@craft-ts/component';
 
-const Counter = craftComponent('Counter', {}, function* () {
-  const isAuth = yield* state('isAuth', true);
-  const brandedStatus = yield* state('brandedStatus', 'ready');
+const { CounterView, provideCounterView } = craftService(
+  { name: 'counterView', providedIn: 'toProvide' },
+  function* () {
+    yield* state('isAuth', true);
+    yield* state('brandedStatus', 'ready');
+  },
+);
 
-  return ifNode(
-    isAuth,
-    () =>
-      div([
-        button('increment', { type: 'button', click: function* () {} }, '+'),
-        span(brandedStatus),
-      ]),
-    () => [],
-  );
-});
+const Counter = craftComponent(
+  'Counter',
+  { providers: [provideCounterView()] },
+  () =>
+    ifNode(
+      'counter-authenticated',
+      function* () {
+        return yield* (yield* CounterView()).isAuth();
+      },
+      () =>
+        div([
+          button('increment', { type: 'button', click: function* () {} }, '+'),
+          span(function* () {
+            return yield* (yield* CounterView()).brandedStatus();
+          }),
+        ]),
+      () => [],
+    ),
+);
 ```
 
 

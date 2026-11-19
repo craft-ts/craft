@@ -34,24 +34,36 @@ craftComponent(name, meta, template);
 
 ```ts
 import { craftComponent, forNode, h1, li, ul } from '@craft-ts/component';
-import { state } from '@craft-ts/core';
+import { craftService, state } from '@craft-ts/core';
 
 type Task = { id: string; title: string; done: boolean };
 
-export const Tasks = craftComponent('Tasks', {}, function* () {
-  const tasks = yield* state('tasks', [] as Task[]);
+const { TasksView, provideTasksView } = craftService(
+  { name: 'tasksView', providedIn: 'toProvide' },
+  function* () {
+    yield* state('tasks', [] as Task[]);
+  },
+);
 
-  return [
+export const Tasks = craftComponent(
+  'Tasks',
+  { providers: [provideTasksView()] },
+  () => [
     h1('Tasks'),
     ul(
-      forNode(tasks, { track: (task) => task.id }, (task) =>
-        li(function* () {
-          return (yield* task()).title;
-        }),
+      forNode(
+        function* () {
+          return yield* (yield* TasksView()).tasks();
+        },
+        { track: (task) => task.id },
+        (task) =>
+          li(function* () {
+            return (yield* task()).title;
+          }),
       ),
     ),
-  ];
-});
+  ],
+);
 ```
 
 
@@ -159,6 +171,21 @@ return [
   h1(`Tasks — static`), // static text needs no reader
 ];
 ```
+
+SVG icons use the same typed nodes and bindings:
+
+```typescript
+import { svg, path } from '@craft-ts/component';
+
+return svg({ viewBox: '0 0 24 24', 'aria-hidden': true }, [
+  path({ d: 'M5 12h14', stroke: 'currentColor', 'stroke-width': 2 }),
+]);
+```
+
+`svg` and its descendants are created in the SVG namespace, including during
+server rendering. `foreignObject` switches its children back to HTML. Shape
+helpers include `path`, `circle`, `rect`, and `g`; `h()` also accepts SVG tags.
+URL bindings retain the usual security checks.
 
 The same binding boundary applies to attributes, DOM properties, classes,
 styles, and host props. Prefer exposing a derived reader on the primitive
@@ -304,3 +331,9 @@ numeric render-callback overload: replace `index + 1` with
 `(yield* index()) + 1` inside a generator binding. Interpolation of the reader
 (`String(index)` or `` `${index}` ``) is rejected by
 [`craft-ts/no-raw-for-index`](/guide/routing/eslint-rules#reactive-fornode-indexes).
+
+## Overlays outside the component DOM
+
+Use [`portalNode`](/guide/components/portals) to mount an overlay in the document
+body or an application overlay root while keeping its template's injector,
+reactivity and cleanup.

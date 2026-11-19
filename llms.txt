@@ -62,6 +62,7 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 - [Local state](https://craft-ts.github.io/craft/guide/state/local-state.md): state holds a value you own, in memory, as a signal — with its methods and derived values attached to it rather than scattered around it.
 - [State machines](https://craft-ts.github.io/craft/guide/state/state-machines.md): craftStateMachine models a finite workflow as a named, typed, reactive primitive.
 - [query](https://craft-ts.github.io/craft/guide/state/server-state.md): query fetches data and owns its whole lifecycle — loading, resolved, exception — re-running itself when its inputs change.
+- [Awaiting Promise-based SDKs](https://craft-ts.github.io/craft/guide/state/awaiting-promises.md): Use craftAwait when a generator loader needs a browser API, generated client, or other Promise-based SDK.
 - [Mutations](https://craft-ts.github.io/craft/guide/state/mutations.md): mutation is query's counterpart for writes: same shape, triggered explicitly, owning its own loading and failure state.
 - [URL state: queryParams and pathParams](https://craft-ts.github.io/craft/guide/state/url-state.md): queryParams is a state whose home is the URL's query string.
 - [asyncProcess](https://craft-ts.github.io/craft/guide/state/async-process.md): asyncProcess runs an async operation and tracks its status, for work that is neither a server read nor a server write.
@@ -126,6 +127,7 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 - [Accessibility](https://craft-ts.github.io/craft/guide/components/accessibility.md): Craft already enforces exhaustive exceptions, pendingNode, and reactive templates.
 - [Customizing components and directives](https://craft-ts.github.io/craft/guide/components/customization.md): Craft splits customization into three layers, and which one you reach for depends on how far the change should travel: Layer Changes Root-element host The component's own root defaults A *.style.ts…
 - [Content projection](https://craft-ts.github.io/craft/guide/components/content-projection.md): Projection is a rendering context, not a category of component.
+- [Portals](https://craft-ts.github.io/craft/guide/components/portals.md): Use portalNode(target, children) for a menu, tooltip, dialog or toast that must escape its component's DOM ancestors.
 - [Styling a component: the only way](https://craft-ts.github.io/craft/guide/components/styles.md): A component is styled through @craft-ts/style, and through nothing else.
 - [Template migrator](https://craft-ts.github.io/craft/guide/components/template-migrator.md): Paste an HTML snippet or a web component from a UI library's documentation.
 
@@ -216,6 +218,7 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 
 ## Resources
 
+- [CraftTS Cloud](https://craft-ts.github.io/craft/resources/cloud.md): CraftTS records what an application does: every state change, every request, every event a user triggers.
 - [Examples](https://craft-ts.github.io/craft/resources/examples.md): Every example below is a real route of one of the demo applications.
 - [Migrating an existing application](https://craft-ts.github.io/craft/resources/migration.md): craft-migrate runs the CraftTS codemods in a safe, explicit order: primitive migration points service composition typed route collections and dependency checks legacy component(...) factories to cr…
 - [Migrating to _tag and providedIn](https://craft-ts.github.io/craft/guide/migration/wave-1-tag-and-provided-in.md): Two renames on the public API: // exceptions craftException({ code: 'UserNotFound' }, payload) craftException({ _tag: 'UserNotFound' }, payload) // after // services craftService({ name: 'UserApi',…

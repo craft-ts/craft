@@ -89,22 +89,23 @@ import { craftComponent, forNode, h1, li, ul } from '@craft-ts/component';
 export const Tasks = craftComponent(
   'Tasks',
   { providers: [provideTaskList()] },
-  function* () {
-    const { tasks } = yield* TaskList();
-
-    return [
-      h1(function* () {
-        return `Tasks — ${yield* tasks.remaining()} left`;
-      }),
-      ul(
-        forNode(tasks, { track: (task) => task.id }, (task) =>
+  () => [
+    h1(function* () {
+      return `Tasks — ${yield* (yield* TaskList()).tasks.remaining()} left`;
+    }),
+    ul(
+      forNode(
+        function* () {
+          return yield* (yield* TaskList()).tasks();
+        },
+        { track: (task) => task.id },
+        (task) =>
           li(function* () {
             return (yield* task()).title;
           }),
-        ),
       ),
-    ];
-  },
+    ),
+  ],
 );
 ```
 
@@ -127,15 +128,20 @@ mocked through the register:
       inputs: {},
       register: {
         TaskList: {
-          // The exposed `tasks` state: its call shape and the members read.
-          // A state method hands back an invocation, so the fake does too.
-          tasks: Object.assign(
-            () => [{ id: '1', title: 'Write tests', done: false }],
-            {
-              remaining: function* () {
-                return 1;
+          // State reads are yieldable signals; preserve that contract in the
+          // mock so the template can yield the list like it does in the app.
+          tasks: markYieldableValue(
+            Object.assign(
+              function* () {
+                return [{ id: '1', title: 'Write tests', done: false }];
               },
-            },
+              {
+                remaining: function* () {
+                  return 1;
+                },
+              },
+            ),
+            'tasks',
           ),
         },
       },

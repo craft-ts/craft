@@ -230,22 +230,32 @@ Effect; the adapter runs it in place, so you get a plain reactive value:
 
 ```ts
 import { craftComponent, p } from '@craft-ts/component';
-import { state } from '@craft-ts/core';
+import { craftExpose, craftService, state } from '@craft-ts/core';
 import { computedEffect } from '@craft-ts/effect';
 
-export const CartTotal = craftComponent('LearnEffectCartTotal', {}, function* () {
-  const lines = yield* state('lines', [
-    { sku: 'sku-1', qty: 2, unitCents: 1_000 },
-    { sku: 'sku-2', qty: 1, unitCents: 1_000 },
-  ] as CartLine[]);
+const { CartTotalView, provideCartTotalView } = craftService(
+  { name: 'cartTotalView', providedIn: 'toProvide' },
+  function* () {
+    const lines = yield* state('lines', [
+      { sku: 'sku-1', qty: 2, unitCents: 1_000 },
+      { sku: 'sku-2', qty: 1, unitCents: 1_000 },
+    ] as CartLine[]);
 
-  // The factory RETURNS the Effect; `computedEffect` runs it in place.
-  const totalLabel = computedEffect('totalLabel', function* () {
-    return cartTotalLabel(yield* lines());
-  });
+    // The factory RETURNS the Effect; `computedEffect` runs it in place.
+    yield* craftExpose(
+      'totalLabel',
+      computedEffect('totalLabel', function* () {
+        return cartTotalLabel(yield* lines());
+      }),
+    );
+  },
+);
 
-  return [p(totalLabel)];
-});
+export const CartTotal = craftComponent(
+  'LearnEffectCartTotal',
+  { providers: [provideCartTotalView()] },
+  () => p(CartTotalView.totalLabel),
+);
 ```
 
 Anything nobody declared synchronous is refused at the call, before anything

@@ -33,6 +33,12 @@ key; the formatter decides how the value is rendered in the active locale. That
 is why `msg` can derive the params type of a message from the tokens it
 interpolates — see [Tokens](./tokens.md) for the full list.
 
+Compile-time cardinal categories come from Unicode CLDR. Runtime validation and
+selection use the host's `Intl.PluralRules`. French, Spanish, Italian and
+Portuguese require `one`, `many` and `other`; Chinese, Japanese and Korean need
+only `other`. For example, one million selects `many` in French. Translated
+catalogues may have different plural branches from the reference locale.
+
 ## `defineCatalog`, `msg`, `plural`
 
 ```ts
@@ -69,6 +75,7 @@ export const fr = defineLocaleLike(en, 'fr-FR', {
     total: msg`Total de la commande : ${amount}.`,
     items: plural(count, {
       one: msg`${count} article est dans la commande.`,
+      many: msg`${count} articles sont dans la commande.`,
       other: msg`${count} articles sont dans la commande.`,
     }),
   },

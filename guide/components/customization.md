@@ -436,7 +436,7 @@ export const titleSheet = craftStyles('docsCardTitle', {
 
 ```ts
 import { craftComponent, div, h2, type Input } from '@craft-ts/component';
-import { state } from '@craft-ts/core';
+import { craftService, state } from '@craft-ts/core';
 import { cardSheet } from './card.style';
 import { titleSheet } from './card-2.style';
 
@@ -447,14 +447,24 @@ const CardTitle = craftComponent(
     h2({ class: titleSheet.root }, props.text),
 );
 
-const Card = craftComponent('Card', {}, function* () {
-  const title = yield* state('title', 'Card');
-  // The card sets `data-cardActive`; its sheet writes the inherited
-  // variable; the title, a separate component, reads it.
-  return div({ class: cardSheet.root, 'data-cardActive': 'true' }, [
-    CardTitle({ text: title }),
-  ]);
-});
+const { CardView, provideCardView } = craftService(
+  { name: 'cardView', providedIn: 'toProvide' },
+  function* () {
+    yield* state('title', 'Card');
+  },
+);
+
+const Card = craftComponent('Card', { providers: [provideCardView()] }, () =>
+  div({ class: cardSheet.root, 'data-cardActive': 'true' }, [
+    // The card sets `data-cardActive`; its sheet writes the inherited
+    // variable; the title, a separate component, reads it.
+    CardTitle({
+      text: function* () {
+        return yield* (yield* CardView()).title();
+      },
+    }),
+  ]),
+);
 ```
 
 The card sets `data-cardActive`, its sheet writes `cardVars.ink`, and the title,

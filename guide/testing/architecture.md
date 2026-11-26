@@ -752,7 +752,9 @@ it('forbids depends-on cycles', () => {
 ### `assertDeclarativeArchitecture`
 
 Runs the aggregate checks above and joins their messages. Pass `{ allow }`
-through to `assertMutationHasReactOn` for fire-and-forget mutations.
+through to `assertMutationHasReactOn` for fire-and-forget mutations, or — the
+form `craft-architecture-check` also reads — waive each one in
+`architecture/waivers.ts` with `target: 'primitive:<owner>.<name>'`.
 
 ```typescript
 import { architectureWaiverList } from './waivers';
@@ -773,7 +775,7 @@ graph (step 4):
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `style-only-design-system`     | an element's class does not reach a sheet of a `*.style.ts` (a string, a computed class, a sheet declared elsewhere), or a component imports a `.css` |
 | `style-obligations-discharged` | a sheet `requires(...)` an obligation nothing `provides(...)`                                                                                                                   |
-| `no-dangling-css-vars`         | a variable is read and never declared, or declared and never read (a read from `craftGlobalStyles` counts)                                                                     |
+| `no-dangling-css-vars`         | a variable is read and never declared, or declared and never read (a read from `craftGlobalStyles` counts); a host page's variable is read through its [style contract](/guide/style/tokens#host-variables) |
 | `no-global-stylesheet`         | an entry file imports a `.css`, or `index.html` links a stylesheet — the only one is `virtual:craft-style.css`                                                                |
 
 A component of pure composition, with no class at all, is not at fault. A class
@@ -897,9 +899,13 @@ export const architectureWaiverList = defineArchitectureWaivers(
 ```
 
 The target is a component name, `file:<path>`, `obligation:<id>`,
-`css-var:<name>`, `service:<name>`, or `'*'` for the whole rule — the only form a rule that
+`css-var:<name>`, `service:<name>`, `primitive:<owner>.<name>` (for example
+`primitive:Session.logout` for a fire-and-forget mutation under
+`mutation-react-on`, see [mutation reactions](/guide/testing/architecture/mutation-reactions#waive-one-mutation-in-architecture-waivers-ts)),
+or `'*'` for the whole rule — the only form a rule that
 checks the whole graph (`no-dependency-cycles`, …) accepts, and the one a
-project uses while it migrates. Two things keep the list honest: an **empty
+project uses while it migrates. Prefer a target whenever the rule reports one:
+a `'*'` waiver also excuses every finding the rule will report later. Two things keep the list honest: an **empty
 reason** is refused, and a waiver that no longer waives anything is **stale**
 and fails the check. Review Attest lists every waiver for a decision.
 

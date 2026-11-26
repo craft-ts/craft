@@ -143,6 +143,7 @@ already receive those methods as arguments — see
 | Symbol               | What it does                       | Page                                                         |
 | -------------------- | ---------------------------------- | ------------------------------------------------------------ |
 | `craftComputed`      | Tracked `computed`                 | [craftComputed](/guide/reactivity/craft-computed)            |
+| `craftLiteral`       | Marks a technical string value     | [craftComputed](/guide/reactivity/craft-computed#technical-values-craftliteral) |
 | `craftEffect`        | Tracked `effect`                   | [craftEffect](/guide/reactivity/craft-effect)                |
 | `craftMethod`        | A tracked method on a primitive    | [craftMethod](/guide/reactivity/craft-method)                |
 | `source$`            | An imperative event source         | [source$](/guide/reactivity/source)                          |
@@ -244,6 +245,7 @@ parameter with a Standard Schema. The package imports core for types only.
 | `TranslationDependencies`, `StaticTranslationKey`                                                             | The services a message resolves, and the keys `t` can render alone                   | [The runtime](/guide/i18n/runtime#di-inside-a-translation)            |
 | `TokenSchema`, `TokenSchemaInput`, `TokenSchemaOutput`, `TokenFactory`                                        | Declaring a parameter with a Standard Schema                                         | [Tokens](/guide/i18n/tokens)                                          |
 | `bind`, `createReactiveTranslator`                                                                            | A translator that re-reads when the locale state changes                             | [The runtime](/guide/i18n/runtime#reactive-translation)               |
+| `CRAFT_I18N_TRANSLATION`, `TranslationProofCarrier`                                                           | Type-only proof of the bound dependency, read by `no-craft-computed-side-effects`    | [The runtime](/guide/i18n/runtime#reactive-translation)               |
 | `createI18nLoader`, `loadLocale`                                                                              | Lazy locales, cached by id, evicted on failure                                       | [The runtime](/guide/i18n/runtime#loading-catalogues)                 |
 | `validateCatalog`, `assertValidCatalog`, `validateLocaleParity`, `assertLocaleParity`                         | The checks behind `npm run i18n:check` (also `@craft-ts/i18n/testing`)               | [The catalogue](/guide/i18n/catalog#checking-outside-the-typechecker) |
 | `serializeCatalog`, `serializeToken`                                                                          | JSON-safe delivery shape; refuses a token that resolves a service                    | [The catalogue](/guide/i18n/catalog)                                  |

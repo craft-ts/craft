@@ -105,3 +105,162 @@ theme variable is the opposite — set once on a wrapper, read by everything
 below — so pass `{ inherits: true }`. A non-inheriting theme hands every
 descendant the initial value, which looks exactly like dark mode not working,
 with no error anywhere.
+
+## Variables owned by the host page {#host-variables}
+
+A view embedded in a host application often has to paint with the host's
+theme — `--host-accent`, `--host-surface-1` — which the host declares,
+registers and switches at run time. A view never reads such a variable
+directly, and never re-declares it with `cssVars`: that would register the
+host's variable a second time with CraftTS's `syntax`, `inherits` and initial
+value, in conflict with the host's own registration.
+
+Written as a string, the read is refused by `craft-ts/no-raw-css-value`
+(`rawVar`). Read any other way, the architecture rule `no-dangling-css-vars`
+reports it:
+
+```text
+'--host-accent' is read by a sheet and declared by none, so nothing types,
+registers or checks it, and the read resolves to nothing unless something
+outside CraftTS defines it. If the variable belongs to this view, declare it
+with cssVars(...) and read the token. If it belongs to the host page, do not
+read it from a view: consume the host's shared CraftTS style contract — import
+its tokens and axes from the host's *.style.ts or its package's /style entry.
+If the host does not use CraftTS, write an adapter: a *.style.ts that declares
+the contract with cssVars(...) and fills it from the host's variables, so views
+read only the contract.
+```
+
+There is deliberately no API to read an arbitrary host variable from a view.
+The view consumes a **style contract** instead — typed tokens and axes, part of
+the same model as its own — and who provides that contract depends on the host.
+
+### The host uses CraftTS: import its contract
+
+The host declares its theme once, as the tokens and axes every view below it
+reads, in a `*.style.ts` — or in the `/style` entry of its package:
+
+```ts
+// The host's style contract — in a real project the host publishes it from its
+// own `*.style.ts`, or from its package's `/style` entry (`@acme/shell/style`).
+import { cssVars, defineStateAxis, kind, palette } from '@craft-ts/style';
+
+// Set once by the host, read by every view below it: a theme inherits.
+const themed = { inherits: true } as const;
+
+export const shellTheme = cssVars('shell', {
+  accent: kind.color(palette.accent.info, themed),
+  surface: kind.color(palette.surface.raised, themed),
+  ink: kind.color(palette.text.strong, themed),
+});
+
+/** Drives `data-emphasis` on the element that carries it. */
+export const emphasis = defineStateAxis('emphasis', ['quiet', 'loud']);
+```
+
+The view imports that contract and spends it like its own tokens; the host's
+axis becomes a point of the view's visual matrix:
+
+```ts
+import { bg, color, craftStyles, p, space, when } from '@craft-ts/style';
+// ✓ the host's contract — '@acme/shell/style' when the host is a package
+import { emphasis, shellTheme } from './shell.style';
+
+export const banner = craftStyles(
+  'banner',
+  {
+    root: [
+      p(space(4)),
+      bg(shellTheme.surface),
+      color(shellTheme.ink),
+      // The host's axis is a point of the view's own matrix.
+      when(emphasis.loud, [bg(shellTheme.accent)]),
+    ],
+  },
+  { axes: [emphasis] },
+);
+```
+
+The variables are declared once, by their owner, and every read is checked
+against that declaration.
+
+### The host does not use CraftTS: write an adapter
+
+When the host only has CSS variables, the view's project provides the contract
+itself, in one adapter module. The adapter declares the contract with
+`cssVars` — registered, typed, owned by the project — and fills it on `:root`
+from the host's variables. Those are read through `defineVarTokens`, which
+builds typed `var(--{prefix}-{key})` tokens **without** registering them or
+emitting an `@property`, so the host keeps its own registration:
+
+```ts
+import {
+  craftGlobalStyles,
+  cssVars,
+  defineVarTokens,
+  kind,
+  palette,
+  set,
+} from '@craft-ts/style';
+
+const themed = { inherits: true } as const;
+
+/**
+ * The contract the views read, owned by this project: registered with
+ * `@property`, typed, and the only thing a view imports.
+ */
+export const hostTheme = cssVars('hostTheme', {
+  accent: kind.color(palette.accent.info, themed),
+  surface: kind.color(palette.surface.raised, themed),
+});
+
+/**
+ * What the host page owns: `--host-accent` and `--host-surface-1`. Read here
+ * and nowhere else — `defineVarTokens` registers nothing and emits no
+ * `@property`, so the host keeps its own registration.
+ */
+const page = defineVarTokens('host', {
+  accent: kind.color(palette.accent.info),
+  'surface-1': kind.color(palette.surface.raised),
+}).tokens;
+
+// Fill the contract from the host's variables, on `:root`.
+craftGlobalStyles('hostAdapter', {
+  root: [
+    set(hostTheme.accent, page.accent),
+    set(hostTheme.surface, page['surface-1']),
+  ],
+});
+```
+
+Views import the adapter's contract, never the host's variables:
+
+```ts
+import { bg, color, craftStyles, p, space } from '@craft-ts/style';
+// ✓ the adapter's contract, never `--host-accent` itself
+import { hostTheme } from './host-adapter.style';
+
+export const panel = craftStyles('panel', {
+  root: [p(space(4)), bg(hostTheme.surface), color(hostTheme.accent)],
+});
+```
+
+What this buys and what to know:
+
+- **One place reads the host.** The emitted CSS registers `--hostTheme-accent`
+  and sets `:root { --hostTheme-accent: var(--host-accent) }`; nothing else
+  names `--host-accent`. When the host renames a variable, only the adapter
+  changes.
+- **A missing host variable is not a broken view.** If the host does not
+  define `--host-accent`, the registered contract variable falls back to its
+  initial value (`palette.accent.info` here) instead of resolving to nothing.
+- **The mapping lives on `:root`.** The view follows a host theme switched on
+  the document. A host that re-themes only a subtree needs that subtree's
+  values mapped too.
+- **The host's names must read as `--{prefix}-{key}`.** `--host-surface-1` is
+  `defineVarTokens('host', { 'surface-1': … })`. `defineVarTokens` belongs in
+  the adapter only: a view sheet that reads its tokens is reported by
+  `no-dangling-css-vars` like any other undeclared read.
+- When the host team can edit its own CSS, the same mapping can live there
+  instead — `--hostTheme-accent: var(--host-accent)` in the host's stylesheet —
+  and the adapter shrinks to the `cssVars` contract.

@@ -129,7 +129,7 @@ const UploadCard = craftComponent(
 | ------------------------------------------ | --------------------------------------------------------------------------------------- |
 | the component's own look                   | `craftStyles('name', { root: [...] })` in `name.style.ts`                               |
 | a variant (tone, size, selected)           | `defineStateAxis(...)`, then `when(axis.point, [...])`; the template sets `data-*`      |
-| a state the platform already announces     | `ariaCurrent`, `ariaPressed`, `ariaInvalid`, `interaction.hover` / `.focus` / `.disabled` |
+| a state the platform already announces     | `ariaCurrent`, `ariaPressed`, `ariaInvalid`, `ariaChecked`, `ariaSelected`, `interaction.hover` / `.focus` / `.focusVisible` / `.disabled` |
 | a value known only at runtime              | `cssVars(...)` in the sheet, `assign(...)` in the template                             |
 | a child that follows its parent's state    | a variable declared with `{ inherits: true }`, set by the parent, read by the child     |
 | page defaults (`body`, links, the theme)   | [`craftGlobalStyles`](/guide/style/foundation)                                          |
@@ -145,7 +145,10 @@ Per file, in `craftRules.configs.recommended`
 ([details](/guide/routing/eslint-rules)):
 
 - `no-raw-class` — a `class` that does not trace back to a sheet imported from a
-  `*.style` module;
+  `*.style` module. A class from another package's `/style` entry is refused
+  too: re-express what you need in a
+  [local CraftTS adapter](/guide/routing/eslint-rules#external-style-entries)
+  built on your tokens and axes;
 - `no-inline-style` — a `style` that is not `assign(...)`;
 - `no-component-css` — any `.css` import other than `virtual:craft-style.css`;
 - `style-file-boundary` — a sheet importing anything but style vocabulary;
@@ -160,7 +163,8 @@ Across the application, in the base architecture rules
 - `no-global-stylesheet` — an entry file importing a `.css`, or `index.html`
   linking a stylesheet;
 - `style-obligations-discharged`, `no-dangling-css-vars` — a `requires` nobody
-  provides, a variable read and never declared.
+  provides, a variable read and never declared (a host page's variable is
+  read through its [style contract](/guide/style/tokens#host-variables)).
 
 The meta carries no CSS: `styles`, `stylesUrl` and `cssVars` do not exist on it.
 The only route left outside a sheet is the reasoned bypass below.

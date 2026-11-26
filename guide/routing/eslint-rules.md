@@ -281,6 +281,83 @@ its insertion API depend on the service's behavior. It reports direct writes
 inside exposed callbacks; writes delegated to helper functions are outside its
 static analysis.
 
+### Only provable reads go inside a `craftComputed`
+
+`craft-ts/no-craft-computed-side-effects` and
+`craft-ts/prefer-computed-local-dependency` are both enabled at `error` in the
+recommended preset, including generated apps, and they share one predicate: a
+call is accepted inside a computed only when its type proves it is a read.
+`prefer-computed-local-dependency` asks to move a dependency into the computed
+that uses it only when that predicate accepts it there, so the two rules never
+ask for opposite things.
+
+The evidence the predicate accepts:
+
+- a reactive Craft read (`state`, `craftComputed`, a query reader, a component
+  input, a `CraftServiceInput`), `settled(...)` and `syncEffect(...)`;
+- the synchronous core capabilities `CraftRouter()` and `CraftGlobalError()`;
+- an `@craft-ts/i18n` translator built by `runtime.bind(dependency)`, and the
+  reader it returns, when its type proves that the bound `dependency` is a
+  reactive Craft read and that the message resolves no service (no DI-aware
+  token).
+
+Resolving any other service — abstract or concrete, by `Service()` or by a
+shortcut such as `Store.count()` — is not proven: the resolution can
+instantiate the implementation inside the computation, with transitive
+dependencies such as a `craftEffect` or a write, and neither an abstract
+contract nor a service's dependency map proves that it has none.
+
+Before — rejected by `no-craft-computed-side-effects`, because
+`HostLocale()` resolves a service inside the computation:
+
+```ts
+export const { Greeting, provideGreeting } = craftService(
+  { name: 'Greeting', providedIn: 'toProvide' },
+  function* () {
+    const name = yield* state('name', 'Ada');
+    yield* craftComputed('greeting', function* () {
+      const locale = yield* HostLocale(); // ❌ resolves a service
+      return `${locale}: ${yield* name()}`;
+    });
+  },
+);
+```
+
+After — the service body resolves `HostLocale()` once and the computed reads
+the value. `prefer-computed-local-dependency` accepts this form: it does not
+ask to move a dependency that the computed rule cannot prove pure.
+
+```ts
+export const { Greeting, provideGreeting } = craftService(
+  { name: 'Greeting', providedIn: 'toProvide' },
+  function* () {
+    const name = yield* state('name', 'Ada');
+    const locale = yield* HostLocale();
+    yield* craftComputed('greeting', function* () {
+      return `${locale}: ${yield* name()}`;
+    });
+  },
+);
+```
+
+A translation read in a computed is accepted when the translator is bound to a
+reactive read:
+
+```ts
+const language = yield* state('language', 'en');
+const t = runtime.bind(language);
+const lines = yield* state('lines', [1, 2, 3]);
+yield* craftComputed('summary', function* () {
+  return yield* t('items', { count: (yield* lines()).length })(); // ✅
+});
+```
+
+The same reader is rejected when `bind` received a generator that is not a
+reactive Craft read (bind it to the `state` that holds the locale), or when the
+message uses a DI-aware token: rendering it resolves that token's service, so
+read the translation in a template binding instead. Neither rule has an
+autofix; the diagnostic names the proof that is missing.
+
 ## Imported state and action references
 
 `craft-ts/no-imported-state-actions` is enabled at `error` in the recommended
@@ -487,6 +564,219 @@ of the implementation of each provider helper. See
 [providers configured by component inputs](/guide/components/customization#providers-configured-by-component-inputs)
 for the service and component example.
 
+## Component inputs with reserved names
+
+`craft-ts/no-reserved-component-input-name` is enabled at `error` in the
+recommended preset, inherited by the Effect preset and newly generated apps.
+A component call sends some keys to its root element instead of the component:
+global DOM properties (`id`, `title`, `slot`, `hidden`, `lang`, `dir`, `class`,
+`style`, …), every `data-*` and `aria-*` attribute, and DOM events (`error`,
+`input`, `change`, `load`, `submit`, `focus`, …) along with their `onXxx` form.
+An input declared with one of these names type-checks, but its value becomes an
+attribute or an event listener of the root element and never reaches the
+component — a provider configured from it by `withComponentProviders` receives
+nothing either.
+
+Before — rejected because `title` and `error` never reach `Field`:
+
+```ts
+export const Field = craftComponent(
+  'Field',
+  {},
+  (inputs: { title: Input<string>; error: Input<string> }) =>
+    span([inputs.title, inputs.error]),
+);
+```
+
+After — give each input a component-specific name:
+
+```ts
+export const Field = craftComponent(
+  'Field',
+  {},
+  (inputs: { titleText: Input<string>; errorMessage: Input<string> }) =>
+    span([inputs.titleText, inputs.errorMessage]),
+);
+
+// `title` remains available at the call site: it sets the root element's
+// DOM attribute, as on any component.
+Field({ titleText: 'Email', errorMessage: 'Required', title: 'Your email' });
+```
+
+The rule checks the inputs a `craftComponent(...)` factory declares (inline
+types, destructured parameters, local type aliases and interfaces, and imported
+types under typed linting), never the keys passed at a call site. The reserved
+vocabulary is the one the `@craft-ts/component` runtime uses to split a call's
+keys between the root element and the inputs. There is **no autofix**: the
+diagnostic suggests a name prefixed with the component's name (`fieldTitle`),
+but renaming an input also changes its callers, so choose the name yourself.
+
+## Style modules imported with NodeNext
+
+`craft-ts/style-file-boundary` is enabled at `error` in the recommended preset,
+inherited by the Effect preset and newly generated apps. A `*.style.ts` may
+import another style module, so a design system can be split across several
+files. Under `"moduleResolution": "NodeNext"` a relative import has to name the
+JavaScript output — `./tokens.style.js` — and the rule accepts that spelling
+when the import reaches a **typed** style module: a `tokens.style.ts` source (or
+`.tsx`) or a `tokens.style.d.ts` declaration. `.mjs` maps to `.mts`/`.d.mts`
+and `.cjs` to `.cts`/`.d.cts`, as in TypeScript.
+
+The `.js` suffix alone proves nothing. If the import lands on a plain
+`tokens.style.js`, the values the sheet imports lose their CraftTS token types:
+TypeScript types them `any`, or infers whatever the JavaScript happens to
+produce, so a sheet can spend a value the design system never declared. With typed linting (`projectService` or `project`)
+the rule asks TypeScript which file the import resolved to; without type
+information it looks for the typed file TypeScript would substitute beside the
+importing sheet.
+
+Before — rejected because `./tokens.style.js` reaches only a plain JavaScript
+file (or nothing):
+
+```ts
+// src/tokens.style.js — no tokens.style.ts, no tokens.style.d.ts
+export const gap = unit.rem(1);
+
+// src/card.style.ts
+import { craftStyles, gap as gapProp } from '@craft-ts/style';
+import { gap } from './tokens.style.js'; // ✗ untyped style module
+
+export const card = craftStyles('card', { root: [gapProp(gap)] });
+```
+
+After — the import resolves to the typed source (a `tokens.style.d.ts` beside a
+shipped `tokens.style.js` works the same way):
+
+```ts
+// src/tokens.style.ts
+import { unit } from '@craft-ts/style';
+
+export const gap = unit.rem(1);
+
+// src/card.style.ts
+import { craftStyles, gap as gapProp } from '@craft-ts/style';
+import { gap } from './tokens.style.js'; // ✓ TypeScript reads tokens.style.ts
+
+export const card = craftStyles('card', { root: [gapProp(gap)] });
+```
+
+`./tokens.style` and `./tokens.style.ts` stay accepted as before. There is
+**no autofix**: write the `*.style.ts` source, or ship its declaration, yourself.
+
+## Classes from another package's `/style` entry {#external-style-entries}
+
+`craft-ts/no-raw-class` is enabled at `error` in the recommended preset,
+inherited by the Effect preset and newly generated apps. It accepts a class from
+a project `*.style` module or from the `/style` entry of a CraftTS package
+(`@craft-ts/ui/style`). A class taken from the `/style` entry of any other
+package — `@acme/kit/style` — stays refused, even when
+`craftStyle({ include: ['@acme/kit'] })` evaluates that package's sheets and the
+class has CSS.
+
+Loading the package's CSS does not make its classes part of the project's CraftTS
+token and axis model. Bound directly, the class produces a look nobody can trace
+back to the project's tokens and axes: its variants are not points of your axes,
+its colours are not your theme's, and the next component that needs the same
+styling cannot reuse it consistently. The diagnostic
+(`externalStyleClass`) names the import and asks for a **local CraftTS adapter**:
+a `*.style.ts` module in your project that re-expresses what you need with
+`craftStyles`, your tokens (`cssVars`, the palette and scales) and your axes
+(`defineStateAxis`, `when`).
+
+Before — rejected because `kit.button` comes from an external `/style` entry:
+
+```ts
+// src/save.ts
+import { button, craftComponent } from '@craft-ts/component';
+import { kit } from '@acme/kit/style';
+
+export const Save = craftComponent('Save', {}, () =>
+  button(
+    'save',
+    { type: 'button', class: [kit.button, kit.danger] }, // ✗ externalStyleClass
+    'Save',
+  ),
+);
+```
+
+After — the project's tokens and axes, which the adapter spends:
+
+```ts
+import { cssVars, defineStateAxis, kind, palette } from '@craft-ts/style';
+
+// The project's own tokens and axes — see "Defining your design system".
+const themed = { inherits: true } as const;
+
+export const theme = cssVars('adapterTheme', {
+  accent: kind.color(palette.accent.info, themed),
+  danger: kind.color(palette.accent.danger, themed),
+  onAccent: kind.color(palette.text.inverted, themed),
+});
+
+/** Drives `data-tone` on the element that carries it. */
+export const tone = defineStateAxis('tone', ['neutral', 'danger']);
+```
+
+The adapter, `kit.style.ts`, keeps only what the screen needs from the kit, and
+turns the kit's `danger` modifier class into a point of the project's `tone`
+axis:
+
+```ts
+import {
+  bg,
+  color,
+  craftStyles,
+  fontWeight,
+  p,
+  radii,
+  radius,
+  space,
+  when,
+} from '@craft-ts/style';
+import { theme, tone } from './foundation.style';
+
+/**
+ * The local CraftTS adapter: what this project needs from the kit's button,
+ * re-expressed with the project's own tokens and axes.
+ */
+export const kitButton = craftStyles(
+  'kitButton',
+  {
+    root: [
+      p(space(2)),
+      radius(radii.md),
+      bg(theme.accent),
+      color(theme.onAccent),
+      fontWeight.bold,
+      // The kit's "danger" modifier becomes a point on the project's axis.
+      when(tone.danger, [bg(theme.danger)]),
+    ],
+  },
+  { axes: [tone] },
+);
+```
+
+The component binds the adapter's class and sets the axis by attribute:
+
+```ts
+import { button, craftComponent } from '@craft-ts/component';
+// ✓ the project's adapter, not '@acme/kit/style'
+import { kitButton } from './kit.style';
+
+export const Save = craftComponent('Save', {}, () =>
+  button(
+    'save',
+    { type: 'button', class: kitButton.root, 'data-tone': 'danger' },
+    'Save',
+  ),
+);
+```
+
+There is **no autofix**: only you can decide which part of the package's styling
+the project needs and which of its tokens and axes it maps to. Once nothing
+binds the package's classes any more, its `include` entry in `craftStyle` can go
+too.
+
 ## Presets and configuration
 
 The recommended preset bans every TypeScript assertion in authored Craft code,
@@ -535,6 +825,7 @@ export default [
       'craft-ts/no-mutable-craft-service-closure-state': 'error',
       'craft-ts/require-craft-service-input-scope': 'error',
       'craft-ts/no-craft-component-return-type': 'error',
+      'craft-ts/no-reserved-component-input-name': 'error',
       'craft-ts/require-craft-component-for-exported-node-factory': 'error',
       'craft-ts/no-raw-craft-router-url': 'error',
       'craft-ts/no-type-assertions-in-template': 'error',
@@ -606,7 +897,7 @@ What each rule does:
 - `craft-ts/prefer-direct-craft-service-exposure`: reports `craftExpose(...)` wrappers that repeat a yielded service's name, a named primitive result, or a member already returned by a primitive such as `state`, including when the member is renamed; keep the existing nested path (for example, `View.searchInput.setSearchInput`). It also reports a member destructured from a yielded service only to be exposed again: expose it from the shortcut with `craftExpose('save', View.save)`, or yield `View.count()` when the member is a reader (calling a shortcut runs a method). It forbids `craftExpose` inside supported primitive declarations or callbacks. Keep `craftExpose` for standalone or computed values.
 - `craft-ts/prefer-craft-computed-for-reactive-generator`: reports a zero-argument generator exposed as a service value when its only statement returns a value derived from a `yield*` read. Declare that value with `yield* craftComputed(name, function* () { ... })`; parameterized generators and multi-step workflows are unaffected.
 - `craft-ts/prefer-craft-computed-for-reactive-array-length`: reports `.length` reads from reactive array readers in consumers. Expose a boolean or count through `craftComputed` in the owning service; `.length` inside that computed is allowed, and no autofix is offered because the scalar API needs a domain-specific name.
-- `craft-ts/prefer-computed-local-dependency`: reports a dependency yielded outside a `craftComputed` when every use of that dependency is inside that computed. Yield it in a generator callback there so the computed records its own dependency; no autofix is offered because the callback may need to become a generator.
+- `craft-ts/prefer-computed-local-dependency`: reports a dependency yielded outside a `craftComputed` when every use of that dependency is inside that computed and `craft-ts/no-craft-computed-side-effects` would accept it there (a reactive read, `CraftRouter()`, `CraftGlobalError()`, a proven i18n reader — see [Only provable reads go inside a `craftComputed`](#only-provable-reads-go-inside-a-craftcomputed)). Yield it in a generator callback there so the computed records its own dependency; no autofix is offered because the callback may need to become a generator. A service whose resolution is not proven pure stays resolved by the enclosing body.
 - `craft-ts/require-craft-component-for-exported-node-factory`: requires an exported function that directly returns a Craft node, such as `button(...)`, to be declared with `craftComponent(...)` so Craft directives and composition remain available
 
 ### Keep `craftService` exposure keys unique
@@ -848,7 +1139,7 @@ checks exported arrow functions.
 - `craft-ts/no-ephemeral-template-form-state`: forbids `let` / `const` / `var` in a `craftComponent(...)` or `craftDirective(...)` template. Component templates now return their node tree directly, so state and derived values belong in a view service; directive generator templates must also avoid render-local state because they can rerun.
 - `craft-ts/require-form-for-input-action`: rejects a button's direct `mutate(...)` or `method(...)` call when it consumes an input-bound value, including through a local record or variable; use `insertForm`, `insertFormAttributes`, and `insertFormSubmit` for mutation-backed forms, then submit a native `form(...)` with a `type: 'submit'` button
 - `craft-ts/template-element-name-unique`: requires named HTML helpers to use a static, unique local name within a component; use the object-first helper form for unnamed elements such as `p({ id: 'hint' }, ...)`
-- `craft-ts/no-craft-computed-side-effects`: forbids writes and asynchronous work inside `craftComputed`; only reactive reads and `settled(...)` are allowed. The graph-wide counterpart is [`assertCraftComputedPure`](/guide/testing/architecture#assertcraftcomputedpure).
+- `craft-ts/no-craft-computed-side-effects`: forbids writes, asynchronous work and unproven service resolution inside `craftComputed`; only reactive reads, `settled(...)`, `syncEffect(...)`, the synchronous core capabilities and proven i18n readers are allowed (see [Only provable reads go inside a `craftComputed`](#only-provable-reads-go-inside-a-craftcomputed)). The graph-wide counterpart is [`assertCraftComputedPure`](/guide/testing/architecture#assertcraftcomputedpure).
 - `craft-ts/no-effect-outside-loaders`: keeps `params`, methods, `craftComputed(...)`, and `craftEffect(...)` synchronous by allowing Effect values and Effect service reads only in Effect loaders; `no-effect-in-params` remains as a compatibility alias
 - `craft-ts/sync-effect-body`: keeps a body declared synchronous (`SyncOp` in its requirements) free of anything that may suspend — async constructors such as `Effect.sleep`/`Effect.promise`, and members nothing declares synchronous. Type-aware: the ESLint parser must use `projectService: true` or a TypeScript `project`
 - `craft-ts/no-explicit-effect-type`: lets `Effect.gen` infer its complete type instead of repeating an explicit Effect annotation; contracts declared in interfaces and type aliases remain allowed
@@ -1014,9 +1305,9 @@ states must respond to one operation, use a shared `source$` and `on$(...)`.
 - `craft-ts/no-imperative-template-action-chain`: forbids chaining multiple Craft actions in one template event callback, or in a generator passed as a component prop (`trigger: function* () { … }`); it also follows named event handlers from the legacy four-argument `craftComponent(...)` form. Emit one `source$` event and let the query, mutation, and state react through `on$`. With type information, any `yield*` of a service method counts as an action (`yield* View.label.recordConfirm()`), whatever its name; `yield*` of a reactive reader does not (`const user = yield* View.user()`), so a handler can read as many values as it needs around a single action
 - `craft-ts/prefer-route-query-params-for-filter-state`: warns when a local `state()` is used directly or through a local derivation as `params` for `query`, `queryEffect`, `asyncProcess`, or `asyncProcessEffect`; use `queryParams()` for values that should survive reloads and be represented in the URL. The graph-wide counterpart, which also sees cross-file dependencies, is [`assertResourceParamsPreferQueryParams`](/guide/testing/architecture/resource-params-query-state).
 - `craft-ts/no-imperative-storage-in-craft-method`: forbids direct storage access and imperative location changes in a `craftMethod`; use `insertReactOnMutation(...)` with `optimisticUpdate: () => undefined` to clear the affected query and let its persistence follow the query state.
-- `craft-ts/no-transition-actions`: forbids `query.call(...)`, `mutation.mutate(...)`, and `asyncProcess.method(...)` inside `transitionStep(...)`; validate the event and emit a source, then let the resource react to that source.
+- `craft-ts/no-transition-actions`: forbids `query.call(...)`, `mutation.mutate(...)`, `asyncProcess.method(...)`, `state.restore(...)`, and `source$.emit(...)` inside `transitionStep(...)`. Trace the event's producer first: emit external events at their real boundary and consume them with `on$(source$, ...)`; for values derived by `afterRecomputation(...)`, keep the value in the machine, register the reaction under its destination `transitionStep(...)`, and pass it to `transit(value)` with a `transitionGuard(({ from, event }) => ...)`. `transit()` targets the step that declares it. If this requires an insertion-level `currentStep()` router or state changes after acceptance, treat it as an API gap. See [Recomputations as transition triggers](/guide/state/state-machines#recomputations-as-transition-triggers).
 - `craft-ts/require-craft-resource-trigger-yield`: requires those triggers to use `yield*` inside generator functions, while ordinary UI callbacks may keep imperative calls
-- `craft-ts/require-craft-method-for-yieldable-callback`: requires callbacks returned by a `craftComponent` factory to wrap yieldable Craft method calls in `craftMethod(...)`
+- `craft-ts/require-craft-method-for-yieldable-callback`: requires an event callback in a `craftComponent` template — a DOM event prop (`click`, `change`, `onClick`, …) or a component `Output` — to wrap yieldable Craft method calls in `craftMethod(...)`; render callbacks such as `matchNode` handlers, `forNode` renders or slots are not checked. See [Wrap event callbacks that call yieldable methods](#wrap-event-callbacks-that-call-yieldable-methods)
 - `craft-ts/prefer-direct-yieldable-callback`: replaces a template generator or generator method that only delegates `yield* callback()` with the callback reference itself (`callback` or `object.method`)
 - `craft-ts/prefer-direct-yieldable-destructuring`: inlines a `yield*` result into its only object destructuring
 - `craft-ts/prefer-deep-yieldable-for-item`: warns when a `forNode` item is read repeatedly through `yield* item()` property accesses; expose a named `insertDeepYieldable('property')` collection and use direct item property readers
@@ -1030,13 +1321,13 @@ states must respond to one operation, use a shared `source$` and `on$(...)`.
 - `craft-ts/require-catch-tag-exhaustive-reaction`: rejects empty `catchTag.exhaustive` handlers and bare `return;` statements so each caught exception triggers a real reaction
 - `craft-ts/require-exception-component-di-check`: generates O(1) `RouteExceptionComponentCheckedDI` checks for `renderComponent`, route-level `errorComponent`, `withErrorComponent`, `withRouteLoadError`, and route-local `provideRouteLoadErrorComponent`
 - `craft-ts/require-pending-component-di-check`: generates the independent `RouteCheckedDI` check for each `pendingComponent`
-- `craft-ts/no-raw-class`: requires every `class:` binding — on an element, in `attrs`, on a component `host` — to trace back to a sheet imported from a `*.style` module: `sheet.key`, a `const` bound to one, an array of them, a typed input (a parameter or a member of one), or a function that only returns one. A string, a template literal, a conditional or an object of booleans is refused. A class assembled at render time is a visual state nothing recorded, so the [visual matrix](/guide/style/testing) would enumerate what the sheets declare while the DOM shows something else; and a sheet declared outside a `*.style.ts` is never evaluated by the build, so its class has no CSS. Make the variation an axis and set a `data-*` attribute
+- `craft-ts/no-raw-class`: requires every `class:` binding — on an element, in `attrs`, on a component `host` — to trace back to a sheet imported from a `*.style` module: `sheet.key`, a `const` bound to one, an array of them, a typed input (a parameter or a member of one), or a function that only returns one. A string, a template literal, a conditional or an object of booleans is refused. A class assembled at render time is a visual state nothing recorded, so the [visual matrix](/guide/style/testing) would enumerate what the sheets declare while the DOM shows something else; and a sheet declared outside a `*.style.ts` is never evaluated by the build, so its class has no CSS. Make the variation an axis and set a `data-*` attribute. A class from the `/style` entry of a package outside `@craft-ts` (`@acme/kit/style`) is refused with its own message: wrap what you need in a [local CraftTS adapter](#external-style-entries)
 - `craft-ts/no-inline-style`: restricts `style:` to `assign(...)` from `@craft-ts/style` — or an array of them, an object spreading only them, a conditional whose branches are all of them, or a function that only returns them. What varies at runtime is a typed variable (`cssVars` + `assign`), read by a sheet; `attrs.style` is always refused
 - `craft-ts/no-component-css`: forbids every `.css` import except `virtual:craft-style.css`. Global rules go in [`craftGlobalStyles`](/guide/style/foundation), fonts in `defineFont`
 - `craft-ts/no-forbidden-eslint-disable`: requires a reason on every directive that disables a design-system rule — `// eslint-disable-next-line craft-ts/no-raw-class -- markdown output carries its own classes`. The reason is what the reviewer decides on in Review Attest. It also forbids disabling the rules listed in `.craft/eslint-disable-policy.json`. A blanket `eslint-disable` silences this rule too, so it cannot be reported here; Review Attest lists it
-- `craft-ts/no-raw-css-value`: forbids a string or number literal as an argument to a `@craft-ts/style` helper — `p('12px')`, `bg('red')`. If the scale is missing the step, add it to the scale; if the value genuinely cannot be proven, `unsafeLength('13px', reason)` compiles and makes the debt countable in the [graph](/guide/style/testing#what-the-graph-adds)
+- `craft-ts/no-raw-css-value`: forbids a string or number literal as an argument to a `@craft-ts/style` helper — `p('12px')`, `bg('red')`. If the scale is missing the step, add it to the scale; if the value genuinely cannot be proven, `unsafeLength('13px', reason)` compiles and makes the debt countable in the [graph](/guide/style/testing#what-the-graph-adds). A variable read written as a string — `color('var(--host-accent)')` — is reported as `rawVar`: declare the variable with `cssVars(...)` when the view owns it; when the host page owns it, import the host's CraftTS style contract, or write an adapter that provides one ([variables owned by the host page](/guide/style/tokens#host-variables))
 - `craft-ts/no-free-has`: forbids a hand-written `:has()` in styles. It reaches across the component boundary, so what a component looks like depends on markup it does not own — a state the matrix cannot enumerate. Use the `descendant` axis, which is a closed set and carries its own test driver
-- `craft-ts/style-file-boundary`: restricts a `*.style.ts` to style-vocabulary imports. The [build plugin](/guide/style/setup) imports the file in Node to read what it registered, so an application import would run application code at build time
+- `craft-ts/style-file-boundary`: restricts a `*.style.ts` to style-vocabulary imports. The [build plugin](/guide/style/setup) imports the file in Node to read what it registered, so an application import would run application code at build time. A relative import of another style module may use the NodeNext spelling (`./tokens.style.js`) only when it reaches a typed `*.style.ts` source or `*.style.d.ts` declaration; see [Style modules imported with NodeNext](#style-modules-imported-with-nodenext)
 - `craft-ts/require-effect-adapters`: requires the Effect-aware adapters — `queryEffect`, `mutationEffect`, `asyncProcessEffect`, and `transitionGuardEffect` — instead of the plain primitives and `transitionGuard` in an Effect application. A `query` whose loader yields an imported `CraftHttpClient` request stays a Craft query because that request is a Craft generator, not an `Effect`; server-function queries follow the same boundary. See [Choose the right adapter](/guide/advanced/effect#choose-the-right-adapter)
 - `craft-ts/craft-signal-source-name-match`: requires `signalSource(name, ...)` to take a string literal matching the variable, class property or object property it is assigned to, so the name in a trace is the name in the source. A computed name defeats the [architecture graph](/guide/testing/architecture), which reads these names statically
 - `craft-ts/require-child-route-mount-check`: adds the missing `assertChildRouteMounts(...)` call + import (Quick Fix) for any `craftRoutes(...)` collection that mounts lazy `loadChildren`, so a `.withParent`-pinned child mounted under the wrong path is a compile error
@@ -1047,6 +1338,7 @@ states must respond to one operation, use a shared `source$` and `on$(...)`.
 - `craft-ts/prefer-craft-route-over-page-state`: warns when string-valued state named `page`, `currentPage`, `activePage`, or `routePage` may duplicate route activation; if it chooses the visible app page, declare routes with `craftRoutes(...)` and render them with `CraftRouterOutlet()`. Pagination and page-local state remain valid. Warning only; no autofix.
 - `craft-ts/no-raw-craft-router-url`: rejects reading `CraftRouter.url`; use the typed route parameter helper generated by `craftRoutes(...)` instead of parsing the URL
 - `craft-ts/no-craft-component-return-type`: rejects explicit annotations on `craftComponent(...)` results so dependency and template inference remains intact
+- `craft-ts/no-reserved-component-input-name`: rejects `craftComponent(...)` inputs named like a DOM property (`title`, `id`, `slot`, …), a `data-*`/`aria-*` attribute or a DOM event (`error`, `input`, `onClick`, …); a component call sends those keys to its root element, so the input would never reach the component. See [component inputs with reserved names](#component-inputs-with-reserved-names)
 
 ## Keep derived state in services
 
@@ -1265,6 +1557,22 @@ extracted factories, `h('tag')`), not only `craftComponent` argument 3.
 - `require-interactive-local-name`: requires a string-literal first argument on interactive helpers; the local name is the third segment of `data-craft-name="${component}:${tag}:${localName}"`
 - `img-has-alt`, `iframe-has-title`, `button-has-type`, `anchor-has-href`
 - `control-has-accessible-name`, `label-has-associated-control`, `heading-has-content`
+  — a label is associated with any HTML labelable element (`button`, `input`
+  other than hidden, `meter`, `output`, `progress`, `select`, `textarea`) it
+  wraps or targets with `htmlFor`, and its text names that control:
+
+  ```ts
+  // ❌ a div is not labelable, even with role=switch
+  label([span('Dark mode'), div({ role: 'switch', 'aria-checked': 'false' })]);
+  // ✅ the wrapping label associates and names the native button
+  label([
+    span('Dark mode'),
+    button({ type: 'button', role: 'switch', 'aria-checked': 'false' }),
+  ]);
+  ```
+
+  See [Labels and labelable controls](/guide/components/accessibility#labels-and-labelable-controls).
+
 - `no-noninteractive-element-interactions`, `no-positive-tabindex`
 - `valid-aria`, `role-has-required-aria`, `target-blank-noopener`
 - `prefer-relative-heading`, `require-route-heading-outline`,
@@ -1489,6 +1797,51 @@ span(counter.increment);
 The rule leaves callbacks with parameters, extra statements, or additional
 computation unchanged. In those cases the generator contains behavior that
 cannot be represented by passing the callback reference alone.
+
+### Wrap event callbacks that call yieldable methods
+
+`require-craft-method-for-yieldable-callback` checks the callbacks a template
+binds to an event. A plain arrow that calls a yieldable Craft method only builds
+an invocation nobody drives, so the action never runs:
+
+```ts
+// Before: rejected — the arrow returns an undriven generator.
+const updatePageSize = (event: Event) =>
+  pagination.updatePageSize(Number((event.target as HTMLSelectElement).value));
+select({ change: updatePageSize });
+DsButton({ label: 'Save', press: () => View.save() });
+
+// After: the callback is a Craft action the runtime drives.
+const updatePageSize = craftMethod('updatePageSize', function* (event: Event) {
+  yield* pagination.updatePageSize(
+    Number((event.target as HTMLSelectElement).value),
+  );
+});
+select({ change: updatePageSize });
+DsButton({ label: 'Save', press: View.save });
+```
+
+There is no autofix: name the action with `craftMethod(...)`, or pass the
+method reference when the callback only forwards to it.
+
+A callback counts as an event binding when its key is one the runtime binds as
+a listener — a DOM event name from the component host vocabulary (`click`,
+`input`, `change`, `submit`, `keydown`, …) or any `onXxx` key — or when it is
+passed to a component input declared as `Output<Handler>`. Every other
+function-valued property renders nodes and is left alone, so this is valid:
+
+```ts
+// Valid: render callbacks build nodes, they handle no event.
+matchNode.exhaustive(Job.phase, {
+  running: () => p(Job.t('loading')),
+  finished: () => p(Job.t('done')),
+});
+```
+
+The rule requires type information (`parserOptions.projectService` or
+`project`): it identifies yieldable methods and component outputs from their
+types. Without it, the rule reports a single `missingTypeInfo` diagnostic
+instead of checking callbacks.
 
 ### Destructure directly from `yield*`
 

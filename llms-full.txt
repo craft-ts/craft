@@ -4173,7 +4173,7 @@ Skills follow the [Agent Skills](https://agentskills.io/specification) layout
 
 | Skill | Trigger |
 | --- | --- |
-| `craft-ts` | Any authored Craft code |
+| `craft-ts` | Any authored Craft code; `TS2589` / `TS2321` / `TS7056` on components (`sealComponent`) |
 | `craft-ts-architecture-tests` | Scaffold or run `architecture/`, or freeze a graph smell |
 | `translate-spec-to-craft-ts` | Spec / CRUD / filters / forms → primitives |
 | `craft-ts-routes` | `craftRoutes`, `loadCraftComponent`, `TS2589` |
@@ -5241,7 +5241,8 @@ non-interactive starters, configuration options, and first checks
 [Customization](/guide/components/customization) ·
 [Content projection](/guide/components/content-projection) ·
 [Styling a component](/guide/components/styles) ·
-[Accessibility](/guide/components/accessibility)
+[Accessibility](/guide/components/accessibility) ·
+[Composition boundaries](/guide/components/composition-boundaries)
 
 ### Forms
 
@@ -14602,6 +14603,78 @@ of the implementation of each provider helper. See
 [providers configured by component inputs](/guide/components/customization#providers-configured-by-component-inputs)
 for the service and component example.
 
+## Components typed by hand
+
+`craft-ts/no-craft-component-return-type` is an error in the recommended and
+Effect presets, including generated apps.
+
+Before — the annotation hides the template, and the contracts with it:
+
+```ts
+import type { CraftComponent, PropsFromFactory } from '@craft-ts/component';
+
+// ✗ CraftComponent<Props> has no dependency contract, no exceptions, no heading need
+export const Panel: CraftComponent<PropsFromFactory<() => never>> = PanelImpl;
+```
+
+After — seal the component instead:
+
+```ts
+import { sealComponent } from '@craft-ts/component';
+
+// ✓ every contract is kept; only the template tree is dropped
+export const Panel = sealComponent(PanelImpl);
+```
+
+Why: a DI proof (`RouteCheckedDI`) on a component typed this way, or on any
+component rendering it, used to answer `true` with a provider missing. The
+proof now fails closed with a message, and the rule reports the annotation in
+the editor first. An assertion (`… as CraftComponent<…>`) is reported the same
+way.
+
+`eslint --fix` does not change a `CraftComponent<…>` annotation: removing it
+is offered as a suggestion, because the developer chooses between the
+inferred type and `sealComponent(...)`. An annotation written directly on a
+`craftComponent(...)` call (piped or sealed) is still removed by `--fix`. See
+[Composition boundaries](/guide/components/composition-boundaries).
+
+## Lazily loaded components in `deferNode`
+
+`craft-ts/prefer-defer-node-pick` is an error in the recommended and Effect
+presets, including generated apps.
+
+Before — the loader selects the component with `.then(...)`:
+
+```ts
+deferNode(
+  ({ withRetry }) =>
+    withRetry(import('./lazy-message')).then((module) => module.lazyMessage),
+  { trigger: 'interaction', placeholder: () => p('Load') },
+);
+```
+
+After — the loader returns the module, and `.pick` names the export:
+
+```ts
+deferNode(({ withRetry }) => withRetry(import('./lazy-message'))).pick(
+  'lazyMessage',
+  { trigger: 'interaction', placeholder: () => p('Load') },
+);
+```
+
+Why: written in a template, the `.then` callback is checked after the call
+around it has fixed its types. The loaded component then falls back to a
+component with no contract, and the services it needs vanish from the
+parent's DI proof (`RouteCheckedDI` now fails on it instead of answering
+`true`). With `.pick`, the component is read from the module's type: its
+contract reaches the parent, `'lazyMessage'` must be an export that is a Craft
+component, and `props` must match its inputs.
+
+`eslint --fix` rewrites the call when the selection is `(m) => m.X`,
+`(m) => m['X']` or `({ X }) => X` and the options are an object literal
+without `resolve`. Otherwise the rule only reports: `resolve` needs the
+loaded value itself, and `.pick` does not accept it.
+
 ## Component inputs with reserved names
 
 `craft-ts/no-reserved-component-input-name` is enabled at `error` in the
@@ -14863,6 +14936,7 @@ export default [
       'craft-ts/no-mutable-craft-service-closure-state': 'error',
       'craft-ts/require-craft-service-input-scope': 'error',
       'craft-ts/no-craft-component-return-type': 'error',
+      'craft-ts/prefer-defer-node-pick': 'error',
       'craft-ts/no-reserved-component-input-name': 'error',
       'craft-ts/require-craft-component-for-exported-node-factory': 'error',
       'craft-ts/no-raw-craft-router-url': 'error',
@@ -15375,7 +15449,8 @@ states must respond to one operation, use a shared `source$` and `on$(...)`.
 - `craft-ts/no-manual-craft-routing`: rejects browser URL parsing and History API/event handling used to match, select, or change Craft routes; use `CraftActivatedRoute` with typed path/query helpers to read the route, `CraftRouter.navigate(...)` for actions, and `CraftRouterLink(...)` for links. No autofix is offered because route ownership and parameter mapping require a human choice.
 - `craft-ts/prefer-craft-route-over-page-state`: warns when string-valued state named `page`, `currentPage`, `activePage`, or `routePage` may duplicate route activation; if it chooses the visible app page, declare routes with `craftRoutes(...)` and render them with `CraftRouterOutlet()`. Pagination and page-local state remain valid. Warning only; no autofix.
 - `craft-ts/no-raw-craft-router-url`: rejects reading `CraftRouter.url`; use the typed route parameter helper generated by `craftRoutes(...)` instead of parsing the URL
-- `craft-ts/no-craft-component-return-type`: rejects explicit annotations on `craftComponent(...)` results so dependency and template inference remains intact
+- `craft-ts/no-craft-component-return-type`: rejects explicit annotations on `craftComponent(...)` results (also piped or sealed) so dependency and template inference remains intact, and rejects typing a component by hand with `CraftComponent<…>` (annotation or assertion), which drops its dependency contract. See [components typed by hand](#components-typed-by-hand)
+- `craft-ts/prefer-defer-node-pick`: requires a `deferNode` loader to return the module and name the component export with `.pick(name, options)`, so the loaded component keeps its dependency contract. See [lazily loaded components in `deferNode`](#lazily-loaded-components-in-defernode)
 - `craft-ts/no-reserved-component-input-name`: rejects `craftComponent(...)` inputs named like a DOM property (`title`, `id`, `slot`, …), a `data-*`/`aria-*` attribute or a DOM event (`error`, `input`, `onClick`, …); a component call sends those keys to its root element, so the input would never reach the component. See [component inputs with reserved names](#component-inputs-with-reserved-names)
 
 ## Keep derived state in services
@@ -17738,6 +17813,26 @@ If a component starts depending on a service that is not provided, or expects
 an input that the route does not supply, its `CanRun` alias becomes a
 TypeScript error in the route file.
 
+## When a proof cannot be computed
+
+A DI proof never answers `true` when it has nothing to prove. Each case below
+fails with a message naming the problem:
+
+| Situation | Message |
+| --- | --- |
+| The contract degraded to `any` (TypeScript gave up with TS2589), or a missing provider entry is `any` | `The component dependency contract could not be computed; …` |
+| The value checked is not a component (`ComponentDepsOf<typeof import('./page')>` instead of its `default`) | `The dependency contract of a component rendered in … is unknown: …` |
+| A component in the tree was typed by hand (`CraftComponent<Props>`) | `The dependency contract of a component rendered in … is unknown: …` |
+| The value checked is a bare object (`{}`) | `The value checked is not a component dependency contract …` |
+| The provided values widened to `any` or `unknown` | `Provided values widened to any or unknown; …` |
+| The provider or input names widened to `string` | `Available provider names widened to string; …` / `Available input names widened to string; …` |
+
+A deep page does not need any of this. Each component computes its contract
+once, so the cost of the proof stays the same per nesting level. Seal the
+components that cross a boundary (export, slot, `forNode` row) with
+[`sealComponent`](/guide/components/composition-boundaries) to keep that true
+where a parent compares children.
+
 ## Scaling to hundreds of routes
 
 Organise routes as a tree of feature files joined by `loadChildren` when that
@@ -17834,6 +17929,7 @@ Notes:
 - [Setup](/guide/routing/setup)
 - [Architecture rules](/guide/testing/architecture) — `assertRouteDiProofs` catches a routed component with no check
 - [Route providers](/guide/routing/route-providers)
+- [Composition boundaries: `sealComponent`](/guide/components/composition-boundaries)
 
 ---
 
@@ -18048,6 +18144,17 @@ Control flow is made of functions rather than syntax — `forNode`, `ifNode`,
 ternary is the wrong tool for **structure**, is in
 [Learn step 2](/learn/02-derive#control-flow).
 
+To load a component lazily, return its module from the `deferNode` loader and
+name the export with `.pick` — the component's dependency contract then
+reaches the parent's DI proof:
+
+```ts
+deferNode(({ withRetry }) => withRetry(import('./lazy-message'))).pick(
+  'lazyMessage',
+  { trigger: 'interaction', placeholder: () => p('Load') },
+);
+```
+
 ## The meta
 
 ```typescript
@@ -18131,6 +18238,7 @@ with `.pipe(catchNode.exhaustive(...))` — see
 - [Learn: your first state](/learn/01-first-state) — the guided version
 - [Directives and `.pipe(...)`](/guide/components/directives)
 - [Accessibility](/guide/components/accessibility)
+- [Composition boundaries: `sealComponent`](/guide/components/composition-boundaries)
 - [Testing components](/guide/testing/components)
 
 
@@ -23062,6 +23170,183 @@ Hydration claims the existing remote nodes using their declaring application's
 hydration identities. It preserves their DOM identity, removes server portals
 that the client no longer renders, and leaves unrelated document content alone.
 Remote content counts toward the SSR HTML size budget.
+
+---
+
+---
+url: https://craft-ts.github.io/craft/guide/components/composition-boundaries.md
+---
+# Composition boundaries: `sealComponent`
+
+A component's type remembers two different things:
+
+- **its contracts** — props and inputs, the services it still needs
+  (`ComponentDepsOf`), the exceptions a parent must catch, a `heading()` a
+  parent must wrap in `headingSection`, style channels, content requirements;
+- **the shape of the tree its template renders** — every element, and the
+  full type of every child component, recursively.
+
+A parent checks the contracts. Only typed locators and template contracts read
+the shape. Each component computes its contracts once. The shape, however,
+grows with the depth of the tree, and some composition sites re-expand it:
+
+- a node choosing between two components (`flag ? A() : B()`);
+- a component passed to a slot, mounted as a `forNode` row, or compared
+  against a generic constraint;
+- the declaration (`.d.ts`) of an exported component, which may fail with
+  `TS7056: The inferred type of this node exceeds the maximum length the
+  compiler will serialize`.
+
+`sealComponent` keeps the contracts and drops the shape.
+
+## Usage
+
+Keep the definition plain, and seal the component where it is composed:
+
+```ts
+// workspace-browser.ts
+import { craftComponent } from '@craft-ts/component';
+
+export const WorkspaceBrowser = craftComponent(
+  'WorkspaceBrowser',
+  { providers: [provideWorkspace()] },
+  function* () {
+    const workspace = yield* Workspace();
+    return div([Toolbar(), FileTree(), Preview()]);
+  },
+);
+```
+
+```ts
+// shell.ts
+import { craftComponent, div, sealComponent } from '@craft-ts/component';
+import { WorkspaceBrowser } from './workspace-browser';
+
+const SealedWorkspaceBrowser = sealComponent(WorkspaceBrowser);
+
+export const Shell = craftComponent('Shell', {}, () =>
+  div([flag ? SealedWorkspaceBrowser() : Welcome()]),
+);
+```
+
+The component itself is returned untouched. Sealing only changes what its type
+remembers, so there is nothing to change at runtime. Keeping the definition
+unsealed keeps its own tests able to reach into its template (see
+[Testing a sealed component](#testing-a-sealed-component)).
+
+A library that publishes declaration files seals in its public index instead,
+so the `.d.ts` no longer has to spell the template out (TS7056):
+
+```ts
+// index.ts of the library
+import { WorkspaceBrowser as WorkspaceBrowserComponent } from './workspace-browser';
+import { sealComponent } from '@craft-ts/component';
+
+export const WorkspaceBrowser = sealComponent(WorkspaceBrowserComponent);
+```
+
+## What a sealed component keeps
+
+| Contract | Still checked on a sealed component |
+| --- | --- |
+| Props and required inputs | yes: a missing input is still a compile error |
+| Dependency contract (`ComponentDepsOf`, `RouteCheckedDI`) | yes: the component and every parent rendering it |
+| Initialization exceptions | yes: rendering it without `catchNode` is still refused |
+| Field exceptions | yes |
+| `heading()` need | yes: the parent must still wrap it in `headingSection` |
+| Style channels and content requirements | yes |
+| `.pipe(...)` | yes, with the same operators and checks |
+| Typed locators / template contracts reaching *into* it | no, they stop at the sealed boundary |
+
+## When to seal
+
+Sealing is one remedy for a type that grew too deep, not a default. Reach for
+it when TypeScript reports one of these on a component tree:
+
+- `TS2589: Type instantiation is excessively deep and possibly infinite`;
+- `TS2321: Excessive stack depth comparing types`;
+- `TS7056: The inferred type of this node exceeds the maximum length the
+  compiler will serialize`;
+
+or when `tsc --extendedDiagnostics` shows composition dominating the
+instantiation count. Seal at the boundary the error points to: a node
+choosing between components, a slot, a `forNode` row, an exported component.
+Other remedies remain: split one huge template into child components, and for
+a route collection, split it with `loadChildren`
+([Scaling routes](/guide/routing/scaling)).
+
+A sealed component costs about the same per nesting level as a plain one. The
+difference shows where the plain one re-expands its tree: a node choosing
+between two plain components overflows (TS2321) around 14 levels, while sealed
+components compile 32 levels down. `npm run type-budget` checks these figures
+on every change.
+
+## Testing a sealed component
+
+The register of `setupCraftComponentTemplateTest` — the services a test must
+mock or declare — is the same whether a component, or a child it renders, is
+sealed. Locating by tag, role, label or attribute works the same too.
+
+What stops at a sealed boundary is everything that reads the template's
+types: content locators (`result.locator('span', { content: 'status' })`) and
+template contracts (`TemplateRendersNamedElementWhen`). Test the unsealed
+component, which is why the definition stays plain and the seal sits where the
+component is used:
+
+```ts
+// workspace-browser.spec.ts — the plain component keeps typed locators.
+const result = await setupCraftComponentTemplateTest(WorkspaceBrowser, {
+  inputs: {},
+  register: { workspace: 'provided' },
+});
+result.locator('span', { content: 'workspaceName' });
+```
+
+A parent test cannot locate by content inside a sealed child. That is usually
+right: a parent test should not depend on how a child renders.
+
+## Never type a component by hand
+
+Before: the annotation suggested to hide a component's template drops its
+contracts with it.
+
+```ts
+// ✗ drops the dependency contract, the exceptions and the heading need
+export const Panel: CraftComponent<PropsFromFactory<() => never>> = PanelImpl;
+```
+
+After:
+
+```ts
+// ✓ keeps every contract, drops only the template tree
+export const Panel = sealComponent(PanelImpl);
+```
+
+Why it matters: `CraftComponent<Props>` has no dependency contract. A DI proof
+on that component, or on any component rendering it, used to answer `true`
+even with a provider missing. It now fails with:
+
+```
+The dependency contract of a component rendered in this component is unknown:
+the value is not a component, or a component was typed by hand. Pass the
+component itself to ComponentDepsOf, and seal a component with
+sealComponent(Component) instead of typing it
+```
+
+`craft-ts/no-craft-component-return-type` reports the annotation in the
+editor. It offers to remove it as a suggestion, not as an automatic fix,
+because removing it can change what compiles. Use `sealComponent(...)` when
+the annotation was there to keep the type small.
+
+When a declaration needs to name the type, use `SealedComponent<typeof PanelImpl>`.
+Never write the `CraftComponent<…>` arguments yourself.
+
+## See Also
+
+- [Components](/guide/components/)
+- [Scaling routes](/guide/routing/scaling): DI proofs and when they fail closed
+- [Testing components](/guide/testing/components)
+- [ESLint rules](/guide/routing/eslint-rules)
 
 ---
 

@@ -209,6 +209,17 @@ Control flow is made of functions rather than syntax — `forNode`, `ifNode`,
 ternary is the wrong tool for **structure**, is in
 [Learn step 2](/learn/02-derive#control-flow).
 
+To load a component lazily, return its module from the `deferNode` loader and
+name the export with `.pick` — the component's dependency contract then
+reaches the parent's DI proof:
+
+```ts
+deferNode(({ withRetry }) => withRetry(import('./lazy-message'))).pick(
+  'lazyMessage',
+  { trigger: 'interaction', placeholder: () => p('Load') },
+);
+```
+
 ## The meta
 
 ```typescript
@@ -292,6 +303,7 @@ with `.pipe(catchNode.exhaustive(...))` — see
 - [Learn: your first state](/learn/01-first-state) — the guided version
 - [Directives and `.pipe(...)`](/guide/components/directives)
 - [Accessibility](/guide/components/accessibility)
+- [Composition boundaries: `sealComponent`](/guide/components/composition-boundaries)
 - [Testing components](/guide/testing/components)
 
 

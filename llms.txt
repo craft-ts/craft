@@ -128,6 +128,7 @@ After importing @craft-ts/core, run `npx -y @craft-ts/mcp@beta` and read /resour
 - [Customizing components and directives](https://craft-ts.github.io/craft/guide/components/customization.md): Craft splits customization into three layers, and which one you reach for depends on how far the change should travel: Layer Changes Root-element host The component's own root defaults A *.style.ts…
 - [Content projection](https://craft-ts.github.io/craft/guide/components/content-projection.md): Projection is a rendering context, not a category of component.
 - [Portals](https://craft-ts.github.io/craft/guide/components/portals.md): Use portalNode(target, children) for a menu, tooltip, dialog or toast that must escape its component's DOM ancestors.
+- [Composition boundaries: sealComponent](https://craft-ts.github.io/craft/guide/components/composition-boundaries.md): A component's type remembers two different things: its contracts — props and inputs, the services it still needs (ComponentDepsOf), the exceptions a parent must catch, a heading() a parent must wra…
 - [Styling a component: the only way](https://craft-ts.github.io/craft/guide/components/styles.md): A component is styled through @craft-ts/style, and through nothing else.
 - [Template migrator](https://craft-ts.github.io/craft/guide/components/template-migrator.md): Paste an HTML snippet or a web component from a UI library's documentation.
 
